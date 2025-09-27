@@ -5,3 +5,9 @@
 /backend/.env.local
 /backend/.env.local.php
 /backend/.env.*.local
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.*.local
