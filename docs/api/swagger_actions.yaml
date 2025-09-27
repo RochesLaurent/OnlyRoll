@@ -1,0 +1,652 @@
+openapi: 3.0.3
+info:
+  title: API Module Actions de Partie - JDR Online
+  description: |
+    API pour la gestion des actions dans une partie de jeu de rôle en ligne.
+    Ce module couvre les lancers de dés, la gestion des tokens sur carte et le système de chat.
+  version: 1.0.0
+  contact:
+    name: Équipe JDR Online
+    email: api@jdr-online.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.jdr-online.com/v1
+    description: Serveur de production
+  - url: https://api-dev.jdr-online.com/v1
+    description: Serveur de développement
+  - url: http://localhost:8000/api/v1
+    description: Serveur local
+
+tags:
+  - name: Dice
+    description: Gestion des lancers de dés
+  - name: Tokens
+    description: Gestion des tokens sur la carte
+  - name: Messages
+    description: Système de chat et communication
+  - name: Actions
+    description: Actions transversales
+
+security:
+  - bearerAuth: []
+
+paths:
+  /games/{gameId}/dice/roll:
+    post:
+      tags:
+        - Dice
+      summary: Effectuer un lancer de dés
+      description: Lance des dés selon une expression et diffuse le résultat à tous les joueurs
+      operationId: rollDice
+      parameters:
+        - $ref: '#/components/parameters/gameId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - expression
+              properties:
+                expression:
+                  type: string
+                  pattern: '^(\d+d\d+([+-]\d+)?)+$'
+                  example: "2d6+3"
+                  description: Expression de dés (format XdY+Z)
+                type:
+                  type: string
+                  enum: [attack, damage, saving_throw, ability_check, initiative, other]
+                  example: attack
+                context:
+                  type: string
+                  maxLength: 250
+                  example: "Attaque à l'épée longue"
+                characterId:
+                  type: integer
+                  example: 123
+                  description: ID du personnage effectuant le lancer
+      responses:
+        '201':
+          description: Lancer effectué avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiceRollResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /games/{gameId}/dice/roll-private:
+    post:
+      tags:
+        - Dice
+      summary: Effectuer un lancer de dés privé
+      description: Lance des dés visible uniquement par le MJ
+      operationId: rollDicePrivate
+      parameters:
+        - $ref: '#/components/parameters/gameId'
+      requestBody:
+        $ref: '#/components/requestBodies/DiceRollRequest'
+      responses:
+        '201':
+          description: Lancer privé effectué
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiceRollResponse'
+        '403':
+          description: Réservé au MJ et co-GM
+
+  /games/{gameId}/dice/history:
+    get:
+      tags:
+        - Dice
+      summary: Historique des lancers de dés
+      description: Récupère l'historique paginé des lancers de la partie
+      operationId: getDiceHistory
+      parameters:
+        - $ref: '#/components/parameters/gameId'
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/limit'
+        - name: userId
+          in: query
+          schema:
+            type: integer
+          description: Filtrer par utilisateur
+        - name: characterId
+          in: query
+          schema:
+            type: integer
+          description: Filtrer par personnage
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [attack, damage, saving_throw, ability_check, initiative]
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Date de début
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Date de fin
+      responses:
+        '200':
+          description: Liste des lancers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DiceRollResponse'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+  /games/{gameId}/maps/{mapId}/tokens:
+    get:
+      tags:
+        - Tokens
+      summary: Lister les tokens d'une carte
+      description: Récupère tous les tokens présents sur une carte
+      operationId: getTokens
+      parameters:
+        - $ref: '#/components/parameters/gameId'
+        - $ref: '#/components/parameters/mapId'
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [character, monster, npc, object]
+        - name: layer
+          in: query
+          schema:
+            type: string
+            enum: [background, objects, tokens, effects]
+      responses:
+        '200':
+          description: Liste des tokens
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Token'
+    
+    post:
+      tags:
+        - Tokens
+      summary: Créer un nouveau token
+      description: Ajoute un token sur la carte (MJ/co-GM uniquement)
+      operationId: createToken
+      parameters:
+        - $ref: '#/components/parameters/gameId'
+        - $ref: '#/components/parameters/mapId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenCreateRequest'
+      responses:
+        '201':
+          description: Token créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+        '403':
+          description: Permissions insuffisantes (MJ/co-GM requis)
+
+  /games/{gameId}/maps/{mapId}/tokens/{tokenId}:
+    get:
+      tags:
+        - Tokens
+      summary: Récupérer un token
+      description: Obtient les détails d'un token spécifique
+      operationId: getToken
+      parameters:
+        - $ref: '#/components/parameters/gameId'
+        - $ref: '#/components/parameters/mapId'
+        - $ref: '#/components/parameters/tokenId'
+      responses:
+        '200':
+          description: Détails du token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    
+    patch:
+      tags:
+        - Tokens
+      summary: Modifier un token
+      description: Met à jour les propriétés d'un token
+      operationId: updateToken
+      parameters:
+        - $ref: '#/components/parameters/gameId'
+        - $ref: '#/components/parameters/mapId'
+        - $ref: '#/components/parameters/tokenId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenUpdateRequest'
+      responses:
+        '200':
+          description: Token mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+        '403':
+          description: Token verrouillé ou permissions insuffisantes
+    
+    delete:
+      tags:
+        - Tokens
+      summary: Supprimer un token
+      description: Retire un token de la carte (MJ uniquement)
+      operationId: deleteToken
+      parameters:
+        - $ref: '#/components/parameters/gameId'
+        - $ref: '#/components/parameters/mapId'
+        - $ref: '#/components/parameters/tokenId'
+      responses:
+        '204':
+          description: Token supprimé
+        '403':
+          description: Réservé au MJ
+
+  /games/{gameId}/maps/{mapId}/tokens/{tokenId}/position:
+    patch:
+      tags:
+        - Tokens
+      summary: Déplacer un token
+      description: Met à jour la position d'un token sur la carte
+      operationId: moveToken
+      parameters:
+        - $ref: '#/components/parameters/gameId'
+        - $ref: '#/components/parameters/mapId'
+        - $ref: '#/components/parameters/tokenId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - x
+                - y
+              properties:
+                x:
+                  type: integer
+                  minimum: 0
+                  example: 8
+                y:
+                  type: integer
+                  minimum: 0
+                  example: 12
+      responses:
+        '200':
+          description: Position mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+        '403':
+          description: Token verrouillé ou non autorisé
+
+  /games/{gameId}/messages:
+    get:
+      tags:
+        - Messages
+      summary: Historique des messages
+      description: Récupère l'historique du chat de la partie
+      operationId: getMessages
+      parameters:
+        - $ref: '#/components/parameters/gameId'
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/limit'
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [chat, emote, whisper, system, dice_roll]
+        - name: userId
+          in: query
+          schema:
+            type: integer
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Recherche dans le contenu
+      responses:
+        '200':
+          description: Liste des messages
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Message'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+    
+    post:
+      tags:
+        - Messages
+      summary: Envoyer un message
+      description: Envoie un message dans le chat de partie
+      operationId: sendMessage
+      parameters:
+        - $ref: '#/components/parameters/gameId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageRequest'
+      responses:
+        '201':
+          description: Message envoyé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: Contenu invalide ou trop long
+
+  /games/{gameId}/messages/whisper:
+    post:
+      tags:
+        - Messages
+      summary: Envoyer un whisper
+      description: Envoie un message privé à un autre joueur
+      operationId: sendWhisper
+      parameters:
+        - $ref: '#/components/parameters/gameId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+                - targetUserId
+              properties:
+                content:
+                  type: string
+                  maxLength: 1000
+                targetUserId:
+                  type: integer
+                  description: ID du destinataire
+      responses:
+        '201':
+          description: Whisper envoyé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+  /games/{gameId}/messages/ic:
+    post:
+      tags:
+        - Messages
+      summary: Message In Character
+      description: Envoie un message en tant que personnage
+      operationId: sendIcMessage
+      parameters:
+        - $ref: '#/components/parameters/gameId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+                - characterId
+              properties:
+                content:
+                  type: string
+                  maxLength: 1000
+                characterId:
+                  type: integer
+      responses:
+        '201':
+          description: Message IC envoyé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+  /games/{gameId}/messages/emote:
+    post:
+      tags:
+        - Messages
+      summary: Envoyer une emote
+      description: Décrit une action narrative
+      operationId: sendEmote
+      parameters:
+        - $ref: '#/components/parameters/gameId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+              properties:
+                content:
+                  type: string
+                  maxLength: 500
+                  example: "dégaine son épée avec détermination"
+                characterId:
+                  type: integer
+      responses:
+        '201':
+          description: Emote envoyée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+  /games/{gameId}/actions/undo:
+    post:
+      tags:
+        - Actions
+      summary: Annuler la dernière action
+      description: Annule la dernière action effectuée (30 secondes max)
+      operationId: undoAction
+      parameters:
+        - $ref: '#/components/parameters/gameId'
+      responses:
+        '200':
+          description: Action annulée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Déplacement de token annulé"
+                  actionType:
+                    type: string
+                    example: "token_move"
+        '400':
+          description: Aucune action à annuler ou délai dépassé
+        '403':
+          description: Action non annulable (ex: lancer de dés)
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtenu via /auth/login
+
+  parameters:
+    gameId:
+      name: gameId
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: ID de la partie
+    
+    mapId:
+      name: mapId
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: ID de la carte
+    
+    tokenId:
+      name: tokenId
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: ID du token
+    
+    page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: Numéro de page
+    
+    limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 50
+      description: Nombre d'éléments par page
+
+  schemas:
+    DiceRollResponse:
+      type: object
+      properties:
+        rollId:
+          type: integer
+          example: 456
+        expression:
+          type: string
+          example: "2d6+3"
+        result:
+          type: object
+          properties:
+            dice:
+              type: array
+              items:
+                type: object
+                properties:
+                  sides:
+                    type: integer
+                    example: 6
+                  result:
+                    type: integer
+                    example: 4
+            modifier:
+              type: integer
+              example: 3
+            total:
+              type: integer
+              example: 12
+        total:
+          type: integer
+          example: 12
+        type:
+          type: string
+          example: attack
+        context:
+          type: string
+          example: "Attaque à l'épée longue"
+        characterId:
+          type: integer
+          nullable: true
+        userId:
+          type: integer
+        userName:
+          type: string
+        isPrivate:
+          type: boolean
+          default: false
+        createdAt:
+          type: string
+          format: date-time
+
+    Token:
+      type: object
+      properties:
+        tokenId:
+          type: integer
+        mapId:
+          type: integer
+        name:
+          type: string
+          example: "Gobelin archer"
+        type:
+          type: string
+          enum: [character, monster, npc, object]
+        characterId:
+          type: integer
+          nullable: true
+        monsterId:
+          type: integer
+          nullable: true
+        imageUrl:
+          type: string
+          format: uri
+        x:
+          type: integer
+        y:
+          type: integer
+        size:
+          type: number
+          format: float
+          minimum: 0.5
+          maximum: 5.0
+        rotation:
+          type: integer
+          minimum: 0
+          maximum: 359
+        isVisible:
+          type: boolean
+        isLocked:
+          type: boolean
+        layer:
+          type: string
+          enum: [background, objects, tokens, effects]

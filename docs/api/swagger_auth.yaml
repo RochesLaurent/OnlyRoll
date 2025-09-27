@@ -1,0 +1,876 @@
+openapi: 3.0.3
+info:
+  title: JDR Online - Module Authentification
+  description: |
+    API REST pour le module d'authentification de l'application JDR Online.
+    
+    Ce module gère l'enregistrement, la connexion, la vérification d'email et la sécurisation des comptes utilisateurs.
+    
+    **Fonctionnalités principales :**
+    - Inscription et vérification d'email
+    - Connexion avec JWT
+    - Réinitialisation de mot de passe
+    - Gestion des sessions utilisateur
+    
+    **Technologies utilisées :**
+    - Symfony 6+ avec API Platform
+    - JWT Authentication (LexikJWTAuthenticationBundle)
+    - MySQL 8.0+ avec Doctrine ORM
+    - Redis pour le cache des tokens
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@jdronline.fr
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.jdronline.fr/v1
+    description: Serveur de production
+  - url: https://staging-api.jdronline.fr/v1
+    description: Serveur de staging
+  - url: http://localhost:8000/api/v1
+    description: Serveur de développement local
+
+tags:
+  - name: auth
+    description: Authentification et gestion des utilisateurs
+  - name: user
+    description: Gestion du profil utilisateur
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - auth
+      summary: Inscription d'un nouvel utilisateur
+      description: |
+        Permet à un utilisateur de créer un nouveau compte.
+        
+        **Processus :**
+        1. Validation des données d'entrée
+        2. Vérification de l'unicité du pseudo et email
+        3. Hashage du mot de passe
+        4. Création du compte (non vérifié)
+        5. Envoi d'un email de vérification
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            examples:
+              valid_registration:
+                summary: Inscription valide
+                value:
+                  pseudo: "GamerPro2025"
+                  email: "gamer@example.com"
+                  password: "MySecurePass123!"
+                  timezone: "Europe/Paris"
+                  language: "fr"
+      responses:
+        '201':
+          description: Utilisateur créé avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+              example:
+                success: true
+                message: "Compte créé avec succès. Vérifiez votre email pour activer votre compte."
+                data:
+                  user_id: 123
+                  pseudo: "GamerPro2025"
+                  email: "gamer@example.com"
+                  is_verified: false
+                  created_at: "2025-09-15T10:30:00Z"
+        '400':
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                validation_errors:
+                  summary: Erreurs de validation
+                  value:
+                    success: false
+                    message: "Données invalides"
+                    errors:
+                      pseudo: ["Le pseudo doit contenir entre 3 et 50 caractères"]
+                      email: ["L'email est déjà utilisé"]
+                      password: ["Le mot de passe doit contenir au moins 8 caractères"]
+        '429':
+          description: Trop de tentatives
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      tags:
+        - auth
+      summary: Connexion d'un utilisateur
+      description: |
+        Authentifie un utilisateur et retourne un token JWT.
+        
+        **Processus :**
+        1. Validation des identifiants
+        2. Vérification que le compte est vérifié
+        3. Génération du token JWT
+        4. Mise à jour de la date de dernière connexion
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              login_with_email:
+                summary: Connexion avec email
+                value:
+                  identifier: "gamer@example.com"
+                  password: "MySecurePass123!"
+              login_with_pseudo:
+                summary: Connexion avec pseudo
+                value:
+                  identifier: "GamerPro2025"
+                  password: "MySecurePass123!"
+      responses:
+        '200':
+          description: Connexion réussie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+              example:
+                success: true
+                message: "Connexion réussie"
+                data:
+                  token: "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9..."
+                  refresh_token: "def50200..."
+                  token_type: "bearer"
+                  expires_in: 3600
+                  user:
+                    user_id: 123
+                    pseudo: "GamerPro2025"
+                    email: "gamer@example.com"
+                    roles: ["ROLE_USER"]
+                    avatar: null
+                    timezone: "Europe/Paris"
+                    language: "fr"
+                    last_login: "2025-09-15T10:30:00Z"
+        '401':
+          description: Identifiants incorrects ou compte non vérifié
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_credentials:
+                  summary: Identifiants incorrects
+                  value:
+                    success: false
+                    message: "Identifiants incorrects"
+                unverified_account:
+                  summary: Compte non vérifié
+                  value:
+                    success: false
+                    message: "Votre compte n'est pas encore vérifié. Consultez votre email."
+        '429':
+          description: Trop de tentatives de connexion
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/verify-email/{token}:
+    get:
+      tags:
+        - auth
+      summary: Vérification d'email
+      description: |
+        Vérifie l'adresse email d'un utilisateur via le token reçu par email.
+        
+        **Processus :**
+        1. Validation du token
+        2. Activation du compte utilisateur
+        3. Suppression du token de vérification
+      operationId: verifyEmail
+      parameters:
+        - name: token
+          in: path
+          required: true
+          description: Token de vérification d'email
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9]{64}$'
+          example: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4"
+      responses:
+        '200':
+          description: Email vérifié avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              example:
+                success: true
+                message: "Email vérifié avec succès. Vous pouvez maintenant vous connecter."
+        '400':
+          description: Token invalide ou expiré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Token de vérification invalide ou expiré"
+        '404':
+          description: Token non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/resend-verification:
+    post:
+      tags:
+        - auth
+      summary: Renvoie un email de vérification
+      description: |
+        Renvoie un email de vérification à un utilisateur non vérifié.
+        
+        **Processus :**
+        1. Validation de l'email
+        2. Vérification que le compte n'est pas déjà vérifié
+        3. Génération d'un nouveau token
+        4. Envoi du nouvel email
+      operationId: resendVerification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendVerificationRequest'
+            example:
+              email: "gamer@example.com"
+      responses:
+        '200':
+          description: Email de vérification envoyé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              example:
+                success: true
+                message: "Si cette adresse email existe et n'est pas déjà vérifiée, un email de vérification a été envoyé."
+        '429':
+          description: Trop de tentatives de renvoi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/logout:
+    post:
+      tags:
+        - auth
+      summary: Déconnexion d'un utilisateur
+      description: |
+        Invalide le token JWT de l'utilisateur côté serveur (optionnel).
+        
+        **Note :** La déconnexion peut aussi être gérée uniquement côté client.
+      operationId: logoutUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Déconnexion réussie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              example:
+                success: true
+                message: "Déconnexion réussie"
+        '401':
+          description: Token invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/me:
+    get:
+      tags:
+        - user
+      summary: Récupère le profil de l'utilisateur connecté
+      description: |
+        Retourne les informations du profil de l'utilisateur authentifié.
+        
+        **Utilisation :**
+        - Affichage du profil dans l'interface
+        - Vérification des permissions
+        - Initialisation du state management côté client
+      operationId: getCurrentUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profil utilisateur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+              example:
+                success: true
+                data:
+                  user_id: 123
+                  pseudo: "GamerPro2025"
+                  email: "gamer@example.com"
+                  roles: ["ROLE_USER"]
+                  is_verified: true
+                  avatar: "https://cdn.jdronline.fr/avatars/123.jpg"
+                  timezone: "Europe/Paris"
+                  language: "fr"
+                  created_at: "2025-09-01T10:00:00Z"
+                  last_login: "2025-09-15T10:30:00Z"
+        '401':
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/refresh:
+    post:
+      tags:
+        - auth
+      summary: Actualise le token JWT
+      description: |
+        Génère un nouveau token JWT avec une nouvelle date d'expiration.
+        
+        **Utilisation :**
+        - Maintien automatique de la session utilisateur
+        - Géré par les intercepteurs Axios côté client
+      operationId: refreshToken
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Token actualisé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshTokenResponse'
+              example:
+                success: true
+                data:
+                  token: "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9..."
+                  token_type: "bearer"
+                  expires_in: 3600
+        '401':
+          description: Token invalide ou expiré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/forgot-password:
+    post:
+      tags:
+        - auth
+      summary: Demande de réinitialisation de mot de passe
+      description: |
+        Envoie un email avec un lien de réinitialisation de mot de passe.
+        
+        **Processus :**
+        1. Validation de l'email
+        2. Génération d'un token de réinitialisation
+        3. Envoi de l'email avec le lien sécurisé
+        4. Limitation du taux de requêtes
+      operationId: forgotPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+            example:
+              email: "gamer@example.com"
+      responses:
+        '200':
+          description: Email de réinitialisation envoyé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              example:
+                success: true
+                message: "Si cette adresse email existe, un email de réinitialisation a été envoyé."
+        '429':
+          description: Trop de tentatives
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/reset-password:
+    post:
+      tags:
+        - auth
+      summary: Réinitialisation du mot de passe
+      description: |
+        Permet à un utilisateur de définir un nouveau mot de passe via le token reçu par email.
+        
+        **Processus :**
+        1. Validation du token de réinitialisation
+        2. Validation du nouveau mot de passe
+        3. Mise à jour du mot de passe hashé
+        4. Invalidation du token de réinitialisation
+      operationId: resetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+            example:
+              token: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4"
+              password: "MyNewSecurePass456!"
+      responses:
+        '200':
+          description: Mot de passe réinitialisé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              example:
+                success: true
+                message: "Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous connecter."
+        '400':
+          description: Token invalide ou données incorretes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_token:
+                  summary: Token invalide
+                  value:
+                    success: false
+                    message: "Token de réinitialisation invalide ou expiré"
+                weak_password:
+                  summary: Mot de passe faible
+                  value:
+                    success: false
+                    message: "Le mot de passe ne respecte pas les critères de sécurité"
+                    errors:
+                      password: ["Le mot de passe doit contenir au moins 8 caractères avec majuscule, minuscule, chiffre et caractère spécial"]
+
+components:
+  schemas:
+    RegisterRequest:
+      type: object
+      required:
+        - pseudo
+        - email
+        - password
+      properties:
+        pseudo:
+          type: string
+          minLength: 3
+          maxLength: 50
+          pattern: '^[a-zA-Z0-9_-]+$'
+          description: "Pseudo unique (3-50 caractères, alphanumérique + tirets/underscores)"
+          example: "GamerPro2025"
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          description: "Adresse email valide et unique"
+          example: "gamer@example.com"
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+          description: "Mot de passe (8+ caractères avec complexité)"
+          example: "MySecurePass123!"
+        timezone:
+          type: string
+          default: "UTC"
+          description: "Fuseau horaire de l'utilisateur"
+          example: "Europe/Paris"
+        language:
+          type: string
+          default: "en"
+          enum: ["en", "fr", "es", "de"]
+          description: "Langue préférée"
+          example: "fr"
+
+    RegisterResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Compte créé avec succès"
+        data:
+          type: object
+          properties:
+            user_id:
+              type: integer
+              example: 123
+            pseudo:
+              type: string
+              example: "GamerPro2025"
+            email:
+              type: string
+              example: "gamer@example.com"
+            is_verified:
+              type: boolean
+              example: false
+            created_at:
+              type: string
+              format: date-time
+              example: "2025-09-15T10:30:00Z"
+
+    LoginRequest:
+      type: object
+      required:
+        - identifier
+        - password
+      properties:
+        identifier:
+          type: string
+          description: "Email ou pseudo de l'utilisateur"
+          example: "gamer@example.com"
+        password:
+          type: string
+          description: "Mot de passe"
+          example: "MySecurePass123!"
+
+    LoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Connexion réussie"
+        data:
+          type: object
+          properties:
+            token:
+              type: string
+              description: "Token JWT pour l'authentification"
+              example: "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9..."
+            refresh_token:
+              type: string
+              description: "Token de rafraîchissement"
+              example: "def50200..."
+            token_type:
+              type: string
+              example: "bearer"
+            expires_in:
+              type: integer
+              description: "Durée de validité du token en secondes"
+              example: 3600
+            user:
+              $ref: '#/components/schemas/UserProfile'
+
+    UserProfile:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          example: 123
+        pseudo:
+          type: string
+          example: "GamerPro2025"
+        email:
+          type: string
+          example: "gamer@example.com"
+        roles:
+          type: array
+          items:
+            type: string
+          example: ["ROLE_USER"]
+        is_verified:
+          type: boolean
+          example: true
+        avatar:
+          type: string
+          nullable: true
+          description: "URL de l'avatar utilisateur"
+          example: "https://cdn.jdronline.fr/avatars/123.jpg"
+        timezone:
+          type: string
+          example: "Europe/Paris"
+        language:
+          type: string
+          example: "fr"
+        last_login:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2025-09-15T10:30:00Z"
+
+    UserProfileResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          allOf:
+            - $ref: '#/components/schemas/UserProfile'
+            - type: object
+              properties:
+                created_at:
+                  type: string
+                  format: date-time
+                  example: "2025-09-01T10:00:00Z"
+
+    ResendVerificationRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          description: "Adresse email pour renvoyer la vérification"
+          example: "gamer@example.com"
+
+    ForgotPasswordRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          description: "Adresse email pour la réinitialisation"
+          example: "gamer@example.com"
+
+    ResetPasswordRequest:
+      type: object
+      required:
+        - token
+        - password
+      properties:
+        token:
+          type: string
+          pattern: '^[a-zA-Z0-9]{64}
+          description: "Token de réinitialisation reçu par email"
+          example: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4"
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+          description: "Nouveau mot de passe"
+          example: "MyNewSecurePass456!"
+
+    RefreshTokenResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            token:
+              type: string
+              description: "Nouveau token JWT"
+              example: "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9..."
+            token_type:
+              type: string
+              example: "bearer"
+            expires_in:
+              type: integer
+              description: "Durée de validité en secondes"
+              example: 3600
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Opération réussie"
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Une erreur s'est produite"
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: "Détails des erreurs par champ"
+          example:
+            email: ["L'email est déjà utilisé"]
+            password: ["Le mot de passe est trop faible"]
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Token JWT obtenu via l'endpoint de connexion.
+        
+        **Utilisation :**
+        ```
+        Authorization: Bearer <votre_token_jwt>
+        ```
+        
+        **Durée de vie :** 1 heure (configurable)
+        
+        **Rafraîchissement :** Utilisez l'endpoint `/auth/refresh`
+
+  responses:
+    UnauthorizedError:
+      description: Token d'authentification manquant ou invalide
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: "Token d'authentification requis"
+
+    ForbiddenError:
+      description: Permissions insuffisantes
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: "Permissions insuffisantes"
+
+    ValidationError:
+      description: Erreurs de validation des données
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: "Données invalides"
+            errors:
+              email: ["Format d'email invalide"]
+              password: ["Le mot de passe doit contenir au moins 8 caractères"]
+
+    RateLimitError:
+      description: Trop de requêtes
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: "Trop de tentatives. Veuillez réessayer plus tard."
+
+  examples:
+    UserRegistration:
+      summary: Inscription complète
+      description: Exemple d'inscription avec tous les champs optionnels
+      value:
+        pseudo: "MasterGM2025"
+        email: "master@jdronline.fr"
+        password: "SuperSecure789!"
+        timezone: "Europe/Paris"
+        language: "fr"
+
+    LoginSuccess:
+      summary: Connexion réussie
+      description: Réponse complète après une connexion réussie
+      value:
+        success: true
+        message: "Connexion réussie"
+        data:
+          token: "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE2OTQ3NjU0MDAsImV4cCI6MTY5NDc2OTAwMCwicm9sZXMiOlsiUk9MRV9VU0VSIl0sInVzZXJuYW1lIjoiR2FtZXJQcm8yMDI1In0..."
+          refresh_token: "def50200a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6..."
+          token_type: "bearer"
+          expires_in: 3600
+          user:
+            user_id: 123
+            pseudo: "GamerPro2025"
+            email: "gamer@example.com"
+            roles: ["ROLE_USER"]
+            is_verified: true
+            avatar: null
+            timezone: "Europe/Paris"
+            language: "fr"
+            last_login: "2025-09-15T10:30:00Z"
+
+security:
+  - bearerAuth: []
+
+# Extensions personnalisées pour la documentation
+x-tagGroups:
+  - name: Authentification
+    tags:
+      - auth
+  - name: Utilisateur
+    tags:
+      - user
+
+x-logo:
+  url: "https://cdn.jdronline.fr/logo.png"
+  altText: "JDR Online Logo"
+
+x-contact:
+  name: "Équipe de développement JDR Online"
+  url: "https://jdronline.fr/contact"
+  email: "dev@jdronline.fr"
+
+# Informations supplémentaires pour la mise en œuvre
+x-implementation-notes: |
+  ## Notes d'implémentation
+  
+  ### Sécurité
+  - Tous les mots de passe sont hashés avec Symfony PasswordHasher (bcrypt/argon2i)
+  - Les tokens JWT sont signés avec RS256 et ont une durée de vie de 1 heure
+  - Rate limiting implémenté : 5 tentatives par minute par IP
+  - Validation côté serveur obligatoire même si validation côté client présente
+  
+  ### Cache et Performance
+  - Tokens de vérification/réinitialisation stockés en Redis avec TTL
+  - Sessions utilisateur en cache pour optimiser l'endpoint /auth/me
+  - Invalidation automatique des caches lors des mises à jour
+  
+  ### Emails
+  - Templates Symfony Mailer avec design responsive
+  - Queue asynchrone (Symfony Messenger) pour l'envoi des emails
+  - Fallback SMTP si service principal indisponible
+  
+  ### Logs et Monitoring
+  - Logs des tentatives de connexion (succès/échec)
+  - Monitoring des temps de réponse API
+  - Alertes sur les tentatives de brute force
+  
+  ### Tests
+  - Tests unitaires pour chaque endpoint
+  - Tests d'intégration avec base de données de test
+  - Tests de charge sur les endpoints critiques
