@@ -1,0 +1,7 @@
+# Symfony
+/backend/vendor/
+/backend/var/cache/
+/backend/var/log/
+/backend/.env.local
+/backend/.env.local.php
+/backend/.env.*.local
