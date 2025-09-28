@@ -123,30 +123,30 @@
     const { isAuthenticated } = useAuth()
 
     const quotes = [
-    {
-        text: "Un aventurier averti en vaut deux !",
-        author: "Proverbe de taverne"
-    },
-    {
-        text: "Il vaut mieux être perdu avec une carte qu'être trouvé sans direction.",
-        author: "Sage Ranger"
-    },
-    {
-        text: "Même les plus grands héros se perdent parfois en chemin.",
-        author: "Chroniques d'Astarion"
-    },
-    {
-        text: "Ce n'est pas l'erreur qui compte, c'est comment on s'en remet.",
-        author: "Manuel du Maître de Donjon"
-    },
-    {
-        text: "Parfois, se perdre mène aux plus grandes découvertes.",
-        author: "Journal d'un Explorateur"
-    },
-    {
-        text: "Un chemin fermé en cache souvent un autre.",
-        author: "Proverbe elfique"
-    }
+        {
+            text: "Un aventurier averti en vaut deux !",
+            author: "Proverbe de taverne"
+        },
+        {
+            text: "Il vaut mieux être perdu avec une carte qu'être trouvé sans direction.",
+            author: "Sage Ranger"
+        },
+        {
+            text: "Même les plus grands héros se perdent parfois en chemin.",
+            author: "Chroniques d'Astarion"
+        },
+        {
+            text: "Ce n'est pas l'erreur qui compte, c'est comment on s'en remet.",
+            author: "Manuel du Maître de Donjon"
+        },
+        {
+            text: "Parfois, se perdre mène aux plus grandes découvertes.",
+            author: "Journal d'un Explorateur"
+        },
+        {
+            text: "Un chemin fermé en cache souvent un autre.",
+            author: "Proverbe elfique"
+        }
     ]
 
     const randomQuote = ref(quotes[0])
