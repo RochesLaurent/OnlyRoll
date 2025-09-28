@@ -97,6 +97,7 @@ class AuthController extends AbstractController
                 'message' => 'User validated successfully - JWT should work',
                 'user_id' => $user->getId(),
                 'user_email' => $user->getEmail(),
+                'user_pseudo' => $user->getPseudo(),
                 'user_verified' => $user->isVerified(),
                 'user_roles' => $user->getRoles()
             ]);

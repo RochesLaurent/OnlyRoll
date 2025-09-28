@@ -4,9 +4,17 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 
-const app = createApp(App)
+import './styles/tailwind.css'
 
-app.use(createPinia())
+const app = createApp(App)
+const pinia = createPinia()
+
+app.use(pinia)
 app.use(router)
 
+import { useAuthStore } from './stores/auth'
+
 app.mount('#app')
+
+const authStore = useAuthStore()
+authStore.initialize()
