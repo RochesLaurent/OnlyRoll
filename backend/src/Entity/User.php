@@ -240,4 +240,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setIsVerified(bool $v): self { 
         $this->isVerified = $v; return $this; 
     }
+
+    #[ORM\PreUpdate]
+    public function setUpdatedAtValue(): void
+    {
+        $this->updatedAt = new \DateTimeImmutable();
+    }
 }

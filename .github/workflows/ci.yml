@@ -1,0 +1,333 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+env:
+  PHP_VERSION: '8.2'
+  NODE_VERSION: '20'
+  COMPOSER_VERSION: '2'
+
+jobs:
+  # ============================================
+  # JOB 1: TESTS BACKEND (PHP/Symfony)
+  # ============================================
+  backend-tests:
+    name: Backend Tests (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        php: ['8.2', '8.3']
+    
+    services:
+      mysql:
+        image: mysql:9.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: onlyroll_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+      
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, gd, json, redis
+          coverage: xdebug
+          tools: composer:v2
+      
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+      
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+      
+      - name: Install Composer dependencies
+        working-directory: ./backend
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+      
+      - name: Copy .env.test
+        working-directory: ./backend
+        run: |
+          cp .env.test.dist .env.test
+          echo "DATABASE_URL=mysql://root:root@127.0.0.1:3306/onlyroll_test?serverVersion=9.0" >> .env.test
+          echo "REDIS_URL=redis://127.0.0.1:6379" >> .env.test
+      
+      - name: Create database schema
+        working-directory: ./backend
+        run: |
+          php bin/console doctrine:database:create --env=test --if-not-exists
+          php bin/console doctrine:migrations:migrate --env=test --no-interaction
+      
+      - name: Run PHPUnit tests with coverage
+        working-directory: ./backend
+        run: |
+          vendor/bin/phpunit --coverage-text --coverage-clover=coverage.xml --log-junit=test-results.xml
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: matrix.php == '8.2'
+        with:
+          files: ./backend/coverage.xml
+          flags: backend
+          name: backend-coverage
+      
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-results-php-${{ matrix.php }}
+          path: ./backend/test-results.xml
+
+  # ============================================
+  # JOB 2: CODE QUALITY BACKEND
+  # ============================================
+  backend-quality:
+    name: Backend Code Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql
+          tools: composer:v2, phpstan, php-cs-fixer
+      
+      - name: Install dependencies
+        working-directory: ./backend
+        run: composer install --no-interaction --prefer-dist
+      
+      - name: Run PHPStan (Static Analysis)
+        working-directory: ./backend
+        run: vendor/bin/phpstan analyse src --level=8 --error-format=github
+      
+      - name: Check PHP CS Fixer (Code Style)
+        working-directory: ./backend
+        run: vendor/bin/php-cs-fixer fix --dry-run --diff --verbose
+      
+      - name: Run PHPCS (PSR-12)
+        working-directory: ./backend
+        run: |
+          composer require --dev squizlabs/php_codesniffer
+          vendor/bin/phpcs --standard=PSR12 src
+
+  # ============================================
+  # JOB 3: TESTS FRONTEND (Vue/TypeScript)
+  # ============================================
+  frontend-tests:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: './frontend/package-lock.json'
+      
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+      
+      - name: Run unit tests with coverage
+        working-directory: ./frontend
+        run: npm run test:unit -- --coverage
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./frontend/coverage/coverage-final.json
+          flags: frontend
+          name: frontend-coverage
+      
+      - name: Install Playwright browsers
+        working-directory: ./frontend
+        run: npx playwright install --with-deps chromium
+      
+      - name: Run E2E tests
+        working-directory: ./frontend
+        run: npm run test:e2e
+        env:
+          CI: true
+      
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: ./frontend/playwright-report/
+          retention-days: 7
+
+  # ============================================
+  # JOB 4: CODE QUALITY FRONTEND
+  # ============================================
+  frontend-quality:
+    name: Frontend Code Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: './frontend/package-lock.json'
+      
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+      
+      - name: Run ESLint
+        working-directory: ./frontend
+        run: npm run lint
+      
+      - name: Check Prettier formatting
+        working-directory: ./frontend
+        run: npm run format:check
+      
+      - name: TypeScript type checking
+        working-directory: ./frontend
+        run: npm run type-check
+      
+      - name: Build check
+        working-directory: ./frontend
+        run: npm run build
+
+  # ============================================
+  # JOB 5: SECURITY CHECKS
+  # ============================================
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Backend security check (Symfony)
+        uses: symfonycorp/security-checker-action@v5
+        with:
+          lock: ./backend/composer.lock
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      
+      - name: Frontend security audit
+        working-directory: ./frontend
+        run: npm audit --audit-level=moderate
+
+  # ============================================
+  # JOB 6: BUILD & DEPLOY (Production uniquement)
+  # ============================================
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [backend-tests, backend-quality, frontend-tests, frontend-quality, security]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Build and push Docker images
+        run: |
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --tag ${{ secrets.DOCKER_USERNAME }}/onlyroll-backend:latest \
+            --tag ${{ secrets.DOCKER_USERNAME }}/onlyroll-backend:${{ github.sha }} \
+            --push \
+            ./backend
+          
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --tag ${{ secrets.DOCKER_USERNAME }}/onlyroll-frontend:latest \
+            --tag ${{ secrets.DOCKER_USERNAME }}/onlyroll-frontend:${{ github.sha }} \
+            --push \
+            ./frontend
+      
+      - name: Deploy to production
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          script: |
+            cd /var/www/onlyroll
+            docker-compose pull
+            docker-compose up -d
+            docker-compose exec -T php-fpm php bin/console doctrine:migrations:migrate --no-interaction
+            docker-compose exec -T php-fpm php bin/console cache:clear --env=prod
+      
+      - name: Notify deployment
+        if: success()
+        run: |
+          echo "Deployment successful!"
+          # Ajoutez ici vos notifications (Slack, Discord, etc.)
+
+  # ============================================
+  # JOB 7: NOTIFICATION FINALE
+  # ============================================
+  notify:
+    name: Send Notifications
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests, backend-quality, frontend-quality]
+    if: always()
+    
+    steps:
+      - name: Check job statuses
+        run: |
+          echo "Backend Tests: ${{ needs.backend-tests.result }}"
+          echo "Frontend Tests: ${{ needs.frontend-tests.result }}"
+          echo "Backend Quality: ${{ needs.backend-quality.result }}"
+          echo "Frontend Quality: ${{ needs.frontend-quality.result }}"
