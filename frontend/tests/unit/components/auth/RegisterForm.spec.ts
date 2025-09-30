@@ -9,6 +9,36 @@ import { mount, VueWrapper } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import RegisterForm from '@/components/auth/RegisterForm.vue'
 
+//Typage
+interface RegisterFormVm {
+  form: {
+    pseudo: string;
+    email: string;
+    password: string;
+    confirmPassword: string;
+    acceptTerms: boolean;
+  };
+  passwordRules: {
+    minlength: boolean;
+    lowercase: boolean;
+    uppercase: boolean;
+    number: boolean;
+  };
+  passwordsMatch: boolean;
+  isFormValid: boolean;
+  validationErrors: Array<{ field: string; message: string }>;
+  showPassword: boolean;
+  showConfirmPassword: boolean;
+  isLoading: boolean;
+  error: string | null;
+  // Méthodes
+  togglePasswordVisibility: () => void;
+  toggleConfirmPasswordVisibility: () => void;
+  validateForm: () => boolean;
+  handleSubmit: () => Promise<void>;
+}
+
+
 // Mock du composable useAuth
 const mockRegister = vi.fn()
 const mockClearError = vi.fn()
@@ -72,7 +102,8 @@ describe('RegisterForm Component', () => {
       await pseudoInput.trigger('blur')
       
       // Le formulaire devrait être invalide
-      expect(wrapper.vm.isFormValid).toBe(false)
+      const vm = wrapper.vm as unknown as RegisterFormVm;
+      expect(vm.isFormValid).toBe(false)
     })
 
     it('accepte un pseudo valide', async () => {
@@ -81,7 +112,7 @@ describe('RegisterForm Component', () => {
       await pseudoInput.setValue('ValidPseudo')
       await pseudoInput.trigger('blur')
       
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm as unknown as RegisterFormVm;
       expect(vm.form.pseudo).toBe('ValidPseudo')
     })
   })
@@ -93,7 +124,8 @@ describe('RegisterForm Component', () => {
       await emailInput.setValue('invalid-email')
       await emailInput.trigger('blur')
       
-      expect(wrapper.vm.isFormValid).toBe(false)
+      const vm = wrapper.vm as unknown as RegisterFormVm;
+      expect(vm.isFormValid).toBe(false)
     })
 
     it('accepte un email valide', async () => {
@@ -102,7 +134,7 @@ describe('RegisterForm Component', () => {
       await emailInput.setValue('valid@onlyroll.com')
       await emailInput.trigger('blur')
       
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm as unknown as RegisterFormVm;
       expect(vm.form.email).toBe('valid@onlyroll.com')
     })
   })
@@ -113,8 +145,8 @@ describe('RegisterForm Component', () => {
       
       await passwordInput.setValue('Short1!')
       
-      const vm = wrapper.vm as any
-      expect(vm.passwordRules.minLength).toBe(false)
+      const vm = wrapper.vm as unknown as RegisterFormVm;
+      expect(vm.passwordRules.minlength).toBe(false)
     })
 
     it('vérifie la présence d\'une minuscule', async () => {
@@ -122,7 +154,7 @@ describe('RegisterForm Component', () => {
       
       await passwordInput.setValue('PASSWORD123!')
       
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm as unknown as RegisterFormVm;
       expect(vm.passwordRules.lowercase).toBe(false)
     })
 
@@ -131,7 +163,7 @@ describe('RegisterForm Component', () => {
       
       await passwordInput.setValue('password123!')
       
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm as unknown as RegisterFormVm;
       expect(vm.passwordRules.uppercase).toBe(false)
     })
 
@@ -140,7 +172,7 @@ describe('RegisterForm Component', () => {
       
       await passwordInput.setValue('Password!')
       
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm as unknown as RegisterFormVm;
       expect(vm.passwordRules.number).toBe(false)
     })
 
@@ -149,8 +181,8 @@ describe('RegisterForm Component', () => {
       
       await passwordInput.setValue('ValidPass123!')
       
-      const vm = wrapper.vm as any
-      expect(vm.passwordRules.minLength).toBe(true)
+      const vm = wrapper.vm as unknown as RegisterFormVm;
+      expect(vm.passwordRules.minlength).toBe(true)
       expect(vm.passwordRules.lowercase).toBe(true)
       expect(vm.passwordRules.uppercase).toBe(true)
       expect(vm.passwordRules.number).toBe(true)
@@ -165,7 +197,7 @@ describe('RegisterForm Component', () => {
       await passwordInput.setValue('Password123!')
       await confirmInput.setValue('DifferentPass123!')
       
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm as unknown as RegisterFormVm;
       expect(vm.passwordsMatch).toBe(false)
     })
 
@@ -177,7 +209,7 @@ describe('RegisterForm Component', () => {
       await passwordInput.setValue(samePassword)
       await confirmInput.setValue(samePassword)
       
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm as unknown as RegisterFormVm;
       expect(vm.passwordsMatch).toBe(true)
     })
   })
@@ -205,7 +237,7 @@ describe('RegisterForm Component', () => {
     })
 
     it('envoie le formulaire avec les bonnes données si valide', async () => {
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm as unknown as RegisterFormVm;
       
       // Remplir le formulaire avec des données valides
       await wrapper.find('input[name="pseudo"]').setValue('TestUser')
@@ -232,7 +264,7 @@ describe('RegisterForm Component', () => {
       await wrapper.find('input[name="confirmPassword"]').setValue('ValidPass123!')
       // Ne pas cocher la checkbox
       
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm as unknown as RegisterFormVm;
       expect(vm.form.acceptTerms).toBe(false)
       expect(vm.isFormValid).toBe(false)
     })
@@ -258,7 +290,7 @@ describe('RegisterForm Component', () => {
 
   describe('Affichage des erreurs', () => {
     it('affiche les erreurs de validation', async () => {
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm as unknown as RegisterFormVm;
       
       // Soumettre un formulaire invalide
       await wrapper.find('input[name="pseudo"]').setValue('ab') // Trop court
@@ -291,9 +323,9 @@ describe('RegisterForm Component', () => {
       const passwordInput = wrapper.find('input[name="password"]')
       
       await passwordInput.setValue('pass')
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm as unknown as RegisterFormVm;
       
-      expect(vm.passwordRules.minLength).toBe(false)
+      expect(vm.passwordRules.minlength).toBe(false)
       expect(vm.passwordRules.lowercase).toBe(true)
       expect(vm.passwordRules.uppercase).toBe(false)
       expect(vm.passwordRules.number).toBe(false)
@@ -302,7 +334,7 @@ describe('RegisterForm Component', () => {
 
   describe('Computed isFormValid', () => {
     it('retourne false si le formulaire est incomplet', () => {
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm as unknown as RegisterFormVm;
       expect(vm.isFormValid).toBe(false)
     })
 
@@ -313,7 +345,7 @@ describe('RegisterForm Component', () => {
       await wrapper.find('input[name="confirmPassword"]').setValue('ValidPass123!')
       await wrapper.find('input[type="checkbox"]').setValue(true)
       
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm as unknown as RegisterFormVm;
       expect(vm.isFormValid).toBe(true)
     })
   })
@@ -357,7 +389,7 @@ describe('RegisterForm Component', () => {
       await wrapper.find('input[type="checkbox"]').setValue(true)
       
       // 2. Vérifier que le formulaire est valide
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm as unknown as RegisterFormVm;
       expect(vm.isFormValid).toBe(true)
       
       // 3. Soumettre

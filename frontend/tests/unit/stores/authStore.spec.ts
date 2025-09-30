@@ -275,8 +275,17 @@ describe('Auth Store', () => {
           updatedAt: ''
       }
 
-      vi.mocked(authApi.login).mockResolvedValue({ token: mockToken })
-      vi.mocked(authApi.fetchMe).mockResolvedValue(mockUser)
+      vi.mocked(authApi.login).mockResolvedValue({
+                                success: true,
+                                message: "Login successful",
+                                user_id: 1,
+                                user_email: credentials.email,
+                                user_pseudo: "TestUser",
+                                user_verified: false,
+                                user_roles: ["ROLE_USER"],
+                              });
+
+      vi.mocked(authApi.me).mockResolvedValue(mockUser)
 
       await authStore.login(credentials)
 
@@ -318,8 +327,17 @@ describe('Auth Store', () => {
       const mockToken = 'jwt-token-456'
       let tokenSetBeforeFetchMe = false
 
-      vi.mocked(authApi.login).mockResolvedValue({ token: mockToken })
-      vi.mocked(authApi.fetchMe).mockImplementation(async () => {
+      vi.mocked(authApi.login).mockResolvedValue({
+                                  success: true,
+                                  message: "Login successful",
+                                  user_id: 1,
+                                  user_email: credentials.email,
+                                  user_pseudo: "TestUser",
+                                  user_verified: false,
+                                  user_roles: ["ROLE_USER"],
+                                });
+
+      vi.mocked(authApi.me).mockImplementation(async () => {
         tokenSetBeforeFetchMe = authStore.token === mockToken
         return {
           id: 1,
@@ -349,11 +367,11 @@ describe('Auth Store', () => {
       }
 
       authStore.setToken('valid-token')
-      vi.mocked(authApi.fetchMe).mockResolvedValue(mockUser)
+      vi.mocked(authApi.me).mockResolvedValue(mockUser)
 
       await authStore.fetchMe()
 
-      expect(authApi.fetchMe).toHaveBeenCalled()
+      expect(authApi.me).toHaveBeenCalled()
       expect(authStore.user).toEqual(mockUser)
       expect(authStore.error).toBeNull()
     })
@@ -363,7 +381,7 @@ describe('Auth Store', () => {
       authStore.setToken('invalid-token')
 
       const errorMessage = 'Token invalide'
-      vi.mocked(authApi.fetchMe).mockRejectedValue({
+      vi.mocked(authApi.me).mockRejectedValue({
         error: errorMessage,
       })
 
@@ -472,8 +490,17 @@ describe('Auth Store', () => {
           updatedAt: ''
       }
 
-      vi.mocked(authApi.login).mockResolvedValue({ token: mockToken })
-      vi.mocked(authApi.fetchMe).mockResolvedValue(mockUser)
+      vi.mocked(authApi.login).mockResolvedValue({
+                                success: true,
+                                message: "Login successful",
+                                user_id: 1,
+                                user_email: loginCreds.email,
+                                user_pseudo: "NewUser",
+                                user_verified: false,
+                                user_roles: ["ROLE_USER"],
+                              });
+
+      vi.mocked(authApi.me).mockResolvedValue(mockUser)
 
       await authStore.login(loginCreds)
       expect(authStore.isAuthenticated).toBe(true)
