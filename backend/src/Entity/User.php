@@ -26,6 +26,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(name: 'user_pseudo', type: Types::STRING, length: 50)]
     private string $pseudo = '';
 
+    /**
+     * @var array<string>
+     */
     #[ORM\Column(name: 'user_roles', type: Types::JSON)]
     private array $roles = [];
 
@@ -108,7 +111,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * @see UserInterface
      *
-     * @return list<string>
+     * @return array<string>
      */
     public function getRoles(): array
     {
@@ -116,7 +119,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         // guarantee every user at least has ROLE_USER
         $roles[] = 'ROLE_USER';
 
-        return array_unique($roles);
+        return array_values(array_unique($roles));
     }
 
     /**
