@@ -18,7 +18,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(name: 'user_id', type: Types::INTEGER)]
-    private ?int $id = null;
+    private ?int $id = null; // @phpstan-ignore property.onlyWritten
 
     #[ORM\Column(name: 'user_email', type: Types::STRING, length: 180, unique: true)]
     private string $email;
@@ -89,10 +89,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      * A visual identifier that represents this user.
      *
      * @see UserInterface
+     * @return non-empty-string
      */
     public function getUserIdentifier(): string
     {
-        return (string) $this->email;
+        return $this->email;
     }
 
     /**
