@@ -120,6 +120,7 @@ router.beforeEach(async (to) => {
     try {
       await authStore.fetchMe()
     } catch (error) {
+      console.error('Navigation error:', error);
       // Le token est invalide, on déconnecte l'utilisateur
       authStore.logout()
     }

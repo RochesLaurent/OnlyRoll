@@ -1,11 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authApi } from '@/services/api/authApi'
+import { getErrorMessage } from '@/utils/errorHelpers'
 import type { 
   User, 
   LoginCredentials, 
-  RegisterCredentials,
-  AuthState 
+  RegisterCredentials
 } from '@/types/auth'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -47,12 +47,11 @@ export const useAuthStore = defineStore('auth', () => {
         error.value = null
 
         try {
-            const response = await authApi.register(credentials)
-            
+            await authApi.register(credentials)
             return Promise.resolve()
         
-        } catch (err: any) {
-            const errorMessage = err.error || err.message || 'Erreur lors de l\'inscription'
+        } catch (err: unknown) {
+            const errorMessage = getErrorMessage(err, 'Erreur lors de l\'inscription')
             error.value = errorMessage
             throw new Error(errorMessage)
         } finally {
@@ -76,8 +75,8 @@ export const useAuthStore = defineStore('auth', () => {
                 throw new Error(response.message || 'Échec de la connexion')
             }
         
-        } catch (err: any) {
-            const errorMessage = err.error || err.message || 'Erreur lors de la connexion'
+        } catch (err: unknown) {
+            const errorMessage = getErrorMessage(err, 'Erreur lors de la connexion')
             error.value = errorMessage
             throw new Error(errorMessage)
         } finally {
@@ -106,9 +105,9 @@ export const useAuthStore = defineStore('auth', () => {
             
             setUser(userData)
             
-        } catch (err: any) {
+        } catch (err: unknown) {
             logout()
-            const errorMessage = err.error || 'Session expirée'
+            const errorMessage = getErrorMessage(err, 'Session expirée')
             error.value = errorMessage
             throw new Error(errorMessage)
         } finally {

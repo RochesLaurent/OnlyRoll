@@ -1,3 +1,5 @@
+import forms from '@tailwindcss/forms'
+
 /** @type {import('tailwindcss').Config} */
 export default {
     content: [
@@ -43,7 +45,7 @@ export default {
                 },
                 // System Colors
                 success: '#22c55e',
-                warning: '#eab308', 
+                warning: '#eab308',
                 error: '#ef4444',
                 info: '#3b82f6'
             },
@@ -70,6 +72,6 @@ export default {
         },
     },
     plugins: [
-        require('@tailwindcss/forms'),
+        forms,
     ],
 }

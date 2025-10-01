@@ -485,7 +485,6 @@ describe('Auth Store', () => {
         password: registerCreds.password,
       }
 
-      const mockToken = 'jwt-token'
       const mockUser: User = {
           id: 1,
           email: loginCreds.email,
@@ -497,14 +496,14 @@ describe('Auth Store', () => {
       }
 
       vi.mocked(authApi.login).mockResolvedValue({
-                                success: true,
-                                message: "Login successful",
-                                user_id: 1,
-                                user_email: loginCreds.email,
-                                user_pseudo: "NewUser",
-                                user_verified: false,
-                                user_roles: ["ROLE_USER"],
-                              });
+        success: true,
+        message: "Login successful",
+        user_id: 1,
+        user_email: loginCreds.email,
+        user_pseudo: "NewUser",
+        user_verified: false,
+        user_roles: ["ROLE_USER"],
+      })
 
       vi.mocked(authApi.me).mockResolvedValue(mockUser)
 

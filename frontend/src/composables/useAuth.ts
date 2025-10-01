@@ -73,10 +73,18 @@ export const useAuth = () => {
         authStore.setError(message)
     }
 
-    const getErrorMessage = (error: any): string => {
+    const getErrorMessage = (error: unknown): string => {
         if (typeof error === 'string') return error
-        if (error?.error) return error.error
-        if (error?.message) return error.message
+        
+        if (error && typeof error === 'object') {
+            if ('error' in error && typeof error.error === 'string') {
+                return error.error
+            }
+            if ('message' in error && typeof error.message === 'string') {
+                return error.message
+            }
+        }
+        
         return 'Une erreur inattendue s\'est produite'
     }
 

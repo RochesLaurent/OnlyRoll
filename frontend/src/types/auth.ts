@@ -30,7 +30,7 @@ export interface AuthResponse {
 export interface ValidationError {
     propertyPath: string
     message: string
-    invalidValue?: any
+    invalidValue?: unknown
 }
 
 export interface ApiError {

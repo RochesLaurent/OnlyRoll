@@ -1,7 +1,6 @@
 import type {
   LoginCredentials,
   RegisterCredentials,
-  AuthResponse,
   RegisterResponse,
   MeResponse,
   DebugLoginResponse
@@ -21,7 +20,7 @@ class ApiClient {
         options: RequestInit = {}
     ): Promise<T> {
         const url = `${this.baseURL}${endpoint}`
-        
+       
         const config: RequestInit = {
             headers: {
                 'Content-Type': 'application/json',
@@ -39,12 +38,12 @@ class ApiClient {
         }
 
         try {
-        const response = await fetch(url, config)
-        
+            const response = await fetch(url, config)
+       
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({
-                error: `HTTP ${response.status}`,
-                message: response.statusText
+                    error: `HTTP ${response.status}`,
+                    message: response.statusText
                 }))
                 throw errorData
             }
@@ -54,7 +53,7 @@ class ApiClient {
             if (error && typeof error === 'object' && 'error' in error) {
                 throw error
             }
-        
+       
             throw {
                 error: 'Network Error',
                 message: error instanceof Error ? error.message : 'Une erreur réseau s\'est produite'
@@ -66,19 +65,19 @@ class ApiClient {
         return this.request<T>(endpoint, { ...options, method: 'GET' })
     }
 
-    async post<T>(endpoint: string, data?: any, options?: RequestInit): Promise<T> {
+    async post<T>(endpoint: string, data?: unknown, options?: RequestInit): Promise<T> {
         return this.request<T>(endpoint, {
-        ...options,
-        method: 'POST',
-        body: data ? JSON.stringify(data) : undefined,
+            ...options,
+            method: 'POST',
+            body: data ? JSON.stringify(data) : undefined,
         })
     }
 
-    async put<T>(endpoint: string, data?: any, options?: RequestInit): Promise<T> {
+    async put<T>(endpoint: string, data?: unknown, options?: RequestInit): Promise<T> {
         return this.request<T>(endpoint, {
-        ...options,
-        method: 'PUT',
-        body: data ? JSON.stringify(data) : undefined,
+            ...options,
+            method: 'PUT',
+            body: data ? JSON.stringify(data) : undefined,
         })
     }
 
@@ -90,9 +89,9 @@ class ApiClient {
 const apiClient = new ApiClient(API_BASE_URL)
 
 export const authApi = {
-
     register: (credentials: RegisterCredentials): Promise<RegisterResponse> => {
-        const { confirmPassword, ...registerData } = credentials
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { confirmPassword: _confirmPassword, ...registerData } = credentials
         return apiClient.post('/api/register', registerData)
     },
 

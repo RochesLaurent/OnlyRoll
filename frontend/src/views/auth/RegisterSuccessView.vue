@@ -81,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-    import { ref, onMounted, onUnmounted } from 'vue'
+    import { ref, onUnmounted } from 'vue'
     import { useRoute } from 'vue-router'
 
     const route = useRoute()

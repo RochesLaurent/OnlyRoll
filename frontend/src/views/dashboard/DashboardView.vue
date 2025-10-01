@@ -16,7 +16,7 @@
           <div class="flex items-center space-x-4">
             <UserProfileBadge />
             <button
-              @click="logout"
+              @click="handleLogout"
               class="px-4 py-2 text-sm text-secondary-300 hover:text-secondary-50 transition-colors"
             >
               Déconnexion
@@ -125,12 +125,15 @@
 
 <script setup lang="ts">
 import { useAuth } from '@/composables/useAuth'
-import { useRouter } from 'vue-router'
 import UserProfileBadge from '@/components/common/UserProfileBadge.vue'
 import DashboardCard from '@/components/dashboard/DashboardCard.vue'
 
 const { user, logout } = useAuth()
-const router = useRouter()
+
+// Handler pour la déconnexion
+const handleLogout = async () => {
+  await logout()
+}
 
 const navigateTo = (path: string) => {
   // Pour l'instant, on affiche juste un message
