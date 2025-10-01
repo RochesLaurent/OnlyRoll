@@ -243,8 +243,6 @@ describe('RegisterForm Component', () => {
     })
 
     it('envoie le formulaire avec les bonnes données si valide', async () => {
-      const vm = wrapper.vm as unknown as RegisterFormVm;
-      
       // Remplir le formulaire avec des données valides
       await wrapper.find('input[name="pseudo"]').setValue('TestUser')
       await wrapper.find('input[name="email"]').setValue('test@onlyroll.com')
@@ -311,8 +309,6 @@ describe('RegisterForm Component', () => {
 
   describe('Règles de mot de passe visuelles', () => {
     it('affiche les indicateurs de règles de mot de passe', () => {
-      const passwordInput = wrapper.find('input[name="password"]')
-      
       // Les indicateurs devraient être présents dans le DOM
       expect(wrapper.html()).toContain('Au moins 8 caractères')
       expect(wrapper.html()).toContain('Une minuscule')

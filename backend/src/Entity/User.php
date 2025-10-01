@@ -10,62 +10,57 @@ use Symfony\Component\Security\Core\User\UserInterface;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: 'user')]
+#[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_EMAIL', columns: ['user_email'])]
+#[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_PSEUDO', columns: ['user_pseudo'])]
 #[ORM\HasLifecycleCallbacks]
-#[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_EMAIL', fields: ['email'])]
-#[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_PSEUDO', fields: ['pseudo'])]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(name: 'user_id', type: Types::INTEGER)]
+    #[ORM\Column(name: 'user_id')]
     private ?int $id = null;
 
-    #[ORM\Column(name: 'user_email', type: Types::STRING, length: 180, unique: true)]
-    private string $email;
+    #[ORM\Column(name: 'user_email', type: Types::STRING, length: 180)]
+    private string $email = '';
+
+    #[ORM\Column(name: 'user_pseudo', type: Types::STRING, length: 50)]
+    private string $pseudo = '';
 
     /**
-     * @var list<string> The user roles
+     * @var array<string>
      */
     #[ORM\Column(name: 'user_roles', type: Types::JSON)]
-    private array $roles = ['ROLE_USER'];
+    private array $roles = [];
+
+    #[ORM\Column(name: 'user_password', type: Types::STRING)]
+    private string $password = '';
 
     #[ORM\Column(name: 'user_is_verified', type: Types::BOOLEAN)]
     private bool $isVerified = false;
 
-    /**
-     * @var string The hashed password
-     */
-    #[ORM\Column(name: 'user_password', type: Types::STRING, length: 255)]
-    private string $password;
+    #[ORM\Column(name: 'user_timezone', type: Types::STRING, length: 50)]
+    private string $timezone = 'UTC';
 
-    #[ORM\Column(name: 'user_pseudo', type: Types::STRING, length: 100, unique: true)]
-    private string $pseudo;
+    #[ORM\Column(name: 'user_language', type: Types::STRING, length: 10)]
+    private string $language = 'en';
 
     #[ORM\Column(name: 'user_avatar', type: Types::STRING, length: 255, nullable: true)]
     private ?string $avatar = null;
 
-    #[ORM\Column(name: 'user_timezone', type: Types::STRING, length: 50, nullable: true)]
-    private ?string $timezone = null;
-
-    #[ORM\Column(name: 'user_language', type: Types::STRING, length: 5)]
-    private string $language = 'en';
-
-    #[ORM\Column(name: 'user_created_at', type: Types::DATE_IMMUTABLE)]
+    #[ORM\Column(name: 'user_created_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
 
-    #[ORM\Column(name: 'user_updated_at', type: Types::DATE_IMMUTABLE)]
+    #[ORM\Column(name: 'user_updated_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $updatedAt;
 
     #[ORM\Column(name: 'user_last_login', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $lastLogin = null;
 
-
-    public function __construct() {
+    public function __construct()
+    {
         $this->roles = ['ROLE_USER'];
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
-        $this->timezone = 'UTC';
-        $this->language = 'en';
     }
 
     public function getId(): ?int
@@ -73,7 +68,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->id;
     }
 
-    public function getEmail(): ?string
+    public function getEmail(): string
     {
         return $this->email;
     }
@@ -89,14 +84,34 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      * A visual identifier that represents this user.
      *
      * @see UserInterface
+     *
+     * @return non-empty-string
      */
     public function getUserIdentifier(): string
     {
-        return (string) $this->email;
+        if ('' === $this->email) {
+            throw new \LogicException('User email cannot be empty');
+        }
+
+        return $this->email;
+    }
+
+    public function getPseudo(): string
+    {
+        return $this->pseudo;
+    }
+
+    public function setPseudo(string $pseudo): static
+    {
+        $this->pseudo = $pseudo;
+
+        return $this;
     }
 
     /**
      * @see UserInterface
+     *
+     * @return array<string>
      */
     public function getRoles(): array
     {
@@ -104,7 +119,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         // guarantee every user at least has ROLE_USER
         $roles[] = 'ROLE_USER';
 
-        return array_unique($roles);
+        return array_values(array_unique($roles));
     }
 
     /**
@@ -120,7 +135,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * @see PasswordAuthenticatedUserInterface
      */
-    public function getPassword(): ?string
+    public function getPassword(): string
     {
         return $this->password;
     }
@@ -133,30 +148,34 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     /**
-     * Ensure the session doesn't contain actual password hashes by CRC32C-hashing them, as supported since Symfony 7.3.
+     * @see UserInterface
      */
-    public function __serialize(): array
-    {
-        $data = (array) $this;
-        $data["\0".self::class."\0password"] = hash('crc32c', $this->password);
-
-        return $data;
-    }
-
-    #[\Deprecated]
     public function eraseCredentials(): void
     {
-        // @deprecated, to be removed when upgrading to Symfony 8
+        // If you store any temporary, sensitive data on the user, clear it here
+        // $this->plainPassword = null;
     }
 
-    public function getPseudo(): ?string
+    public function getTimezone(): string
     {
-        return $this->pseudo;
+        return $this->timezone;
     }
 
-    public function setPseudo(string $pseudo): static
+    public function setTimezone(string $timezone): static
     {
-        $this->pseudo = $pseudo;
+        $this->timezone = $timezone;
+
+        return $this;
+    }
+
+    public function getLanguage(): string
+    {
+        return $this->language;
+    }
+
+    public function setLanguage(string $language): static
+    {
+        $this->language = $language;
 
         return $this;
     }
@@ -173,31 +192,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getTimezone(): ?string
-    {
-        return $this->timezone;
-    }
-
-    public function setTimezone(string $timezone): static
-    {
-        $this->timezone = $timezone;
-
-        return $this;
-    }
-
-    public function getlanguage(): ?string
-    {
-        return $this->language;
-    }
-
-    public function setlanguage(string $language): static
-    {
-        $this->language = $language;
-
-        return $this;
-    }
-
-    public function getCreatedAt(): ?\DateTimeImmutable
+    public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
     }
@@ -209,7 +204,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getUpdatedAt(): ?\DateTimeImmutable
+    public function getUpdatedAt(): \DateTimeImmutable
     {
         return $this->updatedAt;
     }
@@ -233,15 +228,20 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function isVerified(): bool {
-        return $this->isVerified; 
+    public function isVerified(): bool
+    {
+        return $this->isVerified;
     }
 
-    public function setIsVerified(bool $v): self { 
-        $this->isVerified = $v; return $this; 
+    public function setIsVerified(bool $v): self
+    {
+        $this->isVerified = $v;
+
+        return $this;
     }
 
     #[ORM\PreUpdate]
+    #[ORM\PrePersist]
     public function setUpdatedAtValue(): void
     {
         $this->updatedAt = new \DateTimeImmutable();

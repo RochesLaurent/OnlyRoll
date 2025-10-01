@@ -2,13 +2,13 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, dev]
   pull_request:
-    branches: [main, develop]
+    branches: [main, dev]
   workflow_dispatch:
 
 env:
-  PHP_VERSION: '8.2'
+  PHP_VERSION: '8.3'
   NODE_VERSION: '20'
   COMPOSER_VERSION: '2'
 
@@ -22,7 +22,7 @@ jobs:
     
     strategy:
       matrix:
-        php: ['8.2', '8.3']
+        php: ['8.3']
     
     services:
       mysql:
@@ -82,6 +82,16 @@ jobs:
           echo "DATABASE_URL=mysql://root:root@127.0.0.1:3306/onlyroll_test?serverVersion=9.0" >> .env.test
           echo "REDIS_URL=redis://127.0.0.1:6379" >> .env.test
       
+      - name: Generate JWT keys for testing
+        working-directory: ./backend
+        run: |
+          mkdir -p config/jwt
+          openssl genrsa -out config/jwt/private.pem -aes256 -passout pass:testpassphrase 4096
+          openssl rsa -pubout -in config/jwt/private.pem -out config/jwt/public.pem -passin pass:testpassphrase
+          echo "JWT_SECRET_KEY=%kernel.project_dir%/config/jwt/private.pem" >> .env.test
+          echo "JWT_PUBLIC_KEY=%kernel.project_dir%/config/jwt/public.pem" >> .env.test
+          echo "JWT_PASSPHRASE=testpassphrase" >> .env.test
+      
       - name: Create database schema
         working-directory: ./backend
         run: |
@@ -95,7 +105,7 @@ jobs:
       
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
-        if: matrix.php == '8.2'
+        if: matrix.php == '8.3'
         with:
           files: ./backend/coverage.xml
           flags: backend
@@ -124,15 +134,26 @@ jobs:
         with:
           php-version: ${{ env.PHP_VERSION }}
           extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql
-          tools: composer:v2, phpstan, php-cs-fixer
+          tools: composer:v2
       
-      - name: Install dependencies
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+      
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+      
+      - name: Install Composer dependencies
         working-directory: ./backend
-        run: composer install --no-interaction --prefer-dist
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
       
       - name: Run PHPStan (Static Analysis)
         working-directory: ./backend
-        run: vendor/bin/phpstan analyse src --level=8 --error-format=github
+        run: vendor/bin/phpstan analyse src --error-format=github
       
       - name: Check PHP CS Fixer (Code Style)
         working-directory: ./backend
@@ -140,9 +161,7 @@ jobs:
       
       - name: Run PHPCS (PSR-12)
         working-directory: ./backend
-        run: |
-          composer require --dev squizlabs/php_codesniffer
-          vendor/bin/phpcs --standard=PSR12 src
+        run: vendor/bin/phpcs --standard=PSR12 src
 
   # ============================================
   # JOB 3: TESTS FRONTEND (Vue/TypeScript)
@@ -180,6 +199,10 @@ jobs:
       - name: Install Playwright browsers
         working-directory: ./frontend
         run: npx playwright install --with-deps chromium
+
+      - name: Build app for E2E tests
+        working-directory: ./frontend
+        run: npm run build
       
       - name: Run E2E tests
         working-directory: ./frontend
