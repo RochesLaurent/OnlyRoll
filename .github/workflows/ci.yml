@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 env:
-  PHP_VERSION: '8.2'
+  PHP_VERSION: '8.3'
   NODE_VERSION: '20'
   COMPOSER_VERSION: '2'
 
@@ -22,7 +22,7 @@ jobs:
     
     strategy:
       matrix:
-        php: ['8.2', '8.3']
+        php: ['8.3']
     
     services:
       mysql:
