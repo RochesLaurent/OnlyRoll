@@ -6,10 +6,7 @@ parameters:
         - public/
         - src/
         - tests/
-    
-    doctrine:
-        objectManagerLoader: tests/bootstrap.php
-    
+
     ignoreErrors:
         # Doctrine génère automatiquement les IDs
         - '#Property App\\Entity\\User::\$id \(int\|null\) is never assigned int#'

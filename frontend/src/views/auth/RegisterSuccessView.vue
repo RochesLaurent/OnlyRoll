@@ -90,7 +90,7 @@ const email = ref((route.query.email as string) || 'votre-email@exemple.com')
 
 const isResending = ref(false)
 const cooldown = ref(0)
-let cooldownTimer: number | null = null
+let cooldownTimer: ReturnType<typeof setInterval> | null = null
 
 // Fonction pour renvoyer l'email (à implémenter plus tard)
 const resendEmail = async () => {
