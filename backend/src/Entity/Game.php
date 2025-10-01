@@ -38,7 +38,12 @@ class Game
     private ?string $description = null;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
-    #[ORM\JoinColumn(name: 'game_master_id', nullable: false, onDelete: 'RESTRICT')]
+    #[ORM\JoinColumn(
+        name: 'game_master_id',
+        referencedColumnName: 'user_id',
+        nullable: false,
+        onDelete: 'RESTRICT'
+    )]
     #[Groups(['game:list', 'game:read'])]
     private ?User $gameMaster = null;
 

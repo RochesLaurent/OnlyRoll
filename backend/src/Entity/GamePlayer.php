@@ -22,11 +22,21 @@ class GamePlayer
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: Game::class, inversedBy: 'gamePlayers')]
-    #[ORM\JoinColumn(name: 'game_id', nullable: false, onDelete: 'CASCADE')]
+    #[ORM\JoinColumn(
+        name: 'game_id',
+        referencedColumnName: 'game_id',
+        nullable: false,
+        onDelete: 'CASCADE'
+    )]
     private ?Game $game = null;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
-    #[ORM\JoinColumn(name: 'user_id', nullable: false, onDelete: 'CASCADE')]
+    #[ORM\JoinColumn(
+        name: 'user_id',
+        referencedColumnName: 'user_id',
+        nullable: false,
+        onDelete: 'CASCADE'
+    )]
     #[Groups(['game:read'])]
     private ?User $user = null;
 
