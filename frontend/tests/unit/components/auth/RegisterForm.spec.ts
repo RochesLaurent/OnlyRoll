@@ -8,6 +8,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, VueWrapper } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import RegisterForm from '@/components/auth/RegisterForm.vue'
+import { ref, computed } from 'vue'
 
 //Typage
 interface RegisterFormVm {
@@ -42,12 +43,14 @@ interface RegisterFormVm {
 // Mock du composable useAuth
 const mockRegister = vi.fn()
 const mockClearError = vi.fn()
+const mockIsLoadingRef = ref(false)
+const mockErrorRef = ref<string | null>(null)
 
 vi.mock('@/composables/useAuth', () => ({
   useAuth: () => ({
     register: mockRegister,
-    isLoading: false,
-    error: null,
+    isLoading: computed(() => mockIsLoadingRef.value),
+    error: computed(() => mockErrorRef.value), 
     clearError: mockClearError,
   }),
 }))
@@ -58,6 +61,9 @@ describe('RegisterForm Component', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    
+    mockIsLoadingRef.value = false
+    mockErrorRef.value = null
 
     wrapper = mount(RegisterForm)
   })
@@ -270,15 +276,7 @@ describe('RegisterForm Component', () => {
     })
 
     it('désactive le bouton pendant le chargement', async () => {
-      // Remount avec isLoading = true
-      vi.mock('@/composables/useAuth', () => ({
-        useAuth: () => ({
-          register: mockRegister,
-          isLoading: true, // Loading
-          error: null,
-          clearError: mockClearError,
-        }),
-      }))
+      mockIsLoadingRef.value = true
 
       wrapper = mount(RegisterForm)
       
@@ -300,10 +298,13 @@ describe('RegisterForm Component', () => {
     })
 
     it('efface l\'erreur globale lors de la saisie', async () => {
+      mockErrorRef.value = 'Une erreur est survenue'
+
+      wrapper = mount(RegisterForm)
+
       const emailInput = wrapper.find('input[name="email"]')
-      
+      await emailInput.setValue('test@example.com')
       await emailInput.trigger('input')
-      
       expect(mockClearError).toHaveBeenCalled()
     })
   })
@@ -313,7 +314,7 @@ describe('RegisterForm Component', () => {
       const passwordInput = wrapper.find('input[name="password"]')
       
       // Les indicateurs devraient être présents dans le DOM
-      expect(wrapper.html()).toContain('8 caractères minimum')
+      expect(wrapper.html()).toContain('Au moins 8 caractères')
       expect(wrapper.html()).toContain('Une minuscule')
       expect(wrapper.html()).toContain('Une majuscule')
       expect(wrapper.html()).toContain('Un chiffre')

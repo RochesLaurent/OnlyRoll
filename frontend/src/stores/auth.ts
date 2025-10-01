@@ -70,18 +70,8 @@ export const useAuthStore = defineStore('auth', () => {
             if (response.success) {
                 const mockToken = `mock_jwt_${response.user_id}_${Date.now()}`
                 setToken(mockToken)
-                
-                const userData: User = {
-                    id: response.user_id,
-                    email: response.user_email,
-                    pseudo: response.user_pseudo,
-                    roles: response.user_roles,
-                    isVerified: response.user_verified,
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                }
-                
-                setUser(userData)
+
+                await fetchMe()
             } else {
                 throw new Error(response.message || 'Échec de la connexion')
             }
@@ -109,9 +99,9 @@ export const useAuthStore = defineStore('auth', () => {
                 email: response.email,
                 pseudo: response.pseudo,
                 roles: response.roles,
-                isVerified: true,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
+                isVerified: response.isVerified,
+                createdAt: response.createdAt || new Date().toISOString(),
+                updatedAt: response.updatedAt ||  new Date().toISOString()
             }
             
             setUser(userData)
@@ -120,6 +110,7 @@ export const useAuthStore = defineStore('auth', () => {
             logout()
             const errorMessage = err.error || 'Session expirée'
             error.value = errorMessage
+            throw new Error(errorMessage)
         } finally {
             isLoading.value = false
         }

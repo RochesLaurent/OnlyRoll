@@ -15,6 +15,7 @@ vi.mock('@/services/api/authApi', () => ({
   authApi: {
     register: vi.fn(),
     login: vi.fn(),
+    me: vi.fn(),
     fetchMe: vi.fn(),
   },
 }))
@@ -264,37 +265,40 @@ describe('Auth Store', () => {
         password: 'Password123!',
       }
 
-      const mockToken = 'jwt-token-123'
       const mockUser: User = {
-          id: 1,
-          email: credentials.email,
-          pseudo: 'TestUser',
-          roles: ['ROLE_USER'],
-          isVerified: false,
-          createdAt: '',
-          updatedAt: ''
+        id: 1,
+        email: credentials.email,
+        pseudo: 'TestUser',
+        roles: ['ROLE_USER'],
+        isVerified: false,
+        createdAt: expect.any(String),
+        updatedAt: expect.any(String)
       }
 
       vi.mocked(authApi.login).mockResolvedValue({
-                                success: true,
-                                message: "Login successful",
-                                user_id: 1,
-                                user_email: credentials.email,
-                                user_pseudo: "TestUser",
-                                user_verified: false,
-                                user_roles: ["ROLE_USER"],
-                              });
+        success: true,
+        message: "Login successful",
+        user_id: 1,
+        user_email: credentials.email,
+        user_pseudo: "TestUser",
+        user_verified: false,
+        user_roles: ["ROLE_USER"],
+      })
 
       vi.mocked(authApi.me).mockResolvedValue(mockUser)
 
       await authStore.login(credentials)
 
       expect(authApi.login).toHaveBeenCalledWith(credentials)
-      expect(authStore.token).toBe(mockToken)
+      
+      expect(authStore.token).toBeTruthy()
+      expect(authStore.token).toMatch(/^mock_jwt_1_\d+$/)
+      
       expect(authStore.user).toEqual(mockUser)
       expect(authStore.isAuthenticated).toBe(true)
       expect(authStore.error).toBeNull()
-      expect(localStorage.getItem('auth_token')).toBe(mockToken)
+      
+      expect(localStorage.getItem('auth_token')).toBe(authStore.token)
     })
 
     it('gère les erreurs de connexion', async () => {
@@ -324,26 +328,28 @@ describe('Auth Store', () => {
         password: 'Password123!',
       }
 
-      const mockToken = 'jwt-token-456'
       let tokenSetBeforeFetchMe = false
 
       vi.mocked(authApi.login).mockResolvedValue({
-                                  success: true,
-                                  message: "Login successful",
-                                  user_id: 1,
-                                  user_email: credentials.email,
-                                  user_pseudo: "TestUser",
-                                  user_verified: false,
-                                  user_roles: ["ROLE_USER"],
-                                });
+        success: true,
+        message: "Login successful",
+        user_id: 1,
+        user_email: credentials.email,
+        user_pseudo: "TestUser",
+        user_verified: false,
+        user_roles: ["ROLE_USER"],
+      })
 
       vi.mocked(authApi.me).mockImplementation(async () => {
-        tokenSetBeforeFetchMe = authStore.token === mockToken
+        tokenSetBeforeFetchMe = !!authStore.token
         return {
           id: 1,
           email: credentials.email,
           pseudo: 'User',
           roles: ['ROLE_USER'],
+          isVerified: false,
+          createdAt: '',
+          updatedAt: ''
         }
       })
 
@@ -361,9 +367,9 @@ describe('Auth Store', () => {
           email: 'user@onlyroll.com',
           pseudo: 'TestUser',
           roles: ['ROLE_USER', 'ROLE_GM'],
-          isVerified: false,
-          createdAt: '',
-          updatedAt: ''
+          isVerified: true,
+          createdAt: expect.any(String),
+          updatedAt: expect.any(String)
       }
 
       authStore.setToken('valid-token')

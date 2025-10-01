@@ -53,6 +53,9 @@ describe('useAuth Composable', () => {
         email: 'test@onlyroll.com',
         pseudo: 'TestUser',
         roles: ['ROLE_USER'],
+        isVerified: false,
+        createdAt: '',
+        updatedAt: ''
       }
 
       authStore.setToken('token-123')
@@ -188,6 +191,9 @@ describe('useAuth Composable', () => {
         email: 'test@onlyroll.com',
         pseudo: 'TestUser',
         roles: ['ROLE_USER', 'ROLE_GM'],
+        isVerified: false,
+        createdAt: '',
+        updatedAt: ''
       })
 
       expect(hasRole('ROLE_USER')).toBe(true)
@@ -203,6 +209,9 @@ describe('useAuth Composable', () => {
         email: 'test@onlyroll.com',
         pseudo: 'TestUser',
         roles: ['ROLE_USER'],
+        isVerified: false,
+        createdAt: '',
+        updatedAt: ''
       })
 
       expect(hasRole('ROLE_ADMIN')).toBe(false)
@@ -220,6 +229,9 @@ describe('useAuth Composable', () => {
         email: 'test@onlyroll.com',
         pseudo: 'TestUser',
         roles: ['ROLE_USER'],
+        isVerified: false,
+        createdAt: '',
+        updatedAt: ''
       })
 
       expect(requireAuth()).toBe(true)
@@ -252,6 +264,9 @@ describe('useAuth Composable', () => {
         email: 'test@onlyroll.com',
         pseudo: 'TestUser',
         roles: ['ROLE_USER'],
+        isVerified: false,
+        createdAt: '',
+        updatedAt: ''
       })
 
       expect(requireGuest()).toBe(false)
@@ -336,6 +351,9 @@ describe('useAuth Composable', () => {
         email: 'test@onlyroll.com',
         pseudo: 'TestUser',
         roles: ['ROLE_USER'],
+        isVerified: false,
+        createdAt: '',
+        updatedAt: ''
       })
 
       await login({ email: 'test@onlyroll.com', password: 'Pass123!' })

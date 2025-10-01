@@ -58,10 +58,13 @@ export interface RegisterResponse {
 }
 
 export interface MeResponse {
-    id: number
-    email: string
-    pseudo: string
-    roles: string[]
+  id: number
+  email: string
+  pseudo: string
+  roles: string[]
+  isVerified: boolean
+  createdAt: string  
+  updatedAt: string  
 }
 
 export interface DebugLoginResponse {
