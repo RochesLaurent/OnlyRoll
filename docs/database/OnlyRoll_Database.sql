@@ -198,13 +198,17 @@ CREATE TABLE game (
     game_max_players INT(2) NOT NULL DEFAULT 6,
     game_is_public BOOLEAN NOT NULL DEFAULT FALSE,
     game_password VARCHAR(255) NULL,
+    game_invite_code VARCHAR(10) NULL UNIQUE,
     game_settings JSON NULL COMMENT "Règles maison, options de partie",
+    game_started_at DATETIME NULL,
+    game_completed_at DATETIME NULL,
     game_created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     game_updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (game_id),
     KEY idx_game_master (game_master_id),
     KEY idx_game_status (game_status),
     KEY idx_game_public (game_is_public),
+    KEY idx_game_invite_code (game_invite_code),
     KEY idx_game_created (game_created_at),
     CONSTRAINT fk_game_master FOREIGN KEY (game_master_id) REFERENCES user(user_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
