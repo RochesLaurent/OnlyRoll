@@ -18,7 +18,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(name: 'user_id', type: Types::INTEGER)]
-    private ?int $id = null; // @phpstan-ignore property.onlyWritten
+    private ?int $id = null;
 
     #[ORM\Column(name: 'user_email', type: Types::STRING, length: 180, unique: true)]
     private string $email;
@@ -93,6 +93,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     public function getUserIdentifier(): string
     {
+        if ($this->email === '') {
+            throw new \LogicException('User email cannot be empty');
+        }
         return $this->email;
     }
 

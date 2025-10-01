@@ -132,7 +132,7 @@ jobs:
       
       - name: Run PHPStan (Static Analysis)
         working-directory: ./backend
-        run: vendor/bin/phpstan analyse src --level=8 --error-format=github
+        run: vendor/bin/phpstan analyse src --error-format=github
       
       - name: Check PHP CS Fixer (Code Style)
         working-directory: ./backend

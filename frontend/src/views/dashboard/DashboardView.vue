@@ -6,8 +6,10 @@
         <div class="flex justify-between items-center h-16">
           <!-- Logo -->
           <RouterLink to="/" class="flex items-center space-x-3">
-            <div class="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-400 rounded-lg flex items-center justify-center">
-              <img style="width: 100%; height: 100%;" src="/logo.png">
+            <div
+              class="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-400 rounded-lg flex items-center justify-center"
+            >
+              <img style="width: 100%; height: 100%" src="/logo.png" />
             </div>
             <span class="text-xl font-bold text-secondary-50">OnlyRoll</span>
           </RouterLink>
@@ -30,12 +32,8 @@
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <!-- Message de bienvenue -->
       <div class="text-center mb-12">
-        <h1 class="text-4xl font-bold text-secondary-50 mb-4">
-          Bienvenue, {{ user?.pseudo }} !
-        </h1>
-        <p class="text-lg text-secondary-400">
-          Votre dashboard OnlyRoll - Prêt pour l'aventure ?
-        </p>
+        <h1 class="text-4xl font-bold text-secondary-50 mb-4">Bienvenue, {{ user?.pseudo }} !</h1>
+        <p class="text-lg text-secondary-400">Votre dashboard OnlyRoll - Prêt pour l'aventure ?</p>
       </div>
 
       <!-- Sections du dashboard -->
@@ -98,14 +96,12 @@
       <!-- Informations de développement -->
       <div class="mt-16 bg-secondary-800/50 rounded-xl p-8 border border-secondary-700">
         <div class="text-center">
-          <h2 class="text-xl font-semibold text-secondary-50 mb-4">
-            🚧 Développement en cours
-          </h2>
+          <h2 class="text-xl font-semibold text-secondary-50 mb-4">🚧 Développement en cours</h2>
           <p class="text-secondary-400 mb-6">
-            Félicitations ! Votre système d'authentification fonctionne parfaitement.<br>
+            Félicitations ! Votre système d'authentification fonctionne parfaitement.<br />
             Les autres fonctionnalités arrivent bientôt...
           </p>
-          
+
           <!-- Infos utilisateur -->
           <div class="bg-secondary-800 rounded-lg p-4 max-w-md mx-auto">
             <h3 class="text-sm font-medium text-secondary-300 mb-2">Informations de session</h3>
@@ -114,7 +110,10 @@
               <p><span class="text-secondary-300">Email:</span> {{ user?.email }}</p>
               <p><span class="text-secondary-300">Pseudo:</span> {{ user?.pseudo }}</p>
               <p><span class="text-secondary-300">Rôles:</span> {{ user?.roles.join(', ') }}</p>
-              <p><span class="text-secondary-300">Vérifié:</span> {{ user?.isVerified ? 'Oui' : 'Non' }}</p>
+              <p>
+                <span class="text-secondary-300">Vérifié:</span>
+                {{ user?.isVerified ? 'Oui' : 'Non' }}
+              </p>
             </div>
           </div>
         </div>

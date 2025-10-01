@@ -25,10 +25,9 @@ class AuthControllerTest extends WebTestCase
     }
 
     /**
-     * @test
      * POST /api/register - Inscription avec des données valides
      */
-    public function it_registers_a_new_user_successfully(): void
+    public function test_it_registers_a_new_user_successfully(): void
     {
         $this->client->request('POST', '/api/register', [], [], [
             'CONTENT_TYPE' => 'application/json',
@@ -51,10 +50,9 @@ class AuthControllerTest extends WebTestCase
     }
 
     /**
-     * @test
      * POST /api/register - Échec avec des champs manquants
      */
-    public function it_fails_to_register_with_missing_fields(): void
+    public function test_it_fails_to_register_with_missing_fields(): void
     {
         $this->client->request('POST', '/api/register', [], [], [
             'CONTENT_TYPE' => 'application/json',
@@ -71,10 +69,9 @@ class AuthControllerTest extends WebTestCase
     }
 
     /**
-     * @test
      * POST /api/register - Échec avec email déjà existant
      */
-    public function it_fails_to_register_with_existing_email(): void
+    public function test_it_fails_to_register_with_existing_email(): void
     {
         // Créer un premier utilisateur
         $this->client->request('POST', '/api/register', [], [], [
@@ -99,10 +96,9 @@ class AuthControllerTest extends WebTestCase
     }
 
     /**
-     * @test
      * POST /api/register - Échec avec pseudo déjà existant
      */
-    public function it_fails_to_register_with_existing_pseudo(): void
+    public function test_it_fails_to_register_with_existing_pseudo(): void
     {
         // Créer un premier utilisateur
         $this->client->request('POST', '/api/register', [], [], [
@@ -127,10 +123,9 @@ class AuthControllerTest extends WebTestCase
     }
 
     /**
-     * @test
      * POST /api/login_check - Connexion réussie avec JWT
      */
-    public function it_logs_in_successfully_and_returns_jwt_token(): void
+    public function test_it_logs_in_successfully_and_returns_jwt_token(): void
     {
         // D'abord créer un utilisateur
         $this->client->request('POST', '/api/register', [], [], [
@@ -162,10 +157,9 @@ class AuthControllerTest extends WebTestCase
     }
 
     /**
-     * @test
      * POST /api/login_check - Échec avec mauvais mot de passe
      */
-    public function it_fails_to_login_with_wrong_password(): void
+    public function test_it_fails_to_login_with_wrong_password(): void
     {
         // Créer un utilisateur
         $this->client->request('POST', '/api/register', [], [], [
@@ -188,10 +182,9 @@ class AuthControllerTest extends WebTestCase
     }
 
     /**
-     * @test
      * POST /api/login_check - Échec avec email inexistant
      */
-    public function it_fails_to_login_with_nonexistent_email(): void
+    public function test_it_fails_to_login_with_nonexistent_email(): void
     {
         $this->client->request('POST', '/api/login_check', [], [], [
             'CONTENT_TYPE' => 'application/json',
@@ -204,10 +197,9 @@ class AuthControllerTest extends WebTestCase
     }
 
     /**
-     * @test
      * GET /api/me - Récupération du profil utilisateur authentifié
      */
-    public function it_returns_current_user_profile_when_authenticated(): void
+    public function test_it_returns_current_user_profile_when_authenticated(): void
     {
         // Créer et connecter un utilisateur
         $this->client->request('POST', '/api/register', [], [], [
@@ -245,10 +237,9 @@ class AuthControllerTest extends WebTestCase
     }
 
     /**
-     * @test
      * GET /api/me - Échec sans authentification
      */
-    public function it_fails_to_get_profile_without_authentication(): void
+    public function test_it_fails_to_get_profile_without_authentication(): void
     {
         $this->client->request('GET', '/api/me');
 
@@ -256,10 +247,9 @@ class AuthControllerTest extends WebTestCase
     }
 
     /**
-     * @test
      * GET /api/me - Échec avec token invalide
      */
-    public function it_fails_to_get_profile_with_invalid_token(): void
+    public function test_it_fails_to_get_profile_with_invalid_token(): void
     {
         $this->client->request('GET', '/api/me', [], [], [
             'HTTP_AUTHORIZATION' => 'Bearer invalid.token.here',
@@ -269,10 +259,9 @@ class AuthControllerTest extends WebTestCase
     }
 
     /**
-     * @test
      * POST /api/debug-login - Debug login fonctionne
      */
-    public function it_debugs_login_successfully(): void
+    public function test_it_debugs_login_successfully(): void
     {
         // Créer un utilisateur
         $this->client->request('POST', '/api/register', [], [], [
@@ -295,10 +284,9 @@ class AuthControllerTest extends WebTestCase
     }
 
     /**
-     * @test
      * Scénario complet : Register → Login → Access Protected Route
      */
-    public function it_completes_full_authentication_flow(): void
+    public function test_it_completes_full_authentication_flow(): void
     {
         // 1. S'inscrire
         $this->client->request('POST', '/api/register', [], [], [

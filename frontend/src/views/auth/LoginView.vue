@@ -1,15 +1,15 @@
 <template>
-    <LoginForm />
+  <LoginForm />
 </template>
 
 <script setup lang="ts">
-    import LoginForm from '@/components/auth/LoginForm.vue'
-    import { useAuth } from '@/composables/useAuth'
-    import { onMounted } from 'vue'
+import LoginForm from '@/components/auth/LoginForm.vue'
+import { useAuth } from '@/composables/useAuth'
+import { onMounted } from 'vue'
 
-    const { requireGuest } = useAuth()
+const { requireGuest } = useAuth()
 
-    onMounted(() => {
-        requireGuest()
-    })
+onMounted(() => {
+  requireGuest()
+})
 </script>

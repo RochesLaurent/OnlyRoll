@@ -9,9 +9,9 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: () => import('@/views/HomeView.vue'),
-      meta: { requiresAuth: false }
+      meta: { requiresAuth: false },
     },
-    
+
     // Routes d'authentification
     {
       path: '/auth',
@@ -21,40 +21,40 @@ const router = createRouter({
           path: 'login',
           name: 'login',
           component: () => import('@/views/auth/LoginView.vue'),
-          meta: { requiresGuest: true }
+          meta: { requiresGuest: true },
         },
         {
           path: 'register',
           name: 'register',
           component: () => import('@/views/auth/RegisterView.vue'),
-          meta: { requiresGuest: true }
-        }
-      ]
+          meta: { requiresGuest: true },
+        },
+      ],
     },
-    
+
     // Page de succès d'inscription
     {
       path: '/auth/register-success',
       name: 'register-success',
       component: () => import('@/views/auth/RegisterSuccessView.vue'),
-      meta: { requiresGuest: true }
+      meta: { requiresGuest: true },
     },
-    
+
     // Routes protégées
     {
       path: '/dashboard',
       name: 'dashboard',
       component: () => import('@/views/dashboard/DashboardView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true },
     },
-    
+
     // {
     //   path: '/profile',
     //   name: 'profile',
     //   component: () => import('@/views/profile/ProfileView.vue'),
     //   meta: { requiresAuth: true }
     // },
-    
+
     // Routes des parties
     // {
     //   path: '/games',
@@ -78,7 +78,7 @@ const router = createRouter({
     //     }
     //   ]
     // },
-    
+
     // Wiki D&D
     // {
     //   path: '/wiki',
@@ -101,44 +101,44 @@ const router = createRouter({
     //     }
     //   ]
     // },
-    
+
     // Page 404
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
-      component: () => import('@/views/NotFoundView.vue')
-    }
-  ]
+      component: () => import('@/views/NotFoundView.vue'),
+    },
+  ],
 })
 
 // Guard de navigation pour l'authentification
 router.beforeEach(async (to) => {
   const authStore = useAuthStore()
-  
+
   // Initialiser le store auth s'il n'est pas déjà fait
   if (authStore.token && !authStore.user) {
     try {
       await authStore.fetchMe()
     } catch (error) {
-      console.error('Navigation error:', error);
+      console.error('Navigation error:', error)
       // Le token est invalide, on déconnecte l'utilisateur
       authStore.logout()
     }
   }
-  
+
   // Vérifier si la route nécessite une authentification
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     return {
       name: 'login',
-      query: { redirect: to.fullPath }
+      query: { redirect: to.fullPath },
     }
   }
-  
+
   // Vérifier si la route nécessite d'être déconnecté
   if (to.meta.requiresGuest && authStore.isAuthenticated) {
     return { name: 'dashboard' }
   }
-  
+
   return true
 })
 

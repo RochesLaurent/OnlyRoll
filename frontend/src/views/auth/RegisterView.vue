@@ -1,15 +1,15 @@
 <template>
-    <RegisterForm />
+  <RegisterForm />
 </template>
 
 <script setup lang="ts">
-    import RegisterForm from '@/components/auth/RegisterForm.vue'
-    import { useAuth } from '@/composables/useAuth'
-    import { onMounted } from 'vue'
+import RegisterForm from '@/components/auth/RegisterForm.vue'
+import { useAuth } from '@/composables/useAuth'
+import { onMounted } from 'vue'
 
-    const { requireGuest } = useAuth()
+const { requireGuest } = useAuth()
 
-    onMounted(() => {
-        requireGuest()
-    })
+onMounted(() => {
+  requireGuest()
+})
 </script>
