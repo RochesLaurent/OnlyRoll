@@ -82,6 +82,16 @@ jobs:
           echo "DATABASE_URL=mysql://root:root@127.0.0.1:3306/onlyroll_test?serverVersion=9.0" >> .env.test
           echo "REDIS_URL=redis://127.0.0.1:6379" >> .env.test
       
+      - name: Generate JWT keys for testing
+        working-directory: ./backend
+        run: |
+          mkdir -p config/jwt
+          openssl genrsa -out config/jwt/private.pem -aes256 -passout pass:testpassphrase 4096
+          openssl rsa -pubout -in config/jwt/private.pem -out config/jwt/public.pem -passin pass:testpassphrase
+          echo "JWT_SECRET_KEY=%kernel.project_dir%/config/jwt/private.pem" >> .env.test
+          echo "JWT_PUBLIC_KEY=%kernel.project_dir%/config/jwt/public.pem" >> .env.test
+          echo "JWT_PASSPHRASE=testpassphrase" >> .env.test
+      
       - name: Create database schema
         working-directory: ./backend
         run: |

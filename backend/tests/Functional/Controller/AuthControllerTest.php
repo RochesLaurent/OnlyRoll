@@ -8,11 +8,11 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Tests fonctionnels pour l'AuthController
- * 
+ * Tests fonctionnels pour l'AuthController.
+ *
  * Ces tests vérifient le comportement réel de l'API d'authentification
  * avec une vraie base de données de test
- * 
+ *
  * @covers \App\Controller\AuthController
  */
 class AuthControllerTest extends WebTestCase
@@ -25,22 +25,22 @@ class AuthControllerTest extends WebTestCase
     }
 
     /**
-     * POST /api/register - Inscription avec des données valides
+     * POST /api/register - Inscription avec des données valides.
      */
-    public function test_it_registers_a_new_user_successfully(): void
+    public function testItRegistersANewUserSuccessfully(): void
     {
         $this->client->request('POST', '/api/register', [], [], [
             'CONTENT_TYPE' => 'application/json',
         ], json_encode([
             'email' => 'newuser@onlyroll.com',
             'password' => 'SecurePass123!',
-            'pseudo' => 'NewGamer'
+            'pseudo' => 'NewGamer',
         ]));
 
         $this->assertResponseStatusCodeSame(Response::HTTP_CREATED);
-        
+
         $responseData = json_decode($this->client->getResponse()->getContent(), true);
-        
+
         $this->assertArrayHasKey('message', $responseData);
         $this->assertArrayHasKey('user', $responseData);
         $this->assertEquals('User created successfully', $responseData['message']);
@@ -50,9 +50,9 @@ class AuthControllerTest extends WebTestCase
     }
 
     /**
-     * POST /api/register - Échec avec des champs manquants
+     * POST /api/register - Échec avec des champs manquants.
      */
-    public function test_it_fails_to_register_with_missing_fields(): void
+    public function testItFailsToRegisterWithMissingFields(): void
     {
         $this->client->request('POST', '/api/register', [], [], [
             'CONTENT_TYPE' => 'application/json',
@@ -62,16 +62,16 @@ class AuthControllerTest extends WebTestCase
         ]));
 
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
-        
+
         $responseData = json_decode($this->client->getResponse()->getContent(), true);
         $this->assertArrayHasKey('error', $responseData);
         $this->assertEquals('Missing fields', $responseData['error']);
     }
 
     /**
-     * POST /api/register - Échec avec email déjà existant
+     * POST /api/register - Échec avec email déjà existant.
      */
-    public function test_it_fails_to_register_with_existing_email(): void
+    public function testItFailsToRegisterWithExistingEmail(): void
     {
         // Créer un premier utilisateur
         $this->client->request('POST', '/api/register', [], [], [
@@ -79,7 +79,7 @@ class AuthControllerTest extends WebTestCase
         ], json_encode([
             'email' => 'existing@onlyroll.com',
             'password' => 'Password123!',
-            'pseudo' => 'ExistingUser'
+            'pseudo' => 'ExistingUser',
         ]));
 
         // Essayer de créer un deuxième avec le même email
@@ -88,7 +88,7 @@ class AuthControllerTest extends WebTestCase
         ], json_encode([
             'email' => 'existing@onlyroll.com',  // Même email
             'password' => 'AnotherPass123!',
-            'pseudo' => 'DifferentPseudo'
+            'pseudo' => 'DifferentPseudo',
         ]));
 
         // Devrait échouer (contrainte unique sur l'email)
@@ -96,9 +96,9 @@ class AuthControllerTest extends WebTestCase
     }
 
     /**
-     * POST /api/register - Échec avec pseudo déjà existant
+     * POST /api/register - Échec avec pseudo déjà existant.
      */
-    public function test_it_fails_to_register_with_existing_pseudo(): void
+    public function testItFailsToRegisterWithExistingPseudo(): void
     {
         // Créer un premier utilisateur
         $this->client->request('POST', '/api/register', [], [], [
@@ -106,7 +106,7 @@ class AuthControllerTest extends WebTestCase
         ], json_encode([
             'email' => 'user1@onlyroll.com',
             'password' => 'Password123!',
-            'pseudo' => 'SamePseudo'
+            'pseudo' => 'SamePseudo',
         ]));
 
         // Essayer de créer un deuxième avec le même pseudo
@@ -115,7 +115,7 @@ class AuthControllerTest extends WebTestCase
         ], json_encode([
             'email' => 'user2@onlyroll.com',
             'password' => 'AnotherPass123!',
-            'pseudo' => 'SamePseudo'  // Même pseudo
+            'pseudo' => 'SamePseudo',  // Même pseudo
         ]));
 
         // Devrait échouer (contrainte unique sur le pseudo)
@@ -123,9 +123,9 @@ class AuthControllerTest extends WebTestCase
     }
 
     /**
-     * POST /api/login_check - Connexion réussie avec JWT
+     * POST /api/login_check - Connexion réussie avec JWT.
      */
-    public function test_it_logs_in_successfully_and_returns_jwt_token(): void
+    public function testItLogsInSuccessfullyAndReturnsJwtToken(): void
     {
         // D'abord créer un utilisateur
         $this->client->request('POST', '/api/register', [], [], [
@@ -133,7 +133,7 @@ class AuthControllerTest extends WebTestCase
         ], json_encode([
             'email' => 'testlogin@onlyroll.com',
             'password' => 'LoginPass123!',
-            'pseudo' => 'LoginTester'
+            'pseudo' => 'LoginTester',
         ]));
 
         // Ensuite se connecter
@@ -141,25 +141,25 @@ class AuthControllerTest extends WebTestCase
             'CONTENT_TYPE' => 'application/json',
         ], json_encode([
             'email' => 'testlogin@onlyroll.com',
-            'password' => 'LoginPass123!'
+            'password' => 'LoginPass123!',
         ]));
 
         $this->assertResponseIsSuccessful();
-        
+
         $responseData = json_decode($this->client->getResponse()->getContent(), true);
-        
+
         $this->assertArrayHasKey('token', $responseData);
         $this->assertNotEmpty($responseData['token']);
-        
+
         // Vérifier que c'est un JWT valide (3 parties séparées par des points)
         $tokenParts = explode('.', $responseData['token']);
         $this->assertCount(3, $tokenParts, 'JWT should have 3 parts');
     }
 
     /**
-     * POST /api/login_check - Échec avec mauvais mot de passe
+     * POST /api/login_check - Échec avec mauvais mot de passe.
      */
-    public function test_it_fails_to_login_with_wrong_password(): void
+    public function testItFailsToLoginWithWrongPassword(): void
     {
         // Créer un utilisateur
         $this->client->request('POST', '/api/register', [], [], [
@@ -167,7 +167,7 @@ class AuthControllerTest extends WebTestCase
         ], json_encode([
             'email' => 'wrongpass@onlyroll.com',
             'password' => 'CorrectPass123!',
-            'pseudo' => 'WrongPassUser'
+            'pseudo' => 'WrongPassUser',
         ]));
 
         // Essayer de se connecter avec un mauvais mot de passe
@@ -175,31 +175,31 @@ class AuthControllerTest extends WebTestCase
             'CONTENT_TYPE' => 'application/json',
         ], json_encode([
             'email' => 'wrongpass@onlyroll.com',
-            'password' => 'WrongPassword!'  // Mauvais mot de passe
+            'password' => 'WrongPassword!',  // Mauvais mot de passe
         ]));
 
         $this->assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
     }
 
     /**
-     * POST /api/login_check - Échec avec email inexistant
+     * POST /api/login_check - Échec avec email inexistant.
      */
-    public function test_it_fails_to_login_with_nonexistent_email(): void
+    public function testItFailsToLoginWithNonexistentEmail(): void
     {
         $this->client->request('POST', '/api/login_check', [], [], [
             'CONTENT_TYPE' => 'application/json',
         ], json_encode([
             'email' => 'nonexistent@onlyroll.com',
-            'password' => 'SomePassword123!'
+            'password' => 'SomePassword123!',
         ]));
 
         $this->assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
     }
 
     /**
-     * GET /api/me - Récupération du profil utilisateur authentifié
+     * GET /api/me - Récupération du profil utilisateur authentifié.
      */
-    public function test_it_returns_current_user_profile_when_authenticated(): void
+    public function testItReturnsCurrentUserProfileWhenAuthenticated(): void
     {
         // Créer et connecter un utilisateur
         $this->client->request('POST', '/api/register', [], [], [
@@ -207,14 +207,14 @@ class AuthControllerTest extends WebTestCase
         ], json_encode([
             'email' => 'profile@onlyroll.com',
             'password' => 'ProfilePass123!',
-            'pseudo' => 'ProfileUser'
+            'pseudo' => 'ProfileUser',
         ]));
 
         $this->client->request('POST', '/api/login_check', [], [], [
             'CONTENT_TYPE' => 'application/json',
         ], json_encode([
             'email' => 'profile@onlyroll.com',
-            'password' => 'ProfilePass123!'
+            'password' => 'ProfilePass123!',
         ]));
 
         $loginResponse = json_decode($this->client->getResponse()->getContent(), true);
@@ -222,13 +222,13 @@ class AuthControllerTest extends WebTestCase
 
         // Accéder au profil avec le token
         $this->client->request('GET', '/api/me', [], [], [
-            'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
+            'HTTP_AUTHORIZATION' => 'Bearer '.$token,
         ]);
 
         $this->assertResponseIsSuccessful();
-        
+
         $profileData = json_decode($this->client->getResponse()->getContent(), true);
-        
+
         $this->assertEquals('profile@onlyroll.com', $profileData['email']);
         $this->assertEquals('ProfileUser', $profileData['pseudo']);
         $this->assertArrayHasKey('id', $profileData);
@@ -237,9 +237,9 @@ class AuthControllerTest extends WebTestCase
     }
 
     /**
-     * GET /api/me - Échec sans authentification
+     * GET /api/me - Échec sans authentification.
      */
-    public function test_it_fails_to_get_profile_without_authentication(): void
+    public function testItFailsToGetProfileWithoutAuthentication(): void
     {
         $this->client->request('GET', '/api/me');
 
@@ -247,9 +247,9 @@ class AuthControllerTest extends WebTestCase
     }
 
     /**
-     * GET /api/me - Échec avec token invalide
+     * GET /api/me - Échec avec token invalide.
      */
-    public function test_it_fails_to_get_profile_with_invalid_token(): void
+    public function testItFailsToGetProfileWithInvalidToken(): void
     {
         $this->client->request('GET', '/api/me', [], [], [
             'HTTP_AUTHORIZATION' => 'Bearer invalid.token.here',
@@ -259,9 +259,9 @@ class AuthControllerTest extends WebTestCase
     }
 
     /**
-     * POST /api/debug-login - Debug login fonctionne
+     * POST /api/debug-login - Debug login fonctionne.
      */
-    public function test_it_debugs_login_successfully(): void
+    public function testItDebugsLoginSuccessfully(): void
     {
         // Créer un utilisateur
         $this->client->request('POST', '/api/register', [], [], [
@@ -269,7 +269,7 @@ class AuthControllerTest extends WebTestCase
         ], json_encode([
             'email' => 'debug@onlyroll.com',
             'password' => 'DebugPass123!',
-            'pseudo' => 'DebugUser'
+            'pseudo' => 'DebugUser',
         ]));
 
         // Tester le debug login
@@ -277,16 +277,16 @@ class AuthControllerTest extends WebTestCase
             'CONTENT_TYPE' => 'application/json',
         ], json_encode([
             'email' => 'debug@onlyroll.com',
-            'password' => 'DebugPass123!'
+            'password' => 'DebugPass123!',
         ]));
 
         $this->assertResponseIsSuccessful();
     }
 
     /**
-     * Scénario complet : Register → Login → Access Protected Route
+     * Scénario complet : Register → Login → Access Protected Route.
      */
-    public function test_it_completes_full_authentication_flow(): void
+    public function testItCompletesFullAuthenticationFlow(): void
     {
         // 1. S'inscrire
         $this->client->request('POST', '/api/register', [], [], [
@@ -294,7 +294,7 @@ class AuthControllerTest extends WebTestCase
         ], json_encode([
             'email' => 'fullflow@onlyroll.com',
             'password' => 'FullFlowPass123!',
-            'pseudo' => 'FullFlowUser'
+            'pseudo' => 'FullFlowUser',
         ]));
         $this->assertResponseStatusCodeSame(Response::HTTP_CREATED);
 
@@ -303,20 +303,20 @@ class AuthControllerTest extends WebTestCase
             'CONTENT_TYPE' => 'application/json',
         ], json_encode([
             'email' => 'fullflow@onlyroll.com',
-            'password' => 'FullFlowPass123!'
+            'password' => 'FullFlowPass123!',
         ]));
         $this->assertResponseIsSuccessful();
-        
+
         $loginData = json_decode($this->client->getResponse()->getContent(), true);
         $token = $loginData['token'];
         $this->assertNotEmpty($token);
 
         // 3. Accéder à une route protégée
         $this->client->request('GET', '/api/me', [], [], [
-            'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
+            'HTTP_AUTHORIZATION' => 'Bearer '.$token,
         ]);
         $this->assertResponseIsSuccessful();
-        
+
         $profileData = json_decode($this->client->getResponse()->getContent(), true);
         $this->assertEquals('fullflow@onlyroll.com', $profileData['email']);
         $this->assertEquals('FullFlowUser', $profileData['pseudo']);

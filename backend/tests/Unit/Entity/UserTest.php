@@ -8,35 +8,35 @@ use App\Entity\User;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Tests unitaires pour l'entité User
- * 
+ * Tests unitaires pour l'entité User.
+ *
  * Ces tests vérifient la logique métier de l'entité User
  * sans interaction avec la base de données
- * 
+ *
  * @covers \App\Entity\User
  */
 class UserTest extends TestCase
 {
     /**
-     * Un utilisateur nouvellement créé a des valeurs par défaut correctes
+     * Un utilisateur nouvellement créé a des valeurs par défaut correctes.
      */
-    public function test_it_has_correct_default_values_on_creation(): void
+    public function testItHasCorrectDefaultValuesOnCreation(): void
     {
         $user = new User();
 
         $this->assertEquals(['ROLE_USER'], $user->getRoles());
+        $this->assertFalse($user->isVerified());
         $this->assertEquals('UTC', $user->getTimezone());
         $this->assertEquals('en', $user->getLanguage());
         $this->assertInstanceOf(\DateTimeImmutable::class, $user->getCreatedAt());
         $this->assertInstanceOf(\DateTimeImmutable::class, $user->getUpdatedAt());
         $this->assertNull($user->getLastLogin());
-        $this->assertNull($user->getAvatar());
     }
 
     /**
-     * On peut définir et récupérer l'email
+     * On peut définir et récupérer l'email.
      */
-    public function test_it_can_set_and_get_email(): void
+    public function testItCanSetAndGetEmail(): void
     {
         $user = new User();
         $email = 'test@onlyroll.com';
@@ -47,9 +47,9 @@ class UserTest extends TestCase
     }
 
     /**
-     * On peut définir et récupérer le pseudo
+     * On peut définir et récupérer le pseudo.
      */
-    public function test_it_can_set_and_get_pseudo(): void
+    public function testItCanSetAndGetPseudo(): void
     {
         $user = new User();
         $pseudo = 'TestGamer';
@@ -60,9 +60,9 @@ class UserTest extends TestCase
     }
 
     /**
-     * On peut définir et récupérer le mot de passe
+     * On peut définir et récupérer le mot de passe.
      */
-    public function test_it_can_set_and_get_password(): void
+    public function testItCanSetAndGetPassword(): void
     {
         $user = new User();
         $hashedPassword = '$2y$13$hashedpassword';
@@ -73,9 +73,9 @@ class UserTest extends TestCase
     }
 
     /**
-     * getUserIdentifier retourne l'email
+     * getUserIdentifier retourne l'email.
      */
-    public function test_it_returns_email_as_user_identifier(): void
+    public function testItReturnsEmailAsUserIdentifier(): void
     {
         $user = new User();
         $email = 'identifier@onlyroll.com';
@@ -85,22 +85,22 @@ class UserTest extends TestCase
     }
 
     /**
-     * On peut définir et récupérer les rôles
+     * On peut définir et récupérer les rôles.
      */
-    public function test_it_can_set_and_get_roles(): void
+    public function testItCanSetAndGetRoles(): void
     {
         $user = new User();
         $roles = ['ROLE_USER', 'ROLE_ADMIN'];
 
         $user->setRoles($roles);
 
-        $this->assertEqualsCanonicalizing($roles, $user->getRoles());
+        $this->assertEquals($roles, $user->getRoles());
     }
 
     /**
-     * getRoles garantit toujours ROLE_USER même si pas défini
+     * getRoles garantit toujours ROLE_USER même si pas défini.
      */
-    public function test_it_always_has_role_user(): void
+    public function testItAlwaysHasRoleUser(): void
     {
         $user = new User();
         $user->setRoles([]); // Définir un tableau vide
@@ -111,22 +111,22 @@ class UserTest extends TestCase
     }
 
     /**
-     * getRoles évite les doublons
+     * getRoles évite les doublons.
      */
-    public function test_it_removes_duplicate_roles(): void
+    public function testItRemovesDuplicateRoles(): void
     {
         $user = new User();
         $user->setRoles(['ROLE_USER', 'ROLE_ADMIN', 'ROLE_USER']); // Doublon
 
         $roles = $user->getRoles();
 
-        $this->assertEquals(['ROLE_USER', 'ROLE_ADMIN'], array_values(array_unique($roles)));
+        $this->assertCount(2, $roles); // Devrait avoir 2 rôles uniques
     }
 
     /**
-     * On peut définir et récupérer isVerified
+     * On peut définir et récupérer isVerified.
      */
-    public function test_it_can_set_and_get_is_verified(): void
+    public function testItCanSetAndGetIsVerified(): void
     {
         $user = new User();
 
@@ -138,9 +138,9 @@ class UserTest extends TestCase
     }
 
     /**
-     * On peut définir et récupérer le timezone
+     * On peut définir et récupérer le timezone.
      */
-    public function test_it_can_set_and_get_timezone(): void
+    public function testItCanSetAndGetTimezone(): void
     {
         $user = new User();
         $timezone = 'Europe/Paris';
@@ -151,9 +151,9 @@ class UserTest extends TestCase
     }
 
     /**
-     * On peut définir et récupérer la langue
+     * On peut définir et récupérer la langue.
      */
-    public function test_it_can_set_and_get_language(): void
+    public function testItCanSetAndGetLanguage(): void
     {
         $user = new User();
         $language = 'fr';
@@ -164,9 +164,9 @@ class UserTest extends TestCase
     }
 
     /**
-     * On peut définir et récupérer l'avatar
+     * On peut définir et récupérer l'avatar.
      */
-    public function test_it_can_set_and_get_avatar(): void
+    public function testItCanSetAndGetAvatar(): void
     {
         $user = new User();
         $avatarUrl = 'https://example.com/avatar.png';
@@ -177,9 +177,9 @@ class UserTest extends TestCase
     }
 
     /**
-     * On peut définir et récupérer la date de dernière connexion
+     * On peut définir et récupérer la date de dernière connexion.
      */
-    public function test_it_can_set_and_get_last_login(): void
+    public function testItCanSetAndGetLastLogin(): void
     {
         $user = new User();
         $lastLogin = new \DateTimeImmutable('2025-01-15 10:30:00');
@@ -190,23 +190,23 @@ class UserTest extends TestCase
     }
 
     /**
-     * eraseCredentials ne fait rien (optionnel mais recommandé de tester)
+     * eraseCredentials ne fait rien (optionnel mais recommandé de tester).
      */
-    public function test_it_can_erase_credentials_safely(): void
+    public function testItCanEraseCredentialsSafely(): void
     {
         $user = new User();
         $user->setPassword('hashedpassword');
 
         $user->eraseCredentials();
 
-        // Le mot de passe devrait toujours être là (c'est le comportement attendu)
+        // Le mot de passe doit toujours être présent car cette méthode ne fait rien
         $this->assertEquals('hashedpassword', $user->getPassword());
     }
 
     /**
-     * Les timestamps sont automatiquement définis
+     * Les timestamps sont automatiquement définis.
      */
-    public function test_it_sets_timestamps_automatically(): void
+    public function testItSetsTimestampsAutomatically(): void
     {
         $beforeCreation = new \DateTimeImmutable();
         $user = new User();
@@ -214,21 +214,20 @@ class UserTest extends TestCase
 
         $this->assertGreaterThanOrEqual($beforeCreation, $user->getCreatedAt());
         $this->assertLessThanOrEqual($afterCreation, $user->getCreatedAt());
-        
+
         $this->assertGreaterThanOrEqual($beforeCreation, $user->getUpdatedAt());
         $this->assertLessThanOrEqual($afterCreation, $user->getUpdatedAt());
     }
 
     /**
-     * Test de la méthode setUpdatedAtValue (lifecycle callback)
+     * Test de la méthode setUpdatedAtValue (lifecycle callback).
      */
-    public function test_it_updates_updated_at_on_persist_and_update(): void
+    public function testItUpdatesUpdatedAtOnPersistAndUpdate(): void
     {
         $user = new User();
         $originalUpdatedAt = $user->getUpdatedAt();
 
-        // Simuler un petit délai
-        usleep(100000); // 0.1 seconde
+        sleep(1); // Attendre 1 seconde pour voir la différence
 
         $user->setUpdatedAtValue();
 
@@ -236,12 +235,12 @@ class UserTest extends TestCase
     }
 
     /**
-     * Validation d'un profil utilisateur complet
+     * Validation d'un profil utilisateur complet.
      */
-    public function test_it_represents_a_complete_user_profile(): void
+    public function testItRepresentsACompleteUserProfile(): void
     {
         $user = new User();
-        
+
         $user->setEmail('complete@onlyroll.com');
         $user->setPseudo('CompleteUser');
         $user->setPassword('$2y$13$hashedpassword');
@@ -250,19 +249,17 @@ class UserTest extends TestCase
         $user->setTimezone('Europe/Paris');
         $user->setLanguage('fr');
         $user->setAvatar('https://example.com/avatar.png');
-        $user->setLastLogin(new \DateTimeImmutable());
+        $user->setLastLogin(new \DateTimeImmutable('2025-01-15 10:30:00'));
 
-        // Vérifier que toutes les données sont correctement stockées
         $this->assertEquals('complete@onlyroll.com', $user->getEmail());
         $this->assertEquals('CompleteUser', $user->getPseudo());
-        $this->assertNotEmpty($user->getPassword());
-        $this->assertContains('ROLE_USER', $user->getRoles());
-        $this->assertContains('ROLE_GM', $user->getRoles());
+        $this->assertEquals('$2y$13$hashedpassword', $user->getPassword());
+        $this->assertEquals(['ROLE_USER', 'ROLE_GM'], $user->getRoles());
         $this->assertTrue($user->isVerified());
         $this->assertEquals('Europe/Paris', $user->getTimezone());
         $this->assertEquals('fr', $user->getLanguage());
-        $this->assertNotNull($user->getAvatar());
-        $this->assertNotNull($user->getLastLogin());
+        $this->assertEquals('https://example.com/avatar.png', $user->getAvatar());
+        $this->assertInstanceOf(\DateTimeImmutable::class, $user->getLastLogin());
         $this->assertInstanceOf(\DateTimeImmutable::class, $user->getCreatedAt());
         $this->assertInstanceOf(\DateTimeImmutable::class, $user->getUpdatedAt());
     }
