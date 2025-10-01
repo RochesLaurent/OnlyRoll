@@ -37,6 +37,7 @@
             </label>
             <input
                 id="email"
+                name="email"
                 v-model="form.email"
                 type="email"
                 autocomplete="email"
@@ -59,6 +60,7 @@
             <div class="relative">
                 <input
                     id="password"
+                    name="password"
                     v-model="form.password"
                     :type="showPassword ? 'text' : 'password'"
                     autocomplete="current-password"

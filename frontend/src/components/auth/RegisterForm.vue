@@ -23,7 +23,7 @@
                     <p v-if="error" class="text-error font-medium">{{ error }}</p>
                     <ul v-if="validationErrors.length > 0" class="text-error space-y-1">
                         <li v-for="err in validationErrors" :key="err.field">
-                        {{ err.message }}
+                            {{ err.message }}
                         </li>
                     </ul>
                 </div>
@@ -37,7 +37,9 @@
             </label>
             <input
                 id="pseudo"
+                name="pseudo"
                 v-model="form.pseudo"
+                @blur="markFieldAsTouched('pseudo')"
                 type="text"
                 autocomplete="username"
                 required
@@ -51,7 +53,10 @@
                 minlength="3"
                 maxlength="50"
             />
-            <p class="text-xs text-secondary-500">
+            <p v-if="fieldErrors.pseudo" class="text-xs text-red-400 mt-1">
+                {{ fieldErrors.pseudo }}
+            </p>
+            <p v-else class="text-xs text-secondary-500">
                 Entre 3 et 50 caractères. Sera visible par les autres joueurs.
             </p>
         </div>
@@ -63,7 +68,9 @@
             </label>
             <input
                 id="email"
+                name="email"
                 v-model="form.email"
+                @blur="markFieldAsTouched('email')"
                 type="email"
                 autocomplete="email"
                 required
@@ -75,7 +82,10 @@
                     transition-colors"
                 placeholder="votre.email@exemple.com"
             />
-            <p class="text-xs text-secondary-500">
+            <p v-if="fieldErrors.email" class="text-xs text-red-400 mt-1">
+                {{ fieldErrors.email }}
+            </p>
+            <p v-else class="text-xs text-secondary-500">
                 Un email de vérification vous sera envoyé.
             </p>
         </div>
@@ -88,6 +98,7 @@
             <div class="relative">
                 <input
                     id="password"
+                    name="password"
                     v-model="form.password"
                     :type="showPassword ? 'text' : 'password'"
                     autocomplete="new-password"
@@ -148,10 +159,16 @@
             
             <ul class="text-xs text-secondary-500 space-y-1">
                 <li class="flex items-center space-x-2">
-                    <span :class="passwordRules.length ? 'text-success' : 'text-secondary-500'">
-                        {{ passwordRules.length ? '✓' : '○' }}
+                    <span :class="passwordRules.minlength ? 'text-success' : 'text-secondary-500'">
+                        {{ passwordRules.minlength ? '✓' : '○' }}
                     </span>
                     <span>Au moins 8 caractères</span>
+                </li>
+                <li class="flex items-center space-x-2">
+                    <span :class="passwordRules.lowercase ? 'text-success' : 'text-secondary-500'">
+                        {{ passwordRules.lowercase ? '✓' : '○' }}
+                    </span>
+                    <span>Une minuscule</span>
                 </li>
                 <li class="flex items-center space-x-2">
                     <span :class="passwordRules.uppercase ? 'text-success' : 'text-secondary-500'">
@@ -176,6 +193,7 @@
             <div class="relative">
                 <input
                     id="confirmPassword"
+                    name="confirmPassword"
                     v-model="form.confirmPassword"
                     :type="showConfirmPassword ? 'text' : 'password'"
                     autocomplete="new-password"
@@ -227,6 +245,7 @@
         <div class="flex items-start space-x-3">
             <input
                 id="acceptTerms"
+                name="acceptTerms"
                 v-model="form.acceptTerms"
                 type="checkbox"
                 required
@@ -282,7 +301,7 @@
 </template>
 
 <script setup lang="ts">
-    import { ref, computed } from 'vue'
+    import { ref, computed, watch } from 'vue'
     import { useAuth } from '@/composables/useAuth'
     import type { RegisterCredentials } from '@/types/auth'
 
@@ -291,154 +310,197 @@
 
     // État du formulaire
     const form = ref<RegisterCredentials & { acceptTerms: boolean }>({
-    pseudo: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    acceptTerms: false
+        pseudo: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+        acceptTerms: false
     })
 
     // État de l'interface
     const showPassword = ref(false)
     const showConfirmPassword = ref(false)
     const validationErrors = ref<Array<{ field: string; message: string }>>([])
+    const touchedFields = ref<Set<string>>(new Set())
+
+    // Watcher pour effacer les erreurs globales lors de la saisie
+    watch(
+        () => [form.value.pseudo, form.value.email, form.value.password, form.value.confirmPassword],
+        () => {
+            clearError()
+        }
+    )
 
     // Validation du formulaire côté client
     const isValidEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return emailRegex.test(email)
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        return emailRegex.test(email)
     }
 
+    // Règles de mot de passe (noms corrigés pour les tests)
     const passwordRules = computed(() => ({
-    length: form.value.password.length >= 8,
-    uppercase: /[A-Z]/.test(form.value.password),
-    number: /\d/.test(form.value.password)
+        minlength: form.value.password.length >= 8,
+        lowercase: /[a-z]/.test(form.value.password),
+        uppercase: /[A-Z]/.test(form.value.password),
+        number: /\d/.test(form.value.password)
     }))
 
     const passwordsMatch = computed(() => {
-    return form.value.password === form.value.confirmPassword
+        return form.value.password === form.value.confirmPassword
     })
 
     const passwordStrength = computed(() => {
-    if (!form.value.password) return 0
-    
-    let score = 0
-    if (passwordRules.value.length) score++
-    if (passwordRules.value.uppercase) score++
-    if (passwordRules.value.number) score++
-    if (/[a-z]/.test(form.value.password)) score++
-    if (/[^A-Za-z0-9]/.test(form.value.password)) score++
-    
-    return score
+        if (!form.value.password) return 0
+        
+        let score = 0
+        if (passwordRules.value.minlength) score++
+        if (passwordRules.value.lowercase) score++
+        if (passwordRules.value.uppercase) score++
+        if (passwordRules.value.number) score++
+        if (/[^A-Za-z0-9]/.test(form.value.password)) score++
+        
+        return score
     })
 
     const passwordStrengthWidth = computed(() => {
-    return `${(passwordStrength.value / 5) * 100}%`
+        return `${(passwordStrength.value / 5) * 100}%`
     })
 
     const passwordStrengthColor = computed(() => {
-    if (passwordStrength.value <= 2) return 'bg-error'
-    if (passwordStrength.value <= 3) return 'bg-warning'
-    return 'bg-success'
+        if (passwordStrength.value <= 2) return 'bg-error'
+        if (passwordStrength.value <= 3) return 'bg-warning'
+        return 'bg-success'
     })
 
     const passwordStrengthText = computed(() => {
-    if (passwordStrength.value <= 2) return 'Mot de passe faible'
-    if (passwordStrength.value <= 3) return 'Mot de passe moyen'
-    return 'Mot de passe fort'
+        if (passwordStrength.value <= 2) return 'Mot de passe faible'
+        if (passwordStrength.value <= 3) return 'Mot de passe moyen'
+        return 'Mot de passe fort'
     })
 
     const isFormValid = computed(() => {
-    return form.value.pseudo.length >= 3 &&
-            form.value.email.length > 0 &&
-            isValidEmail(form.value.email) &&
-            passwordRules.value.length &&
-            passwordRules.value.uppercase &&
-            passwordRules.value.number &&
-            passwordsMatch.value &&
-            form.value.acceptTerms
+        return form.value.pseudo.length >= 3 &&
+                form.value.email.length > 0 &&
+                isValidEmail(form.value.email) &&
+                passwordRules.value.minlength &&
+                passwordRules.value.lowercase &&
+                passwordRules.value.uppercase &&
+                passwordRules.value.number &&
+                passwordsMatch.value &&
+                form.value.acceptTerms
+    })
+
+    // Erreurs par champ pour validation au blur
+    const fieldErrors = computed(() => {
+        const errors: Record<string, string> = {}
+        
+        if (touchedFields.value.has('pseudo')) {
+            if (!form.value.pseudo) {
+                errors.pseudo = 'Le pseudo est requis'
+            } else if (form.value.pseudo.length < 3) {
+                errors.pseudo = 'Le pseudo doit faire au moins 3 caractères'
+            } else if (form.value.pseudo.length > 50) {
+                errors.pseudo = 'Le pseudo ne peut pas dépasser 50 caractères'
+            }
+        }
+        
+        if (touchedFields.value.has('email')) {
+            if (!form.value.email) {
+                errors.email = 'L\'email est requis'
+            } else if (!isValidEmail(form.value.email)) {
+                errors.email = 'L\'email n\'est pas valide'
+            }
+        }
+        
+        return errors
     })
 
     // Utilitaires
     const togglePasswordVisibility = () => {
-    showPassword.value = !showPassword.value
+        showPassword.value = !showPassword.value
     }
 
     const toggleConfirmPasswordVisibility = () => {
-    showConfirmPassword.value = !showConfirmPassword.value
+        showConfirmPassword.value = !showConfirmPassword.value
     }
 
-    // Validation côté client
+    const markFieldAsTouched = (fieldName: string) => {
+        touchedFields.value.add(fieldName)
+    }
+
+    // Validation côté client complète
     const validateForm = (): boolean => {
-    validationErrors.value = []
+        validationErrors.value = []
     
-    // Validation pseudo
-    if (!form.value.pseudo) {
-        validationErrors.value.push({ field: 'pseudo', message: 'Le pseudo est requis' })
-    } else if (form.value.pseudo.length < 3) {
-        validationErrors.value.push({ field: 'pseudo', message: 'Le pseudo doit faire au moins 3 caractères' })
-    } else if (form.value.pseudo.length > 50) {
-        validationErrors.value.push({ field: 'pseudo', message: 'Le pseudo ne peut pas dépasser 50 caractères' })
-    }
-    
-    // Validation email
-    if (!form.value.email) {
-        validationErrors.value.push({ field: 'email', message: 'L\'email est requis' })
-    } else if (!isValidEmail(form.value.email)) {
-        validationErrors.value.push({ field: 'email', message: 'L\'email n\'est pas valide' })
-    }
-    
-    // Validation mot de passe
-    if (!form.value.password) {
-        validationErrors.value.push({ field: 'password', message: 'Le mot de passe est requis' })
-    } else {
-        if (!passwordRules.value.length) {
-        validationErrors.value.push({ field: 'password', message: 'Le mot de passe doit faire au moins 8 caractères' })
+        // Validation pseudo
+        if (!form.value.pseudo) {
+            validationErrors.value.push({ field: 'pseudo', message: 'Le pseudo est requis' })
+        } else if (form.value.pseudo.length < 3) {
+            validationErrors.value.push({ field: 'pseudo', message: 'Le pseudo doit faire au moins 3 caractères' })
+        } else if (form.value.pseudo.length > 50) {
+            validationErrors.value.push({ field: 'pseudo', message: 'Le pseudo ne peut pas dépasser 50 caractères' })
         }
-        if (!passwordRules.value.uppercase) {
-        validationErrors.value.push({ field: 'password', message: 'Le mot de passe doit contenir au moins une majuscule' })
+        
+        // Validation email
+        if (!form.value.email) {
+            validationErrors.value.push({ field: 'email', message: 'L\'email est requis' })
+        } else if (!isValidEmail(form.value.email)) {
+            validationErrors.value.push({ field: 'email', message: 'L\'email n\'est pas valide' })
         }
-        if (!passwordRules.value.number) {
-        validationErrors.value.push({ field: 'password', message: 'Le mot de passe doit contenir au moins un chiffre' })
+        
+        // Validation mot de passe
+        if (!form.value.password) {
+            validationErrors.value.push({ field: 'password', message: 'Le mot de passe est requis' })
+        } else {
+            if (!passwordRules.value.minlength) {
+                validationErrors.value.push({ field: 'password', message: 'Le mot de passe doit faire au moins 8 caractères' })
+            }
+            if (!passwordRules.value.lowercase) {
+                validationErrors.value.push({ field: 'password', message: 'Le mot de passe doit contenir au moins une minuscule' })
+            }
+            if (!passwordRules.value.uppercase) {
+                validationErrors.value.push({ field: 'password', message: 'Le mot de passe doit contenir au moins une majuscule' })
+            }
+            if (!passwordRules.value.number) {
+                validationErrors.value.push({ field: 'password', message: 'Le mot de passe doit contenir au moins un chiffre' })
+            }
         }
-    }
-    
-    // Validation confirmation mot de passe
-    if (!form.value.confirmPassword) {
-        validationErrors.value.push({ field: 'confirmPassword', message: 'La confirmation du mot de passe est requise' })
-    } else if (!passwordsMatch.value) {
-        validationErrors.value.push({ field: 'confirmPassword', message: 'Les mots de passe ne correspondent pas' })
-    }
-    
-    // Validation conditions d'utilisation
-    if (!form.value.acceptTerms) {
-        validationErrors.value.push({ field: 'acceptTerms', message: 'Vous devez accepter les conditions d\'utilisation' })
-    }
-    
-    return validationErrors.value.length === 0
+        
+        // Validation confirmation mot de passe
+        if (!form.value.confirmPassword) {
+            validationErrors.value.push({ field: 'confirmPassword', message: 'La confirmation du mot de passe est requise' })
+        } else if (!passwordsMatch.value) {
+            validationErrors.value.push({ field: 'confirmPassword', message: 'Les mots de passe ne correspondent pas' })
+        }
+        
+        // Validation conditions d'utilisation
+        if (!form.value.acceptTerms) {
+            validationErrors.value.push({ field: 'acceptTerms', message: 'Vous devez accepter les conditions d\'utilisation' })
+        }
+        
+        return validationErrors.value.length === 0
     }
 
     // Soumission du formulaire
     const handleSubmit = async () => {
-    clearError()
-    
-    if (!validateForm()) {
-        return
-    }
-    
-    try {
-        await register({
-        pseudo: form.value.pseudo,
-        email: form.value.email,
-        password: form.value.password,
-        confirmPassword: form.value.confirmPassword
-        })
+        clearError()
         
-        // La redirection est gérée par le composable useAuth
+        if (!validateForm()) {
+            return
+        }
         
-    } catch (err) {
-        // L'erreur est déjà gérée par le store/composable
-        console.error('Erreur d\'inscription:', err)
-    }
+        try {
+            await register({
+                pseudo: form.value.pseudo,
+                email: form.value.email,
+                password: form.value.password,
+                confirmPassword: form.value.confirmPassword
+            })
+            
+            // La redirection est gérée par le composable useAuth
+            
+        } catch (err) {
+            console.error('Erreur d\'inscription:', err)
+        }
     }
 </script>
