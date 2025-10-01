@@ -40,6 +40,9 @@ class AuthController extends AbstractController
             return $errors;
         }
 
+        // Assert que le DTO n'est pas null après validation
+        assert($dto instanceof RegisterRequestDto, 'DTO should not be null after validation');
+
         // Vérifier si l'email existe déjà
         $existingUser = $em->getRepository(User::class)->findOneBy(['email' => $dto->getEmail()]);
         if ($existingUser) {
@@ -103,6 +106,9 @@ class AuthController extends AbstractController
         if ($errors) {
             return $errors;
         }
+
+        // Assert que le DTO n'est pas null après validation
+        assert($dto instanceof LoginRequestDto, 'DTO should not be null after validation');
 
         try {
             // Étape 1: Chercher l'utilisateur

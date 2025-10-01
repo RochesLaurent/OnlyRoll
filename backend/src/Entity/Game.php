@@ -67,10 +67,16 @@ class Game
     #[Groups(['game:list', 'game:read'])]
     private ?string $inviteCode = null;
 
+    /**
+     * @var array<string, mixed>|null
+     */
     #[ORM\Column(name: 'game_settings', type: Types::JSON, nullable: true)]
     #[Groups(['game:read', 'game:write'])]
     private ?array $settings = null;
 
+    /**
+     * @var Collection<int, GamePlayer>
+     */
     #[ORM\OneToMany(targetEntity: GamePlayer::class, mappedBy: 'game', cascade: ['persist', 'remove'], orphanRemoval: true)]
     #[Groups(['game:read'])]
     private Collection $gamePlayers;
@@ -127,14 +133,26 @@ class Game
             return true;
         }
         
+        $userId = $user->getId();
+        if ($userId === null) {
+            return false;
+        }
+        
         return $this->gamePlayers->exists(
-            fn($key, GamePlayer $player) => $player->getUser()->getId() === $user->getId()
+            fn($key, GamePlayer $player) => $player->getUser()?->getId() === $userId
         );
     }
 
     public function isGameMaster(User $user): bool
     {
-        return $this->gameMaster->getId() === $user->getId();
+        $gameMasterId = $this->gameMaster?->getId();
+        $userId = $user->getId();
+        
+        if ($gameMasterId === null || $userId === null) {
+            return false;
+        }
+        
+        return $gameMasterId === $userId;
     }
 
     public function getActivePlayersCount(): int
@@ -155,7 +173,7 @@ class Game
         return $this->getActivePlayersCount();
     }
 
-    // Getters & Setters (identiques à avant)
+    // Getters & Setters
     
     public function getId(): ?int
     {
@@ -244,11 +262,17 @@ class Game
         return $this->inviteCode;
     }
 
+    /**
+     * @return array<string, mixed>|null
+     */
     public function getSettings(): ?array
     {
         return $this->settings;
     }
 
+    /**
+     * @param array<string, mixed>|null $settings
+     */
     public function setSettings(?array $settings): static
     {
         $this->settings = $settings;

@@ -16,6 +16,9 @@ class UserResponseDto
     #[Groups(['user:read'])]
     private string $pseudo;
 
+    /**
+     * @var array<string>
+     */
     #[Groups(['user:read'])]
     private array $roles;
 
@@ -40,7 +43,14 @@ class UserResponseDto
     public static function fromEntity(User $user): self
     {
         $dto = new self();
-        $dto->id = $user->getId();
+        
+        // Gestion du cas où l'ID serait null (ne devrait pas arriver en production)
+        $userId = $user->getId();
+        if ($userId === null) {
+            throw new \RuntimeException('User ID cannot be null');
+        }
+        
+        $dto->id = $userId;
         $dto->email = $user->getEmail();
         $dto->pseudo = $user->getPseudo();
         $dto->roles = $user->getRoles();
@@ -70,6 +80,9 @@ class UserResponseDto
         return $this->pseudo;
     }
 
+    /**
+     * @return array<string>
+     */
     public function getRoles(): array
     {
         return $this->roles;
