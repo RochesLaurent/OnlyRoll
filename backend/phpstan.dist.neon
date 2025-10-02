@@ -10,3 +10,5 @@ parameters:
     ignoreErrors:
         # Doctrine génère automatiquement les IDs
         - '#Property App\\Entity\\User::\$id \(int\|null\) is never assigned int#'
+        - '#Property App\\Entity\\Game::\$id \(int\|null\) is never assigned int#'
+        - '#Property App\\Entity\\GamePlayer::\$id \(int\|null\) is never assigned int#'
