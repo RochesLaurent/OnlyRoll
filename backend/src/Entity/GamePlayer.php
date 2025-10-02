@@ -15,9 +15,6 @@ use Symfony\Component\Serializer\Annotation\Groups;
 #[ORM\HasLifecycleCallbacks]
 class GamePlayer
 {
-    /**
-     * @phpstan-ignore-next-line
-     */
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(name: 'game_player_id')]
