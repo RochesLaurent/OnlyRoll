@@ -77,7 +77,12 @@ class Game
     /**
      * @var Collection<int, GamePlayer>
      */
-    #[ORM\OneToMany(targetEntity: GamePlayer::class, mappedBy: 'game', cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OneToMany(
+        targetEntity: GamePlayer::class,
+        mappedBy: 'game',
+        cascade: ['persist', 'remove'],
+        orphanRemoval: true
+    )]
     #[Groups(['game:read'])]
     private Collection $gamePlayers;
 

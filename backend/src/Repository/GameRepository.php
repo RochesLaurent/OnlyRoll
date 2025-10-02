@@ -39,7 +39,7 @@ class GameRepository extends ServiceEntityRepository
 
         if ($search) {
             $qb->andWhere('g.name LIKE :search OR g.description LIKE :search')
-               ->setParameter('search', '%'.$search.'%');
+               ->setParameter('search', '%' . $search . '%');
         }
 
         if ($status) {
