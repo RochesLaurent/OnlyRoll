@@ -7,6 +7,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: 'user')]
@@ -18,42 +19,52 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(name: 'user_id')]
+    #[Groups(['user:read', 'user:list', 'game:read', 'game:list'])]
     private ?int $id = null;
 
     #[ORM\Column(name: 'user_email', type: Types::STRING, length: 180)]
+    #[Groups(['user:read'])]
     private string $email = '';
 
     #[ORM\Column(name: 'user_pseudo', type: Types::STRING, length: 50)]
+    #[Groups(['user:read', 'user:list', 'game:read', 'game:list'])]
     private string $pseudo = '';
 
     /**
      * @var array<string>
      */
     #[ORM\Column(name: 'user_roles', type: Types::JSON)]
+    #[Groups(['user:read'])]
     private array $roles = [];
 
     #[ORM\Column(name: 'user_password', type: Types::STRING)]
     private string $password = '';
 
     #[ORM\Column(name: 'user_is_verified', type: Types::BOOLEAN)]
+    #[Groups(['user:read'])]
     private bool $isVerified = false;
 
     #[ORM\Column(name: 'user_timezone', type: Types::STRING, length: 50)]
+    #[Groups(['user:read', 'user:write'])]
     private string $timezone = 'UTC';
 
     #[ORM\Column(name: 'user_language', type: Types::STRING, length: 10)]
+    #[Groups(['user:read', 'user:write'])]
     private string $language = 'en';
 
     #[ORM\Column(name: 'user_avatar', type: Types::STRING, length: 255, nullable: true)]
+    #[Groups(['user:read', 'user:list', 'game:read', 'game:list'])]
     private ?string $avatar = null;
 
     #[ORM\Column(name: 'user_created_at', type: Types::DATETIME_IMMUTABLE)]
+    #[Groups(['user:read'])]
     private \DateTimeImmutable $createdAt;
 
     #[ORM\Column(name: 'user_updated_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $updatedAt;
 
     #[ORM\Column(name: 'user_last_login', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    #[Groups(['user:read'])]
     private ?\DateTimeImmutable $lastLogin = null;
 
     public function __construct()

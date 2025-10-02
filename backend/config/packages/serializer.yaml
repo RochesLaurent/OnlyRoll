@@ -1,0 +1,7 @@
+framework:
+    serializer:
+        enabled: true
+        enable_attributes: true  # Remplace enable_annotations (Symfony 6+)
+        # Configuration pour gérer les dates correctement
+        default_context:
+            datetime_format: 'Y-m-d\TH:i:sP'
