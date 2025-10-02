@@ -2,8 +2,8 @@
 
 namespace App\Repository;
 
-use App\Entity\GamePlayer;
 use App\Entity\Game;
+use App\Entity\GamePlayer;
 use App\Entity\User;
 use App\Enum\PlayerRole;
 use App\Enum\PlayerStatus;
@@ -21,27 +21,27 @@ class GamePlayerRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve un joueur spécifique dans une partie
+     * Trouve un joueur spécifique dans une partie.
      */
     public function findPlayerInGame(Game $game, User $user): ?GamePlayer
     {
         return $this->findOneBy([
             'game' => $game,
-            'user' => $user
+            'user' => $user,
         ]);
     }
 
     /**
-     * Vérifie si un utilisateur est dans une partie
+     * Vérifie si un utilisateur est dans une partie.
      */
     public function isUserInGame(Game $game, User $user): bool
     {
-        return $this->findPlayerInGame($game, $user) !== null;
+        return null !== $this->findPlayerInGame($game, $user);
     }
 
     /**
-     * Trouve les joueurs actifs d'une partie
-     * 
+     * Trouve les joueurs actifs d'une partie.
+     *
      * @return GamePlayer[]
      */
     public function findActivePlayersInGame(Game $game): array
@@ -59,8 +59,8 @@ class GamePlayerRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve les invitations en attente pour une partie
-     * 
+     * Trouve les invitations en attente pour une partie.
+     *
      * @return GamePlayer[]
      */
     public function findPendingInvitations(Game $game): array
@@ -78,8 +78,8 @@ class GamePlayerRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve tous les joueurs participant à une partie (actifs + inactifs)
-     * 
+     * Trouve tous les joueurs participant à une partie (actifs + inactifs).
+     *
      * @return GamePlayer[]
      */
     public function findParticipatingPlayers(Game $game): array
@@ -97,8 +97,8 @@ class GamePlayerRepository extends ServiceEntityRepository
     }
 
     /**
-     * Compte les joueurs par statut dans une partie
-     * 
+     * Compte les joueurs par statut dans une partie.
+     *
      * @return array<string, int>
      */
     public function countPlayersByStatus(Game $game): array
@@ -120,8 +120,8 @@ class GamePlayerRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve les parties où l'utilisateur a un rôle spécifique
-     * 
+     * Trouve les parties où l'utilisateur a un rôle spécifique.
+     *
      * @return GamePlayer[]
      */
     public function findUserGamesWithRole(User $user, PlayerRole $role): array
@@ -139,8 +139,8 @@ class GamePlayerRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve toutes les parties où l'utilisateur est Game Master
-     * 
+     * Trouve toutes les parties où l'utilisateur est Game Master.
+     *
      * @return GamePlayer[]
      */
     public function findUserHostedGames(User $user): array
@@ -149,7 +149,7 @@ class GamePlayerRepository extends ServiceEntityRepository
     }
 
     /**
-     * Vérifie si un utilisateur peut rejoindre une partie
+     * Vérifie si un utilisateur peut rejoindre une partie.
      */
     public function canUserJoinGame(Game $game, User $user): bool
     {
@@ -172,8 +172,8 @@ class GamePlayerRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve les joueurs qui ont quitté ou été expulsés d'une partie
-     * 
+     * Trouve les joueurs qui ont quitté ou été expulsés d'une partie.
+     *
      * @return GamePlayer[]
      */
     public function findFormerPlayers(Game $game): array
@@ -191,7 +191,7 @@ class GamePlayerRepository extends ServiceEntityRepository
     }
 
     /**
-     * Compte le nombre total de joueurs dans une partie (tous statuts confondus)
+     * Compte le nombre total de joueurs dans une partie (tous statuts confondus).
      */
     public function countTotalPlayers(Game $game): int
     {

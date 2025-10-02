@@ -19,16 +19,15 @@ class GameRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve les parties publiques disponibles
-     * 
+     * Trouve les parties publiques disponibles.
+     *
      * @return Game[]
      */
     public function findPublicGames(
-        ?string $search = null, 
+        ?string $search = null,
         ?GameStatus $status = null,
-        bool $excludeArchived = true
-    ): array
-    {
+        bool $excludeArchived = true,
+    ): array {
         $qb = $this->createQueryBuilder('g')
             ->where('g.isPublic = :public')
             ->setParameter('public', true)
@@ -40,14 +39,14 @@ class GameRepository extends ServiceEntityRepository
 
         if ($search) {
             $qb->andWhere('g.name LIKE :search OR g.description LIKE :search')
-               ->setParameter('search', '%' . $search . '%');
+               ->setParameter('search', '%'.$search.'%');
         }
 
         if ($status) {
             $qb->andWhere('g.status = :status')
                ->setParameter('status', $status);
         }
-        
+
         if ($excludeArchived) {
             $qb->andWhere('g.status != :archived')
                ->setParameter('archived', GameStatus::ARCHIVED);
@@ -57,8 +56,8 @@ class GameRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve les parties d'un utilisateur
-     * 
+     * Trouve les parties d'un utilisateur.
+     *
      * @return Game[]
      */
     public function findUserGames(User $user): array
@@ -76,7 +75,7 @@ class GameRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve une partie avec tous ses joueurs (pour éviter N+1)
+     * Trouve une partie avec tous ses joueurs (pour éviter N+1).
      */
     public function findGameWithPlayers(int $id): ?Game
     {
@@ -92,7 +91,7 @@ class GameRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve une partie par son code d'invitation
+     * Trouve une partie par son code d'invitation.
      */
     public function findByInviteCode(string $code): ?Game
     {
@@ -100,8 +99,8 @@ class GameRepository extends ServiceEntityRepository
     }
 
     /**
-     * Compte les parties par statut pour un utilisateur
-     * 
+     * Compte les parties par statut pour un utilisateur.
+     *
      * @return array<string, int>
      */
     public function countUserGamesByStatus(User $user): array

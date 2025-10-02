@@ -7,9 +7,9 @@ enum PlayerRole: string
     case GAME_MASTER = 'game_master';
     case PLAYER = 'player';
     case SPECTATOR = 'spectator';
-    
+
     public function canEdit(): bool
     {
-        return $this === self::GAME_MASTER;
+        return self::GAME_MASTER === $this;
     }
 }

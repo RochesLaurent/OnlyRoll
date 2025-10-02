@@ -58,13 +58,13 @@ class GamePlayer
     #[ORM\PrePersist]
     public function onPrePersist(): void
     {
-        if ($this->joinedAt === null) {
+        if (null === $this->joinedAt) {
             $this->joinedAt = new \DateTimeImmutable();
         }
     }
 
     // Méthodes métier
-    
+
     public function canEdit(): bool
     {
         return $this->role->canEdit();
@@ -99,7 +99,7 @@ class GamePlayer
     }
 
     // Getters & Setters
-    
+
     public function getId(): ?int
     {
         return $this->id;
@@ -113,6 +113,7 @@ class GamePlayer
     public function setGame(?Game $game): static
     {
         $this->game = $game;
+
         return $this;
     }
 
@@ -124,6 +125,7 @@ class GamePlayer
     public function setUser(?User $user): static
     {
         $this->user = $user;
+
         return $this;
     }
 
@@ -135,6 +137,7 @@ class GamePlayer
     public function setRole(PlayerRole $role): static
     {
         $this->role = $role;
+
         return $this;
     }
 
@@ -146,6 +149,7 @@ class GamePlayer
     public function setStatus(PlayerStatus $status): static
     {
         $this->status = $status;
+
         return $this;
     }
 
@@ -157,6 +161,7 @@ class GamePlayer
     public function setJoinedAt(\DateTimeImmutable $joinedAt): static
     {
         $this->joinedAt = $joinedAt;
+
         return $this;
     }
 
@@ -168,6 +173,7 @@ class GamePlayer
     public function setLeftAt(?\DateTimeImmutable $leftAt): static
     {
         $this->leftAt = $leftAt;
+
         return $this;
     }
 }

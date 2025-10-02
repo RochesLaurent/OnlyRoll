@@ -43,13 +43,13 @@ class UserResponseDto
     public static function fromEntity(User $user): self
     {
         $dto = new self();
-        
+
         // Gestion du cas où l'ID serait null (ne devrait pas arriver en production)
         $userId = $user->getId();
-        if ($userId === null) {
+        if (null === $userId) {
             throw new \RuntimeException('User ID cannot be null');
         }
-        
+
         $dto->id = $userId;
         $dto->email = $user->getEmail();
         $dto->pseudo = $user->getPseudo();

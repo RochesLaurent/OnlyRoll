@@ -9,10 +9,10 @@ enum GameStatus: string
     case PAUSED = 'paused';
     case COMPLETED = 'completed';
     case ARCHIVED = 'archived';
-    
+
     public function getLabel(): string
     {
-        return match($this) {
+        return match ($this) {
             self::PREPARATION => 'En préparation',
             self::IN_PROGRESS => 'En cours',
             self::PAUSED => 'En pause',

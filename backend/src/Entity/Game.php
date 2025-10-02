@@ -119,27 +119,28 @@ class Game
     {
         $characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
         $code = '';
-        for ($i = 0; $i < 8; $i++) {
+        for ($i = 0; $i < 8; ++$i) {
             $code .= $characters[random_int(0, strlen($characters) - 1)];
         }
+
         return $code;
     }
 
     // Méthodes métier
-    
+
     public function canBeViewedBy(User $user): bool
     {
         if ($this->isPublic) {
             return true;
         }
-        
+
         $userId = $user->getId();
-        if ($userId === null) {
+        if (null === $userId) {
             return false;
         }
-        
+
         return $this->gamePlayers->exists(
-            fn($key, GamePlayer $player) => $player->getUser()?->getId() === $userId
+            fn ($key, GamePlayer $player) => $player->getUser()?->getId() === $userId
         );
     }
 
@@ -147,18 +148,18 @@ class Game
     {
         $gameMasterId = $this->gameMaster?->getId();
         $userId = $user->getId();
-        
-        if ($gameMasterId === null || $userId === null) {
+
+        if (null === $gameMasterId || null === $userId) {
             return false;
         }
-        
+
         return $gameMasterId === $userId;
     }
 
     public function getActivePlayersCount(): int
     {
         return $this->gamePlayers->filter(
-            fn(GamePlayer $player) => $player->getStatus()->isParticipating()
+            fn (GamePlayer $player) => $player->getStatus()->isParticipating()
         )->count();
     }
 
@@ -174,7 +175,7 @@ class Game
     }
 
     // Getters & Setters
-    
+
     public function getId(): ?int
     {
         return $this->id;
@@ -188,6 +189,7 @@ class Game
     public function setName(string $name): static
     {
         $this->name = $name;
+
         return $this;
     }
 
@@ -199,6 +201,7 @@ class Game
     public function setDescription(?string $description): static
     {
         $this->description = $description;
+
         return $this;
     }
 
@@ -210,6 +213,7 @@ class Game
     public function setGameMaster(?User $gameMaster): static
     {
         $this->gameMaster = $gameMaster;
+
         return $this;
     }
 
@@ -221,6 +225,7 @@ class Game
     public function setStatus(GameStatus $status): static
     {
         $this->status = $status;
+
         return $this;
     }
 
@@ -232,6 +237,7 @@ class Game
     public function setMaxPlayers(int $maxPlayers): static
     {
         $this->maxPlayers = $maxPlayers;
+
         return $this;
     }
 
@@ -243,6 +249,7 @@ class Game
     public function setIsPublic(bool $isPublic): static
     {
         $this->isPublic = $isPublic;
+
         return $this;
     }
 
@@ -254,6 +261,7 @@ class Game
     public function setPassword(?string $password): static
     {
         $this->password = $password;
+
         return $this;
     }
 
@@ -276,6 +284,7 @@ class Game
     public function setSettings(?array $settings): static
     {
         $this->settings = $settings;
+
         return $this;
     }
 
@@ -293,6 +302,7 @@ class Game
             $this->gamePlayers->add($gamePlayer);
             $gamePlayer->setGame($this);
         }
+
         return $this;
     }
 
@@ -303,6 +313,7 @@ class Game
                 $gamePlayer->setGame(null);
             }
         }
+
         return $this;
     }
 
@@ -324,6 +335,7 @@ class Game
     public function setStartedAt(?\DateTimeImmutable $startedAt): static
     {
         $this->startedAt = $startedAt;
+
         return $this;
     }
 
@@ -335,6 +347,7 @@ class Game
     public function setCompletedAt(?\DateTimeImmutable $completedAt): static
     {
         $this->completedAt = $completedAt;
+
         return $this;
     }
 }

@@ -47,7 +47,7 @@ class AuthControllerTest extends WebTestCase
         $this->assertEquals('newuser@onlyroll.com', $responseData['user']['email']);
         $this->assertEquals('NewGamer', $responseData['user']['pseudo']);
         $this->assertArrayHasKey('id', $responseData['user']);
-        
+
         // Vérifier les nouveaux champs du DTO
         $this->assertArrayHasKey('timezone', $responseData['user']);
         $this->assertArrayHasKey('language', $responseData['user']);
@@ -70,12 +70,12 @@ class AuthControllerTest extends WebTestCase
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
 
         $responseData = json_decode($this->client->getResponse()->getContent(), true);
-        
+
         // Nouveau format d'erreur avec DTOs
         $this->assertArrayHasKey('error', $responseData);
         $this->assertEquals('Validation failed', $responseData['error']);
         $this->assertArrayHasKey('violations', $responseData);
-        
+
         // Vérifier que les violations contiennent les champs manquants
         $violations = $responseData['violations'];
         $this->assertArrayHasKey('pseudo', $violations);
@@ -98,7 +98,7 @@ class AuthControllerTest extends WebTestCase
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
 
         $responseData = json_decode($this->client->getResponse()->getContent(), true);
-        
+
         $this->assertEquals('Validation failed', $responseData['error']);
         $this->assertArrayHasKey('email', $responseData['violations']);
         $this->assertStringContainsString('email', strtolower($responseData['violations']['email']));
@@ -120,7 +120,7 @@ class AuthControllerTest extends WebTestCase
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
 
         $responseData = json_decode($this->client->getResponse()->getContent(), true);
-        
+
         $this->assertEquals('Validation failed', $responseData['error']);
         $this->assertArrayHasKey('password', $responseData['violations']);
         $this->assertStringContainsString('8', $responseData['violations']['password']);
@@ -142,7 +142,7 @@ class AuthControllerTest extends WebTestCase
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
 
         $responseData = json_decode($this->client->getResponse()->getContent(), true);
-        
+
         $this->assertEquals('Validation failed', $responseData['error']);
         $this->assertArrayHasKey('password', $responseData['violations']);
     }
@@ -163,7 +163,7 @@ class AuthControllerTest extends WebTestCase
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
 
         $responseData = json_decode($this->client->getResponse()->getContent(), true);
-        
+
         $this->assertEquals('Validation failed', $responseData['error']);
         $this->assertArrayHasKey('pseudo', $responseData['violations']);
         $this->assertStringContainsString('3', $responseData['violations']['pseudo']);
@@ -196,7 +196,7 @@ class AuthControllerTest extends WebTestCase
 
         // Devrait retourner 409 Conflict avec le nouveau contrôleur
         $this->assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
-        
+
         $responseData = json_decode($this->client->getResponse()->getContent(), true);
         $this->assertArrayHasKey('error', $responseData);
         $this->assertEquals('Email already exists', $responseData['error']);
@@ -229,7 +229,7 @@ class AuthControllerTest extends WebTestCase
 
         // Devrait retourner 409 Conflict avec le nouveau contrôleur
         $this->assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
-        
+
         $responseData = json_decode($this->client->getResponse()->getContent(), true);
         $this->assertArrayHasKey('error', $responseData);
         $this->assertEquals('Pseudo already exists', $responseData['error']);
@@ -348,14 +348,14 @@ class AuthControllerTest extends WebTestCase
         $this->assertArrayHasKey('id', $profileData);
         $this->assertArrayHasKey('roles', $profileData);
         $this->assertContains('ROLE_USER', $profileData['roles']);
-        
+
         // Vérifier les nouveaux champs du UserResponseDto
         $this->assertArrayHasKey('timezone', $profileData);
         $this->assertArrayHasKey('language', $profileData);
         $this->assertArrayHasKey('isVerified', $profileData);
         $this->assertArrayHasKey('createdAt', $profileData);
         $this->assertArrayHasKey('avatar', $profileData);
-        
+
         // Vérifier les valeurs par défaut
         $this->assertEquals('UTC', $profileData['timezone']);
         $this->assertEquals('en', $profileData['language']);
@@ -407,9 +407,9 @@ class AuthControllerTest extends WebTestCase
         ]));
 
         $this->assertResponseIsSuccessful();
-        
+
         $responseData = json_decode($this->client->getResponse()->getContent(), true);
-        
+
         // Vérifier que la réponse contient le UserResponseDto
         $this->assertArrayHasKey('success', $responseData);
         $this->assertTrue($responseData['success']);
@@ -431,7 +431,7 @@ class AuthControllerTest extends WebTestCase
         ]));
 
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
-        
+
         $responseData = json_decode($this->client->getResponse()->getContent(), true);
         $this->assertEquals('Validation failed', $responseData['error']);
     }
@@ -450,7 +450,7 @@ class AuthControllerTest extends WebTestCase
             'pseudo' => 'FullFlowUser',
         ]));
         $this->assertResponseStatusCodeSame(Response::HTTP_CREATED);
-        
+
         $registerData = json_decode($this->client->getResponse()->getContent(), true);
         $this->assertArrayHasKey('user', $registerData);
         $this->assertArrayHasKey('id', $registerData['user']);
@@ -477,7 +477,7 @@ class AuthControllerTest extends WebTestCase
         $profileData = json_decode($this->client->getResponse()->getContent(), true);
         $this->assertEquals('fullflow@onlyroll.com', $profileData['email']);
         $this->assertEquals('FullFlowUser', $profileData['pseudo']);
-        
+
         // Vérifier la cohérence des données entre register et profile
         $this->assertEquals($registerData['user']['id'], $profileData['id']);
         $this->assertEquals($registerData['user']['email'], $profileData['email']);
@@ -500,10 +500,10 @@ class AuthControllerTest extends WebTestCase
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
 
         $responseData = json_decode($this->client->getResponse()->getContent(), true);
-        
+
         $this->assertEquals('Validation failed', $responseData['error']);
         $violations = $responseData['violations'];
-        
+
         // Toutes les erreurs devraient être présentes
         $this->assertArrayHasKey('email', $violations);
         $this->assertArrayHasKey('password', $violations);

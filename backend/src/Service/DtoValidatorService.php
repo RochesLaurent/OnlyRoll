@@ -15,11 +15,13 @@ class DtoValidatorService
     }
 
     /**
-     * Désérialise et valide un DTO à partir du contenu JSON
+     * Désérialise et valide un DTO à partir du contenu JSON.
      *
      * @template T
-     * @param string $content Le contenu JSON
+     *
+     * @param string          $content  Le contenu JSON
      * @param class-string<T> $dtoClass La classe du DTO à créer
+     *
      * @return array{dto: T|null, errors: JsonResponse|null}
      */
     public function validateDto(string $content, string $dtoClass): array

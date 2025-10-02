@@ -39,6 +39,7 @@ class RegisterRequestDto
     public function setEmail(string $email): self
     {
         $this->email = $email;
+
         return $this;
     }
 
@@ -50,6 +51,7 @@ class RegisterRequestDto
     public function setPseudo(string $pseudo): self
     {
         $this->pseudo = $pseudo;
+
         return $this;
     }
 
@@ -61,6 +63,7 @@ class RegisterRequestDto
     public function setPassword(string $password): self
     {
         $this->password = $password;
+
         return $this;
     }
 }
