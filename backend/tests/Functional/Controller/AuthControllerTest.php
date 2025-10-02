@@ -335,7 +335,7 @@ class AuthControllerTest extends WebTestCase
 
         // Accéder au profil avec le token
         $this->client->request('GET', '/api/me', [], [], [
-            'HTTP_AUTHORIZATION' => 'Bearer '.$token,
+            'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
         ]);
 
         $this->assertResponseIsSuccessful();
@@ -470,7 +470,7 @@ class AuthControllerTest extends WebTestCase
 
         // 3. Accéder à une route protégée
         $this->client->request('GET', '/api/me', [], [], [
-            'HTTP_AUTHORIZATION' => 'Bearer '.$token,
+            'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
         ]);
         $this->assertResponseIsSuccessful();
 
