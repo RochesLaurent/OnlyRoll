@@ -16,25 +16,28 @@ class GameControllerTest extends WebTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->cleanDatabase();
+        // Arrêter le kernel s'il est démarré
+        self::ensureKernelShutdown();
     }
 
     protected function tearDown(): void
     {
         parent::tearDown();
+        // Nettoyer après chaque test
         $this->cleanDatabase();
+        self::ensureKernelShutdown();
     }
 
     private function cleanDatabase(): void
     {
-        // Créer un client pour avoir accès au container
-        $client = static::createClient();
-        $entityManager = $client->getContainer()->get('doctrine')->getManager();
+        // Utiliser le container déjà existant si disponible
+        $container = self::getContainer();
+        $entityManager = $container->get('doctrine')->getManager();
         $connection = $entityManager->getConnection();
-
+        
         // Désactiver les contraintes de clés étrangères
         $connection->executeStatement('SET FOREIGN_KEY_CHECKS=0');
-
+        
         // Vider les tables (ajustez selon vos tables)
         $tables = ['game_user', 'game', 'user'];
         foreach ($tables as $table) {
@@ -44,16 +47,19 @@ class GameControllerTest extends WebTestCase
                 // Ignorer si la table n'existe pas
             }
         }
-
+        
         // Réactiver les contraintes
         $connection->executeStatement('SET FOREIGN_KEY_CHECKS=1');
+        
+        // Clear l'entity manager
+        $entityManager->clear();
     }
 
     public function testCreateGame(): void
     {
         $client = static::createClient();
-        $token = $this->getAuthToken();
-
+        $token = $this->getAuthToken($client);
+        
         $client->request('POST', '/api/games',
             server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $token],
             content: json_encode([
@@ -73,8 +79,8 @@ class GameControllerTest extends WebTestCase
     public function testListPublicGames(): void
     {
         $client = static::createClient();
-        $token = $this->getAuthToken();
-
+        $token = $this->getAuthToken($client);
+        
         $client->request('GET', '/api/games',
             server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $token]
         );
@@ -86,8 +92,8 @@ class GameControllerTest extends WebTestCase
     public function testJoinGame(): void
     {
         $client = static::createClient();
-        $token = $this->getAuthToken();
-
+        $token = $this->getAuthToken($client);
+        
         // Créer d'abord une partie
         $client->request('POST', '/api/games',
             server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $token],
@@ -102,8 +108,8 @@ class GameControllerTest extends WebTestCase
         $gameId = $gameData['id'];
 
         // Créer un second user et le faire rejoindre
-        $secondUserToken = $this->createSecondUser();
-
+        $secondUserToken = $this->createSecondUser($client);
+        
         $client->request('POST', "/api/games/{$gameId}/join",
             server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $secondUserToken]
         );
@@ -111,13 +117,13 @@ class GameControllerTest extends WebTestCase
         $this->assertResponseIsSuccessful();
     }
 
-    private function getAuthToken(): string
+    private function getAuthToken($client): string
     {
-        if (null !== $this->token) {
+        if ($this->token !== null) {
             return $this->token;
         }
 
-        $container = static::getContainer();
+        $container = $client->getContainer();
         $em = $container->get('doctrine')->getManager();
 
         // Créer un user de test
@@ -134,13 +140,13 @@ class GameControllerTest extends WebTestCase
         // Générer le token JWT
         $jwtManager = $container->get(JWTTokenManagerInterface::class);
         $this->token = $jwtManager->create($user);
-
+        
         return $this->token;
     }
 
-    private function createSecondUser(): string
+    private function createSecondUser($client): string
     {
-        $container = static::getContainer();
+        $container = $client->getContainer();
         $em = $container->get('doctrine')->getManager();
 
         $user = new User();
@@ -154,7 +160,6 @@ class GameControllerTest extends WebTestCase
         $em->flush();
 
         $jwtManager = $container->get(JWTTokenManagerInterface::class);
-
         return $jwtManager->create($user);
     }
 }
