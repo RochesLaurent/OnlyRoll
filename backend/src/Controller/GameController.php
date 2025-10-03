@@ -34,7 +34,7 @@ class GameController extends AbstractController
     public function list(Request $request): JsonResponse
     {
         $searchParam = $request->query->get('search');
-        $search = (is_string($searchParam) && $searchParam !== '') ? $searchParam : null;
+        $search = (is_string($searchParam) && '' !== $searchParam) ? $searchParam : null;
 
         $games = $this->gameRepository->findPublicGames($search);
 
