@@ -6,14 +6,14 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Exception levée lorsqu'une partie n'est pas trouvée.
- * Code HTTP : 404 (Not Found)
+ * Code HTTP : 404 (Not Found).
  */
 final class GameNotFoundException extends GameException
 {
     public function __construct(
         string $message = 'Partie introuvable',
         int $code = Response::HTTP_NOT_FOUND,
-        ?\Throwable $previous = null
+        ?\Throwable $previous = null,
     ) {
         parent::__construct($message, $code, $previous);
     }

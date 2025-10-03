@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Dto\Output;
+namespace App\DTO\Auth;
 
 use App\Entity\User;
 use Symfony\Component\Serializer\Annotation\Groups;
 
-class UserResponseDto
+class UserResponseDTO
 {
     #[Groups(['user:read'])]
     private int $id;
