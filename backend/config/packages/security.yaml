@@ -22,6 +22,7 @@ security:
             jwt: ~
     access_control:
         # ORDRE IMPORTANT : Les règles spécifiques AVANT les générales
+        - { path: ^/api/games, roles: ROLE_USER }
         - { path: ^/api/register, roles: PUBLIC_ACCESS }
         - { path: ^/api/login_check, roles: PUBLIC_ACCESS }
         - { path: ^/api/debug-login, roles: PUBLIC_ACCESS }

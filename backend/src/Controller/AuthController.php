@@ -2,9 +2,9 @@
 
 namespace App\Controller;
 
-use App\Dto\Input\LoginRequestDto;
-use App\Dto\Input\RegisterRequestDto;
-use App\Dto\Output\UserResponseDto;
+use App\DTO\Auth\LoginRequestDTO;
+use App\DTO\Auth\RegisterRequestDTO;
+use App\DTO\Auth\UserResponseDTO;
 use App\Entity\User;
 use App\Service\DtoValidatorService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -33,7 +33,7 @@ class AuthController extends AbstractController
         // Validation du DTO
         ['dto' => $dto, 'errors' => $errors] = $this->dtoValidator->validateDto(
             $request->getContent(),
-            RegisterRequestDto::class
+            RegisterRequestDTO::class
         );
 
         if ($errors) {
@@ -41,35 +41,35 @@ class AuthController extends AbstractController
         }
 
         // Assert que le DTO n'est pas null après validation
-        assert($dto instanceof RegisterRequestDto, 'DTO should not be null after validation');
+        assert($dto instanceof RegisterRequestDTO, 'DTO should not be null after validation');
 
         // Vérifier si l'email existe déjà
-        $existingUser = $em->getRepository(User::class)->findOneBy(['email' => $dto->getEmail()]);
+        $existingUser = $em->getRepository(User::class)->findOneBy(['email' => $dto->email]);
         if ($existingUser) {
             return $this->json(['error' => 'Email already exists'], 409);
         }
 
         // Vérifier si le pseudo existe déjà
-        $existingPseudo = $em->getRepository(User::class)->findOneBy(['pseudo' => $dto->getPseudo()]);
+        $existingPseudo = $em->getRepository(User::class)->findOneBy(['pseudo' => $dto->pseudo]);
         if ($existingPseudo) {
             return $this->json(['error' => 'Pseudo already exists'], 409);
         }
 
         // Création de l'utilisateur
         $user = new User();
-        $user->setEmail($dto->getEmail());
-        $user->setPseudo($dto->getPseudo());
+        $user->setEmail($dto->email);
+        $user->setPseudo($dto->pseudo);
         $user->setRoles(['ROLE_USER']);
         $user->setIsVerified(true);
 
-        $hashedPassword = $passwordHasher->hashPassword($user, $dto->getPassword());
+        $hashedPassword = $passwordHasher->hashPassword($user, $dto->password);
         $user->setPassword($hashedPassword);
 
         $em->persist($user);
         $em->flush();
 
         // Réponse avec DTO
-        $userResponse = UserResponseDto::fromEntity($user);
+        $userResponse = UserResponseDTO::fromEntity($user);
 
         return new JsonResponse([
             'message' => 'User created successfully',
@@ -84,7 +84,7 @@ class AuthController extends AbstractController
             return $this->json(['error' => 'Unauthorized'], 401);
         }
 
-        $userResponse = UserResponseDto::fromEntity($user);
+        $userResponse = UserResponseDTO::fromEntity($user);
 
         return new JsonResponse(
             json_decode($this->serializer->serialize($userResponse, 'json', ['groups' => 'user:read']))
@@ -100,7 +100,7 @@ class AuthController extends AbstractController
         // Validation du DTO
         ['dto' => $dto, 'errors' => $errors] = $this->dtoValidator->validateDto(
             $request->getContent(),
-            LoginRequestDto::class
+            LoginRequestDTO::class
         );
 
         if ($errors) {
@@ -108,17 +108,17 @@ class AuthController extends AbstractController
         }
 
         // Assert que le DTO n'est pas null après validation
-        assert($dto instanceof LoginRequestDto, 'DTO should not be null after validation');
+        assert($dto instanceof LoginRequestDTO, 'DTO should not be null after validation');
 
         try {
             // Étape 1: Chercher l'utilisateur
-            $user = $em->getRepository(User::class)->findOneBy(['email' => $dto->getEmail()]);
+            $user = $em->getRepository(User::class)->findOneBy(['email' => $dto->email]);
             if (!$user) {
                 return $this->json(['error' => 'User not found'], 404);
             }
 
             // Étape 2: Vérifier le mot de passe
-            $isValid = $passwordHasher->isPasswordValid($user, $dto->getPassword());
+            $isValid = $passwordHasher->isPasswordValid($user, $dto->password);
             if (!$isValid) {
                 return $this->json(['error' => 'Invalid password'], 401);
             }
@@ -128,7 +128,7 @@ class AuthController extends AbstractController
                 return $this->json(['error' => 'Account not verified'], 401);
             }
 
-            $userResponse = UserResponseDto::fromEntity($user);
+            $userResponse = UserResponseDTO::fromEntity($user);
 
             return new JsonResponse([
                 'success' => true,
