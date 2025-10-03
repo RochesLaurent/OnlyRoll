@@ -34,10 +34,10 @@ class GameControllerTest extends WebTestCase
         $container = self::getContainer();
         $entityManager = $container->get('doctrine')->getManager();
         $connection = $entityManager->getConnection();
-        
+
         // Désactiver les contraintes de clés étrangères
         $connection->executeStatement('SET FOREIGN_KEY_CHECKS=0');
-        
+
         // Vider les tables (ajustez selon vos tables)
         $tables = ['game_user', 'game', 'user'];
         foreach ($tables as $table) {
@@ -47,10 +47,10 @@ class GameControllerTest extends WebTestCase
                 // Ignorer si la table n'existe pas
             }
         }
-        
+
         // Réactiver les contraintes
         $connection->executeStatement('SET FOREIGN_KEY_CHECKS=1');
-        
+
         // Clear l'entity manager
         $entityManager->clear();
     }
@@ -59,7 +59,7 @@ class GameControllerTest extends WebTestCase
     {
         $client = static::createClient();
         $token = $this->getAuthToken($client);
-        
+
         $client->request('POST', '/api/games',
             server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $token],
             content: json_encode([
@@ -80,7 +80,7 @@ class GameControllerTest extends WebTestCase
     {
         $client = static::createClient();
         $token = $this->getAuthToken($client);
-        
+
         $client->request('GET', '/api/games',
             server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $token]
         );
@@ -93,7 +93,7 @@ class GameControllerTest extends WebTestCase
     {
         $client = static::createClient();
         $token = $this->getAuthToken($client);
-        
+
         // Créer d'abord une partie
         $client->request('POST', '/api/games',
             server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $token],
@@ -109,7 +109,7 @@ class GameControllerTest extends WebTestCase
 
         // Créer un second user et le faire rejoindre
         $secondUserToken = $this->createSecondUser($client);
-        
+
         $client->request('POST', "/api/games/{$gameId}/join",
             server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $secondUserToken]
         );
@@ -119,7 +119,7 @@ class GameControllerTest extends WebTestCase
 
     private function getAuthToken($client): string
     {
-        if ($this->token !== null) {
+        if (null !== $this->token) {
             return $this->token;
         }
 
@@ -140,7 +140,7 @@ class GameControllerTest extends WebTestCase
         // Générer le token JWT
         $jwtManager = $container->get(JWTTokenManagerInterface::class);
         $this->token = $jwtManager->create($user);
-        
+
         return $this->token;
     }
 
@@ -160,6 +160,7 @@ class GameControllerTest extends WebTestCase
         $em->flush();
 
         $jwtManager = $container->get(JWTTokenManagerInterface::class);
+
         return $jwtManager->create($user);
     }
 }
