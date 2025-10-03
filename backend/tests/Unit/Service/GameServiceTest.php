@@ -56,7 +56,6 @@ class GameServiceTest extends TestCase
 
     public function testCreateGame(): void
     {
-        // Arrange
         $user = $this->createTestUser('gm@test.com', 1);
 
         $dto = new CreateGameDTO();
@@ -65,14 +64,14 @@ class GameServiceTest extends TestCase
         $dto->maxPlayers = 6;
         $dto->isPublic = true;
 
-        // Mock EntityManager - doit persister le Game ET le GamePlayer (GM)
+        // Mock EntityManager - vérifier que persist est appelé avec Game puis GamePlayer
+        $persistedEntities = [];
         $this->entityManager
             ->expects($this->exactly(2))
             ->method('persist')
-            ->withConsecutive(
-                [$this->isInstanceOf(Game::class)],
-                [$this->isInstanceOf(GamePlayer::class)]
-            );
+            ->willReturnCallback(function ($entity) use (&$persistedEntities) {
+                $persistedEntities[] = $entity;
+            });
 
         $this->entityManager
             ->expects($this->once())
@@ -95,7 +94,12 @@ class GameServiceTest extends TestCase
         $this->assertEquals($user->getId(), $game->getGameMaster()->getId());
         $this->assertEquals(GameStatus::PREPARATION, $game->getStatus());
         $this->assertNotNull($game->getInviteCode());
-        $this->assertEquals(8, strlen($game->getInviteCode())); // Code généré = 8 caractères
+        $this->assertEquals(8, strlen($game->getInviteCode()));
+
+        // Vérifier que les bonnes entités ont été persistées
+        $this->assertCount(2, $persistedEntities);
+        $this->assertInstanceOf(Game::class, $persistedEntities[0]);
+        $this->assertInstanceOf(GamePlayer::class, $persistedEntities[1]);
     }
 
     public function testJoinGameSuccess(): void

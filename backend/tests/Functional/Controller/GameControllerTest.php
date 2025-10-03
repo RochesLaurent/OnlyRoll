@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use App\Entity\User;
-use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
@@ -13,32 +12,25 @@ use Symfony\Component\HttpFoundation\Response;
 class GameControllerTest extends WebTestCase
 {
     private ?string $token = null;
-    private EntityManagerInterface $entityManager;
 
     protected function setUp(): void
     {
         parent::setUp();
-
-        // Récupérer l'EntityManager
-        $kernel = self::bootKernel();
-        $this->entityManager = $kernel->getContainer()->get('doctrine')->getManager();
-
-        // Nettoyer la base de données avant chaque test
         $this->cleanDatabase();
     }
 
     protected function tearDown(): void
     {
         parent::tearDown();
-
-        // Nettoyer après chaque test
         $this->cleanDatabase();
-        $this->entityManager->close();
     }
 
     private function cleanDatabase(): void
     {
-        $connection = $this->entityManager->getConnection();
+        // Créer un client pour avoir accès au container
+        $client = static::createClient();
+        $entityManager = $client->getContainer()->get('doctrine')->getManager();
+        $connection = $entityManager->getConnection();
 
         // Désactiver les contraintes de clés étrangères
         $connection->executeStatement('SET FOREIGN_KEY_CHECKS=0');
