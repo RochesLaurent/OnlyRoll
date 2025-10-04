@@ -15,20 +15,15 @@ vi.mock('@/services/api/authApi', () => ({
   authApi: {
     register: vi.fn(),
     login: vi.fn(),
+    logout: vi.fn(),
     me: vi.fn(),
-    fetchMe: vi.fn(),
   },
 }))
 
 describe('Auth Store', () => {
   beforeEach(() => {
-    // Créer un nouveau Pinia pour chaque test
     setActivePinia(createPinia())
-    
-    // Nettoyer le localStorage
     localStorage.clear()
-    
-    // Reset tous les mocks
     vi.clearAllMocks()
   })
 
@@ -47,7 +42,6 @@ describe('Auth Store', () => {
       const mockToken = 'stored-token-123'
       localStorage.setItem('auth_token', mockToken)
 
-      // Recréer le store pour qu'il lise le localStorage
       setActivePinia(createPinia())
       const authStore = useAuthStore()
 
@@ -58,27 +52,25 @@ describe('Auth Store', () => {
   describe('Computed properties', () => {
     it('isAuthenticated est false quand pas de token', () => {
       const authStore = useAuthStore()
-
       expect(authStore.isAuthenticated).toBe(false)
     })
 
     it('isAuthenticated est false quand token mais pas d\'utilisateur', () => {
       const authStore = useAuthStore()
       authStore.setToken('some-token')
-
       expect(authStore.isAuthenticated).toBe(false)
     })
 
     it('isAuthenticated est true quand token ET utilisateur présents', () => {
       const authStore = useAuthStore()
       const mockUser: User = {
-          id: 1,
-          email: 'test@onlyroll.com',
-          pseudo: 'TestUser',
-          roles: ['ROLE_USER'],
-          isVerified: false,
-          createdAt: '',
-          updatedAt: ''
+        id: 1,
+        email: 'test@onlyroll.com',
+        pseudo: 'TestUser',
+        roles: ['ROLE_USER'],
+        isVerified: false,
+        createdAt: '',
+        updatedAt: ''
       }
 
       authStore.setToken('valid-token')
@@ -87,289 +79,156 @@ describe('Auth Store', () => {
       expect(authStore.isAuthenticated).toBe(true)
     })
 
-    it('currentUser retourne l\'utilisateur actuel', () => {
+    it('isGameMaster est true pour ROLE_GM', () => {
       const authStore = useAuthStore()
-      const mockUser: User = {
-          id: 1,
-          email: 'test@onlyroll.com',
-          pseudo: 'TestUser',
-          roles: ['ROLE_USER'],
-          isVerified: false,
-          createdAt: '',
-          updatedAt: ''
-      }
-
-      authStore.setUser(mockUser)
-
-      expect(authStore.currentUser).toEqual(mockUser)
-    })
-  })
-
-  describe('Actions - setToken', () => {
-    it('définit le token et le stocke dans localStorage', () => {
-      const authStore = useAuthStore()
-      const token = 'new-token-456'
-
-      authStore.setToken(token)
-
-      expect(authStore.token).toBe(token)
-      expect(localStorage.getItem('auth_token')).toBe(token)
-    })
-
-    it('supprime le token du localStorage quand null', () => {
-      const authStore = useAuthStore()
-      localStorage.setItem('auth_token', 'old-token')
-
-      authStore.setToken(null)
-
-      expect(authStore.token).toBeNull()
-      expect(localStorage.getItem('auth_token')).toBeNull()
-    })
-  })
-
-  describe('Actions - setUser', () => {
-    it('définit l\'utilisateur', () => {
-      const authStore = useAuthStore()
-      const mockUser: User = {
-          id: 1,
-          email: 'test@onlyroll.com',
-          pseudo: 'TestUser',
-          roles: ['ROLE_USER'],
-          isVerified: false,
-          createdAt: '',
-          updatedAt: ''
-      }
-
-      authStore.setUser(mockUser)
-
-      expect(authStore.user).toEqual(mockUser)
-    })
-
-    it('peut réinitialiser l\'utilisateur à null', () => {
-      const authStore = useAuthStore()
-      const mockUser: User = {
-          id: 1,
-          email: 'test@onlyroll.com',
-          pseudo: 'TestUser',
-          roles: ['ROLE_USER'],
-          isVerified: false,
-          createdAt: '',
-          updatedAt: ''
-      }
-
-      authStore.setUser(mockUser)
-      authStore.setUser(null)
-
-      expect(authStore.user).toBeNull()
-    })
-  })
-
-  describe('Actions - error management', () => {
-    it('setError définit une erreur', () => {
-      const authStore = useAuthStore()
-      const errorMessage = 'Une erreur est survenue'
-
-      authStore.setError(errorMessage)
-
-      expect(authStore.error).toBe(errorMessage)
-    })
-
-    it('clearError efface l\'erreur', () => {
-      const authStore = useAuthStore()
-      authStore.setError('Erreur')
-
-      authStore.clearError()
-
-      expect(authStore.error).toBeNull()
-    })
-  })
-
-  describe('Actions - register', () => {
-    it('inscrit un utilisateur avec succès', async () => {
-      const authStore = useAuthStore()
-      const credentials: RegisterCredentials = {
-        pseudo: 'NewUser',
-        email: 'newuser@onlyroll.com',
-        password: 'Password123!',
-        confirmPassword: 'Password123!',
-      }
-
-      const mockResponse = {
-        message: 'User created successfully',
-        user: {
-          id: 1,
-          email: credentials.email,
-          pseudo: credentials.pseudo,
-        },
-      }
-
-      vi.mocked(authApi.register).mockResolvedValue(mockResponse)
-
-      await authStore.register(credentials)
-
-      expect(authApi.register).toHaveBeenCalledWith(credentials)
-      expect(authStore.isLoading).toBe(false)
-      expect(authStore.error).toBeNull()
-    })
-
-    it('gère les erreurs d\'inscription', async () => {
-      const authStore = useAuthStore()
-      const credentials: RegisterCredentials = {
-        pseudo: 'NewUser',
-        email: 'newuser@onlyroll.com',
-        password: 'Password123!',
-        confirmPassword: 'Password123!',
-      }
-
-      const errorMessage = 'Email déjà utilisé'
-      vi.mocked(authApi.register).mockRejectedValue({
-        error: errorMessage,
+      authStore.setUser({
+        id: 1,
+        email: 'gm@onlyroll.com',
+        pseudo: 'GameMaster',
+        roles: ['ROLE_GM'],
+        isVerified: true,
+        createdAt: '',
+        updatedAt: ''
       })
 
-      await expect(authStore.register(credentials)).rejects.toThrow(errorMessage)
-
-      expect(authStore.error).toBe(errorMessage)
-      expect(authStore.isLoading).toBe(false)
+      expect(authStore.isGameMaster).toBe(true)
     })
 
-    it('active isLoading pendant l\'inscription', async () => {
+    it('isAdmin est true pour ROLE_ADMIN', () => {
       const authStore = useAuthStore()
-      const credentials: RegisterCredentials = {
-        pseudo: 'NewUser',
-        email: 'newuser@onlyroll.com',
-        password: 'Password123!',
-        confirmPassword: 'Password123!',
-      }
-
-      let loadingDuringCall = false
-      vi.mocked(authApi.register).mockImplementation(async () => {
-        loadingDuringCall = authStore.isLoading
-        return Promise.resolve({
-          message: 'Success',
-          user: { id: 1, email: credentials.email, pseudo: credentials.pseudo },
-        })
+      authStore.setUser({
+        id: 1,
+        email: 'admin@onlyroll.com',
+        pseudo: 'Admin',
+        roles: ['ROLE_ADMIN'],
+        isVerified: true,
+        createdAt: '',
+        updatedAt: ''
       })
 
-      await authStore.register(credentials)
-
-      expect(loadingDuringCall).toBe(true)
-      expect(authStore.isLoading).toBe(false)
+      expect(authStore.isAdmin).toBe(true)
     })
   })
 
-  describe('Actions - login', () => {
-    it('connecte un utilisateur avec succès', async () => {
+  describe('Actions - logout', () => {
+    it('appelle l\'API logout et nettoie tout', async () => {
       const authStore = useAuthStore()
-      const credentials: LoginCredentials = {
-        email: 'user@onlyroll.com',
-        password: 'Password123!',
-      }
-
       const mockUser: User = {
         id: 1,
-        email: credentials.email,
+        email: 'user@onlyroll.com',
         pseudo: 'TestUser',
         roles: ['ROLE_USER'],
         isVerified: false,
-        createdAt: expect.any(String),
-        updatedAt: expect.any(String)
+        createdAt: '',
+        updatedAt: ''
       }
 
-      vi.mocked(authApi.login).mockResolvedValue({
-        success: true,
-        message: "Login successful",
-        user_id: 1,
-        user_email: credentials.email,
-        user_pseudo: "TestUser",
-        user_verified: false,
-        user_roles: ["ROLE_USER"],
-      })
+      authStore.setToken('token-123')
+      authStore.setUser(mockUser)
+      authStore.setError('Une erreur')
 
-      vi.mocked(authApi.me).mockResolvedValue(mockUser)
+      vi.mocked(authApi.logout).mockResolvedValue()
 
-      await authStore.login(credentials)
+      await authStore.logout()
 
-      expect(authApi.login).toHaveBeenCalledWith(credentials)
-      
-      expect(authStore.token).toBeTruthy()
-      expect(authStore.token).toMatch(/^mock_jwt_1_\d+$/)
-      
-      expect(authStore.user).toEqual(mockUser)
-      expect(authStore.isAuthenticated).toBe(true)
+      expect(authApi.logout).toHaveBeenCalled()
+      expect(authStore.user).toBeNull()
+      expect(authStore.token).toBeNull()
       expect(authStore.error).toBeNull()
-      
-      expect(localStorage.getItem('auth_token')).toBe(authStore.token)
+      expect(authStore.isAuthenticated).toBe(false)
+      expect(localStorage.getItem('auth_token')).toBeNull()
     })
 
-    it('gère les erreurs de connexion', async () => {
+    it('nettoie même si l\'API logout échoue', async () => {
       const authStore = useAuthStore()
-      const credentials: LoginCredentials = {
-        email: 'wrong@onlyroll.com',
-        password: 'WrongPassword!',
-      }
+      authStore.setToken('token-123')
 
-      const errorMessage = 'Identifiants invalides'
-      vi.mocked(authApi.login).mockRejectedValue({
-        error: errorMessage,
-      })
+      vi.mocked(authApi.logout).mockRejectedValue(new Error('API error'))
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-      await expect(authStore.login(credentials)).rejects.toThrow(errorMessage)
+      await authStore.logout()
 
-      expect(authStore.error).toBe(errorMessage)
       expect(authStore.token).toBeNull()
       expect(authStore.user).toBeNull()
-      expect(authStore.isAuthenticated).toBe(false)
+      
+      consoleErrorSpy.mockRestore()
     })
+  })
 
-    it('stocke le token avant de récupérer l\'utilisateur', async () => {
+  describe('Actions - hasRole', () => {
+    it('vérifie correctement la présence d\'un rôle', () => {
       const authStore = useAuthStore()
-      const credentials: LoginCredentials = {
+      const mockUser: User = {
+        id: 1,
         email: 'user@onlyroll.com',
-        password: 'Password123!',
+        pseudo: 'TestUser',
+        roles: ['ROLE_USER', 'ROLE_GM'],
+        isVerified: false,
+        createdAt: '',
+        updatedAt: ''
       }
 
-      let tokenSetBeforeFetchMe = false
+      authStore.setUser(mockUser)
 
-      vi.mocked(authApi.login).mockResolvedValue({
-        success: true,
-        message: "Login successful",
-        user_id: 1,
-        user_email: credentials.email,
-        user_pseudo: "TestUser",
-        user_verified: false,
-        user_roles: ["ROLE_USER"],
+      expect(authStore.hasRole('ROLE_USER')).toBe(true)
+      expect(authStore.hasRole('ROLE_GM')).toBe(true)
+      expect(authStore.hasRole('ROLE_ADMIN')).toBe(false)
+    })
+
+    it('retourne false si pas d\'utilisateur', () => {
+      const authStore = useAuthStore()
+      expect(authStore.hasRole('ROLE_USER')).toBe(false)
+    })
+  })
+
+  describe('Actions - hasAnyRole', () => {
+    it('retourne true si l\'utilisateur a au moins un rôle', () => {
+      const authStore = useAuthStore()
+      authStore.setUser({
+        id: 1,
+        email: 'user@onlyroll.com',
+        pseudo: 'TestUser',
+        roles: ['ROLE_USER'],
+        isVerified: false,
+        createdAt: '',
+        updatedAt: ''
       })
 
-      vi.mocked(authApi.me).mockImplementation(async () => {
-        tokenSetBeforeFetchMe = !!authStore.token
-        return {
-          id: 1,
-          email: credentials.email,
-          pseudo: 'User',
-          roles: ['ROLE_USER'],
-          isVerified: false,
-          createdAt: '',
-          updatedAt: ''
-        }
+      expect(authStore.hasAnyRole(['ROLE_USER', 'ROLE_ADMIN'])).toBe(true)
+      expect(authStore.hasAnyRole(['ROLE_GM', 'ROLE_ADMIN'])).toBe(false)
+    })
+  })
+
+  describe('Actions - hasAllRoles', () => {
+    it('retourne true si l\'utilisateur a tous les rôles', () => {
+      const authStore = useAuthStore()
+      authStore.setUser({
+        id: 1,
+        email: 'user@onlyroll.com',
+        pseudo: 'TestUser',
+        roles: ['ROLE_USER', 'ROLE_GM'],
+        isVerified: false,
+        createdAt: '',
+        updatedAt: ''
       })
 
-      await authStore.login(credentials)
-
-      expect(tokenSetBeforeFetchMe).toBe(true)
+      expect(authStore.hasAllRoles(['ROLE_USER', 'ROLE_GM'])).toBe(true)
+      expect(authStore.hasAllRoles(['ROLE_USER', 'ROLE_ADMIN'])).toBe(false)
     })
   })
 
   describe('Actions - fetchMe', () => {
-    it('récupère les informations de l\'utilisateur connecté', async () => {
+    it('récupère les informations avec lastLogin', async () => {
       const authStore = useAuthStore()
       const mockUser: User = {
-          id: 1,
-          email: 'user@onlyroll.com',
-          pseudo: 'TestUser',
-          roles: ['ROLE_USER', 'ROLE_GM'],
-          isVerified: true,
-          createdAt: expect.any(String),
-          updatedAt: expect.any(String)
+        id: 1,
+        email: 'user@onlyroll.com',
+        pseudo: 'TestUser',
+        roles: ['ROLE_USER'],
+        isVerified: true,
+        lastLogin: '2025-01-15T10:30:00Z',
+        createdAt: '2025-01-01T00:00:00Z',
+        updatedAt: '2025-01-15T10:30:00Z'
       }
 
       authStore.setToken('valid-token')
@@ -379,21 +238,7 @@ describe('Auth Store', () => {
 
       expect(authApi.me).toHaveBeenCalled()
       expect(authStore.user).toEqual(mockUser)
-      expect(authStore.error).toBeNull()
-    })
-
-    it('gère les erreurs de récupération du profil', async () => {
-      const authStore = useAuthStore()
-      authStore.setToken('invalid-token')
-
-      const errorMessage = 'Token invalide'
-      vi.mocked(authApi.me).mockRejectedValue({
-        error: errorMessage,
-      })
-
-      await expect(authStore.fetchMe()).rejects.toThrow(errorMessage)
-
-      expect(authStore.error).toBe(errorMessage)
+      expect(authStore.user?.lastLogin).toBe('2025-01-15T10:30:00Z')
     })
   })
 

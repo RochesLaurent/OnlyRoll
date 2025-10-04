@@ -65,6 +65,7 @@ export interface MeResponse {
   isVerified: boolean
   createdAt: string
   updatedAt: string
+  lastLogin?: string
 }
 
 export interface DebugLoginResponse {

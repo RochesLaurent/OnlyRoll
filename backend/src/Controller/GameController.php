@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\DTO\Game\CreateGameDTO;
+use App\DTO\Game\JoinGameDTO;
 use App\DTO\Game\UpdateGameDTO;
 use App\Repository\GameRepository;
 use App\Service\GameService;
@@ -141,14 +142,24 @@ class GameController extends AbstractController
     #[Route('/{id}/join', name: 'join', methods: ['POST'])]
     public function join(int $id, Request $request): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
-        $password = $data['password'] ?? null;
+        // Désérialiser le DTO
+        $dto = $this->serializer->deserialize(
+            $request->getContent(),
+            JoinGameDTO::class,
+            'json'
+        );
+
+        // Valider
+        $errors = $this->validator->validate($dto);
+        if (count($errors) > 0) {
+            return $this->json(['errors' => (string) $errors], Response::HTTP_BAD_REQUEST);
+        }
 
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
         try {
-            $gamePlayer = $this->gameService->joinGame($id, $user, $password);
+            $gamePlayer = $this->gameService->joinGame($id, $user, $dto->password);
 
             return $this->json($gamePlayer, Response::HTTP_OK, [], ['groups' => 'game:read']);
         } catch (\Exception $e) {

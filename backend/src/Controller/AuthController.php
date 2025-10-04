@@ -2,7 +2,6 @@
 
 namespace App\Controller;
 
-use App\DTO\Auth\LoginRequestDTO;
 use App\DTO\Auth\RegisterRequestDTO;
 use App\DTO\Auth\UserResponseDTO;
 use App\Entity\User;
@@ -40,7 +39,6 @@ class AuthController extends AbstractController
             return $errors;
         }
 
-        // Assert que le DTO n'est pas null après validation
         assert($dto instanceof RegisterRequestDTO, 'DTO should not be null after validation');
 
         // Vérifier si l'email existe déjà
@@ -84,64 +82,23 @@ class AuthController extends AbstractController
             return $this->json(['error' => 'Unauthorized'], 401);
         }
 
-        $userResponse = UserResponseDTO::fromEntity($user);
-
-        return new JsonResponse(
-            json_decode($this->serializer->serialize($userResponse, 'json', ['groups' => 'user:read']))
-        );
+        // Retour direct sans double sérialisation
+        return $this->json([
+            'id' => $user->getId(),
+            'email' => $user->getEmail(),
+            'pseudo' => $user->getPseudo(),
+            'roles' => $user->getRoles(),
+            'isVerified' => $user->isVerified(),
+            'createdAt' => $user->getCreatedAt()?->format('c'),
+            'updatedAt' => $user->getUpdatedAt()?->format('c'),
+        ]);
     }
 
-    #[Route('/api/debug-login', name: 'api_debug_login', methods: ['POST'])]
-    public function debugLogin(
-        Request $request,
-        EntityManagerInterface $em,
-        UserPasswordHasherInterface $passwordHasher,
-    ): JsonResponse {
-        // Validation du DTO
-        ['dto' => $dto, 'errors' => $errors] = $this->dtoValidator->validateDto(
-            $request->getContent(),
-            LoginRequestDTO::class
-        );
-
-        if ($errors) {
-            return $errors;
-        }
-
-        // Assert que le DTO n'est pas null après validation
-        assert($dto instanceof LoginRequestDTO, 'DTO should not be null after validation');
-
-        try {
-            // Étape 1: Chercher l'utilisateur
-            $user = $em->getRepository(User::class)->findOneBy(['email' => $dto->email]);
-            if (!$user) {
-                return $this->json(['error' => 'User not found'], 404);
-            }
-
-            // Étape 2: Vérifier le mot de passe
-            $isValid = $passwordHasher->isPasswordValid($user, $dto->password);
-            if (!$isValid) {
-                return $this->json(['error' => 'Invalid password'], 401);
-            }
-
-            // Étape 3: Vérifier que l'utilisateur est vérifié
-            if (!$user->isVerified()) {
-                return $this->json(['error' => 'Account not verified'], 401);
-            }
-
-            $userResponse = UserResponseDTO::fromEntity($user);
-
-            return new JsonResponse([
-                'success' => true,
-                'message' => 'User validated successfully - JWT should work',
-                'user' => json_decode($this->serializer->serialize($userResponse, 'json', ['groups' => 'user:read'])),
-            ]);
-        } catch (\Exception $e) {
-            return $this->json([
-                'error' => 'Exception occurred',
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-            ], 500);
-        }
+    #[Route('/api/logout', name: 'api_logout', methods: ['POST'])]
+    public function logout(): JsonResponse
+    {
+        // Avec JWT, la déconnexion est gérée côté client
+        // Le serveur n'a pas besoin de blacklister le token
+        return $this->json(['message' => 'Déconnexion réussie']);
     }
 }
