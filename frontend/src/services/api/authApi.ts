@@ -4,7 +4,6 @@ import type {
   RegisterCredentials,
   RegisterResponse,
   MeResponse,
-  DebugLoginResponse,
 } from '@/types/auth'
 
 /**

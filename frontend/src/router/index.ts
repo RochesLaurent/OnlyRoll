@@ -56,28 +56,18 @@ const router = createRouter({
     // },
 
     // ========== GESTION DES PARTIES (PROTÉGÉ) ==========
-    // Décommentez quand vous créerez cette fonctionnalité
+    {
+      path: '/games',
+      name: 'games',
+      component: () => import('@/views/games/GameListView.vue'),
+      meta: { requiresAuth: true, title: 'Parties' },
+    },
     // {
-    //   path: '/games',
-    //   meta: { requiresAuth: true },
-    //   children: [
-    //     {
-    //       path: '',
-    //       name: 'games.list',
-    //       component: () => import('@/views/games/GameListView.vue')
-    //     },
-    //     {
-    //       path: 'create',
-    //       name: 'games.create',
-    //       component: () => import('@/views/games/GameCreateView.vue')
-    //     },
-    //     {
-    //       path: ':id',
-    //       name: 'games.play',
-    //       component: () => import('@/views/games/GamePlayView.vue'),
-    //       props: true
-    //     }
-    //   ]
+    //   path: '/games/:id',
+    //   name: 'game-detail',
+    //   component: () => import('@/views/games/GameDetailView.vue'),
+    //   meta: { requiresAuth: true, title: 'Détail de la partie' },
+    //   props: true, // Passe :id comme prop au composant
     // },
 
     // ========== WIKI D&D (PUBLIC) ==========

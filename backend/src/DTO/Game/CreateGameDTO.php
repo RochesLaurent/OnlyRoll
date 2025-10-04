@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\DTO\Game;
 
 use Symfony\Component\Validator\Constraints as Assert;
@@ -27,11 +29,5 @@ class CreateGameDTO
     #[Assert\Type(type: 'bool', message: 'Le champ "isPublic" doit être un booléen.')]
     public bool $isPublic = false;
 
-    #[Assert\Length(
-        min: 4,
-        max: 50,
-        minMessage: 'Le mot de passe doit faire au moins {{ limit }} caractères.',
-        maxMessage: 'Le mot de passe ne peut pas dépasser {{ limit }} caractères.'
-    )]
     public ?string $password = null;
 }

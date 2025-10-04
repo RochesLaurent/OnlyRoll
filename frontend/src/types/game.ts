@@ -73,3 +73,33 @@ export interface UpdateGameDTO {
 export interface JoinGameDTO {
   password?: string
 }
+
+/**
+ * Filtres de recherche pour les parties
+ */
+export interface GameFilters {
+  search?: string
+  title?: string
+  gameMaster?: string
+  status?: GameStatus
+  page?: number
+  limit?: number
+}
+
+/**
+ * Métadonnées de pagination
+ */
+export interface PaginationMeta {
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
+
+/**
+ * Réponse paginée de l'API
+ */
+export interface PaginatedGamesResponse {
+  data: Game[]
+  meta: PaginationMeta
+}

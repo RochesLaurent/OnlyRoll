@@ -121,10 +121,10 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       // Appel à /api/login qui retourne { token: string }
       const response = await authApi.login(credentials)
-      
+
       // Stocker le vrai token JWT
       setToken(response.token)
-      
+
       // Récupérer les infos utilisateur avec le token
       await fetchMe()
     } catch (err: unknown) {

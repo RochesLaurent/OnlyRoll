@@ -1,5 +1,12 @@
 import { apiClient } from './apiClient'
-import type { Game, CreateGameDTO, UpdateGameDTO, JoinGameDTO } from '@/types/game'
+import type {
+  Game,
+  CreateGameDTO,
+  UpdateGameDTO,
+  JoinGameDTO,
+  GameFilters,
+  PaginatedGamesResponse,
+} from '@/types/game'
 
 /**
  * Service de gestion des parties de jeu
@@ -7,12 +14,21 @@ import type { Game, CreateGameDTO, UpdateGameDTO, JoinGameDTO } from '@/types/ga
  */
 export const gameApi = {
   /**
-   * Liste toutes les parties publiques
-   * @param search - Terme de recherche optionnel
+   * Liste toutes les parties publiques avec filtres et pagination
+   * @param filters - Filtres de recherche optionnels
    */
-  async listPublic(search?: string): Promise<Game[]> {
-    const endpoint = search ? `/games?search=${encodeURIComponent(search)}` : '/games'
-    return apiClient.get<Game[]>(endpoint)
+  async listPublic(filters?: GameFilters): Promise<PaginatedGamesResponse> {
+    const params = new URLSearchParams()
+
+    if (filters?.search) params.append('search', filters.search)
+    if (filters?.title) params.append('title', filters.title)
+    if (filters?.gameMaster) params.append('gameMaster', filters.gameMaster)
+    if (filters?.status) params.append('status', filters.status)
+    if (filters?.page) params.append('page', filters.page.toString())
+    if (filters?.limit) params.append('limit', filters.limit.toString())
+
+    const endpoint = params.toString() ? `/games?${params.toString()}` : '/games'
+    return apiClient.get<PaginatedGamesResponse>(endpoint)
   },
 
   /**
