@@ -1,116 +1,55 @@
+import { apiClient } from './apiClient'
 import type {
   LoginCredentials,
   RegisterCredentials,
   RegisterResponse,
   MeResponse,
-  DebugLoginResponse,
 } from '@/types/auth'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
-
-class ApiClient {
-  private baseURL: string
-
-  constructor(baseURL: string) {
-    this.baseURL = baseURL
-  }
-
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const url = `${this.baseURL}${endpoint}`
-
-    const config: RequestInit = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      ...options,
-    }
-
-    const token = localStorage.getItem('auth_token')
-    if (token) {
-      config.headers = {
-        ...config.headers,
-        Authorization: `Bearer ${token}`,
-      }
-    }
-
-    try {
-      const response = await fetch(url, config)
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({
-          error: `HTTP ${response.status}`,
-          message: response.statusText,
-        }))
-        throw errorData
-      }
-
-      return await response.json()
-    } catch (error) {
-      if (error && typeof error === 'object' && 'error' in error) {
-        throw error
-      }
-
-      throw {
-        error: 'Network Error',
-        message: error instanceof Error ? error.message : "Une erreur réseau s'est produite",
-      }
-    }
-  }
-
-  async get<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    return this.request<T>(endpoint, { ...options, method: 'GET' })
-  }
-
-  async post<T>(endpoint: string, data?: unknown, options?: RequestInit): Promise<T> {
-    return this.request<T>(endpoint, {
-      ...options,
-      method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
-    })
-  }
-
-  async put<T>(endpoint: string, data?: unknown, options?: RequestInit): Promise<T> {
-    return this.request<T>(endpoint, {
-      ...options,
-      method: 'PUT',
-      body: data ? JSON.stringify(data) : undefined,
-    })
-  }
-
-  async delete<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    return this.request<T>(endpoint, { ...options, method: 'DELETE' })
-  }
-}
-
-const apiClient = new ApiClient(API_BASE_URL)
-
+/**
+ * Service d'authentification
+ * Gère l'inscription, la connexion et la récupération de mot de passe
+ */
 export const authApi = {
-  register: (credentials: RegisterCredentials): Promise<RegisterResponse> => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { confirmPassword: _confirmPassword, ...registerData } = credentials
-    return apiClient.post('/api/register', registerData)
+  register: async (credentials: RegisterCredentials): Promise<RegisterResponse> => {
+    const registerData = {
+      pseudo: credentials.pseudo,
+      email: credentials.email,
+      password: credentials.password,
+    }
+    return apiClient.post<RegisterResponse>('/register', registerData)
   },
 
-  login: (credentials: LoginCredentials): Promise<DebugLoginResponse> => {
-    return apiClient.post('/api/debug-login', credentials)
+  login: async (credentials: LoginCredentials): Promise<{ token: string }> => {
+    return apiClient.post<{ token: string }>('/login', credentials)
   },
 
-  me: (): Promise<MeResponse> => {
-    return apiClient.get('/api/me')
+  logout: async (): Promise<void> => {
+    await apiClient.post('/logout')
   },
 
-  verifyEmail: (token: string): Promise<{ message: string }> => {
-    return apiClient.get(`/api/auth/verify-email/${token}`)
+  me: async (): Promise<MeResponse> => {
+    return apiClient.get<MeResponse>('/me')
   },
 
-  forgotPassword: (email: string): Promise<{ message: string }> => {
-    return apiClient.post('/api/auth/forgot-password', { email })
+  /**
+   * Vérification de l'email via token
+   */
+  verifyEmail: async (token: string): Promise<{ message: string }> => {
+    return apiClient.get<{ message: string }>(`/auth/verify-email/${token}`)
   },
 
-  resetPassword: (token: string, password: string): Promise<{ message: string }> => {
-    return apiClient.post('/api/auth/reset-password', { token, password })
+  /**
+   * Demande de réinitialisation de mot de passe
+   */
+  forgotPassword: async (email: string): Promise<{ message: string }> => {
+    return apiClient.post<{ message: string }>('/auth/forgot-password', { email })
+  },
+
+  /**
+   * Réinitialisation du mot de passe avec token
+   */
+  resetPassword: async (token: string, password: string): Promise<{ message: string }> => {
+    return apiClient.post<{ message: string }>('/auth/reset-password', { token, password })
   },
 }
-
-export { apiClient }

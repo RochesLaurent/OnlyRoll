@@ -4,26 +4,32 @@ security:
             entity:
                 class: App\Entity\User
                 property: email
+
     password_hashers:
         App\Entity\User: 'auto'
+
     firewalls:
-        login:
-            pattern: ^/api/login_check
+        dev:
+            pattern: ^/(_(profiler|wdt)|css|images|js)
+            security: false
+
+        api_login:
+            pattern: ^/api/login
             stateless: true
             json_login:
-                check_path: /api/login_check
+                check_path: /api/login
                 username_path: email
                 password_path: password
                 success_handler: lexik_jwt_authentication.handler.authentication_success
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
+
         api:
             pattern: ^/api
             stateless: true
             jwt: ~
+
     access_control:
-        # ORDRE IMPORTANT : Les règles spécifiques AVANT les générales
-        - { path: ^/api/games, roles: ROLE_USER }
         - { path: ^/api/register, roles: PUBLIC_ACCESS }
-        - { path: ^/api/login_check, roles: PUBLIC_ACCESS }
+        - { path: ^/api/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/debug-login, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }

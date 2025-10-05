@@ -39,15 +39,25 @@ class GameService
             'game_master_id' => $gameMaster->getId(),
         ]);
 
+        if (!$dto->isPublic) {
+            if (empty($dto->password)) {
+                throw new \InvalidArgumentException('Le mot de passe est requis pour une partie privée');
+            }
+
+            if (strlen($dto->password) < 4 || strlen($dto->password) > 50) {
+                throw new \InvalidArgumentException('Le mot de passe doit faire entre 4 et 50 caractères');
+            }
+        }
+
         $game = new Game();
         $game->setName($dto->name)
-             ->setDescription($dto->description)
-             ->setGameMaster($gameMaster)
-             ->setMaxPlayers($dto->maxPlayers)
-             ->setIsPublic($dto->isPublic);
+            ->setDescription($dto->description)
+            ->setGameMaster($gameMaster)
+            ->setMaxPlayers($dto->maxPlayers)
+            ->setIsPublic($dto->isPublic);
 
         // Hash du mot de passe si partie privée
-        if (!$dto->isPublic && $dto->password) {
+        if ($dto->password && !$dto->isPublic) {
             $game->setPassword(password_hash($dto->password, PASSWORD_ARGON2ID));
         }
 
@@ -56,9 +66,9 @@ class GameService
         // Ajouter automatiquement le MJ comme joueur
         $gmPlayer = new GamePlayer();
         $gmPlayer->setGame($game)
-                 ->setUser($gameMaster)
-                 ->setRole(PlayerRole::GAME_MASTER)
-                 ->setStatus(PlayerStatus::ACTIVE);
+                ->setUser($gameMaster)
+                ->setRole(PlayerRole::GAME_MASTER)
+                ->setStatus(PlayerStatus::ACTIVE);
 
         $this->entityManager->persist($gmPlayer);
         $this->entityManager->flush();

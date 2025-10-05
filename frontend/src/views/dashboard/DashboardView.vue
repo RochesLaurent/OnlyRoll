@@ -43,8 +43,8 @@
           title="Mes Parties"
           description="Créez ou rejoignez une partie de D&D"
           icon="gamepad"
-          @click="navigateTo('/games')"
-          :coming-soon="true"
+          @click="navigateTo('games')"
+          :coming-soon="false"
         />
 
         <!-- Wiki D&D -->
@@ -52,7 +52,7 @@
           title="Wiki D&D"
           description="Consultez toutes les données du SRD"
           icon="book"
-          @click="navigateTo('/wiki')"
+          @click="navigateTo('wiki')"
           :coming-soon="true"
         />
 
@@ -61,7 +61,7 @@
           title="Mes Personnages"
           description="Gérez vos feuilles de personnage"
           icon="user"
-          @click="navigateTo('/characters')"
+          @click="navigateTo('characters')"
           :coming-soon="true"
         />
 
@@ -70,7 +70,7 @@
           title="Mon Profil"
           description="Paramètres et préférences"
           icon="settings"
-          @click="navigateTo('/profile')"
+          @click="navigateTo('profile')"
           :coming-soon="true"
         />
 
@@ -79,7 +79,7 @@
           title="Partie Rapide"
           description="Rejoindre une partie publique"
           icon="zap"
-          @click="navigateTo('/games/public')"
+          @click="navigateTo('games')"
           :coming-soon="true"
         />
 
@@ -123,10 +123,12 @@
 </template>
 
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import UserProfileBadge from '@/components/common/UserProfileBadge.vue'
 import DashboardCard from '@/components/dashboard/DashboardCard.vue'
 
+const router = useRouter()
 const { user, logout } = useAuth()
 
 // Handler pour la déconnexion
@@ -134,9 +136,8 @@ const handleLogout = async () => {
   await logout()
 }
 
-const navigateTo = (path: string) => {
-  // Pour l'instant, on affiche juste un message
-  alert(`Navigation vers ${path} - Fonctionnalité en cours de développement`)
+const navigateTo = (routeName: string) => {
+  router.push({ name: routeName })
 }
 
 const openDiscord = () => {

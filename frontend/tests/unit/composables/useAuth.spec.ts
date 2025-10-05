@@ -12,9 +12,11 @@ import type { User } from '@/types/auth'
 
 // Mock du router
 const mockPush = vi.fn()
+const mockCurrentRoute = { value: { fullPath: '/dashboard' } }
 vi.mock('vue-router', () => ({
   useRouter: () => ({
     push: mockPush,
+    currentRoute: mockCurrentRoute,
   }),
 }))
 
@@ -23,7 +25,8 @@ vi.mock('@/services/api/authApi', () => ({
   authApi: {
     register: vi.fn(),
     login: vi.fn(),
-    fetchMe: vi.fn(),
+    logout: vi.fn(),
+    me: vi.fn(),
   },
 }))
 
@@ -71,7 +74,6 @@ describe('useAuth Composable', () => {
       const { login } = useAuth()
       const authStore = useAuthStore()
 
-      // Mock de la méthode login du store
       vi.spyOn(authStore, 'login').mockResolvedValue()
 
       await login({ email: 'test@onlyroll.com', password: 'Pass123!' })
@@ -108,7 +110,6 @@ describe('useAuth Composable', () => {
         login({ email: 'wrong@email.com', password: 'WrongPass' })
       ).rejects.toThrow('Identifiants invalides')
 
-      // Ne devrait pas rediriger en cas d'erreur
       expect(mockPush).not.toHaveBeenCalled()
     })
   })
@@ -161,7 +162,7 @@ describe('useAuth Composable', () => {
       const { logout } = useAuth()
       const authStore = useAuthStore()
 
-      vi.spyOn(authStore, 'logout').mockImplementation(() => {})
+      vi.spyOn(authStore, 'logout').mockResolvedValue()
 
       await logout()
 
@@ -173,11 +174,26 @@ describe('useAuth Composable', () => {
       const { logout } = useAuth()
       const authStore = useAuthStore()
 
-      vi.spyOn(authStore, 'logout').mockImplementation(() => {})
+      vi.spyOn(authStore, 'logout').mockResolvedValue()
 
       await logout('/goodbye')
 
       expect(mockPush).toHaveBeenCalledWith('/goodbye')
+    })
+
+    it('redirige même si logout échoue', async () => {
+      const { logout } = useAuth()
+      const authStore = useAuthStore()
+
+      vi.spyOn(authStore, 'logout').mockRejectedValue(new Error('API error'))
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      await logout()
+
+      expect(mockPush).toHaveBeenCalledWith({ name: 'home' })
+      expect(consoleErrorSpy).toHaveBeenCalled()
+      
+      consoleErrorSpy.mockRestore()
     })
   })
 
@@ -218,6 +234,46 @@ describe('useAuth Composable', () => {
     })
   })
 
+  describe('hasAnyRole', () => {
+    it('retourne true si l\'utilisateur a au moins un des rôles', () => {
+      const { hasAnyRole } = useAuth()
+      const authStore = useAuthStore()
+
+      authStore.setUser({
+        id: 1,
+        email: 'test@onlyroll.com',
+        pseudo: 'TestUser',
+        roles: ['ROLE_USER'],
+        isVerified: false,
+        createdAt: '',
+        updatedAt: ''
+      })
+
+      expect(hasAnyRole(['ROLE_USER', 'ROLE_ADMIN'])).toBe(true)
+      expect(hasAnyRole(['ROLE_GM', 'ROLE_ADMIN'])).toBe(false)
+    })
+  })
+
+  describe('hasAllRoles', () => {
+    it('retourne true si l\'utilisateur a tous les rôles', () => {
+      const { hasAllRoles } = useAuth()
+      const authStore = useAuthStore()
+
+      authStore.setUser({
+        id: 1,
+        email: 'test@onlyroll.com',
+        pseudo: 'TestUser',
+        roles: ['ROLE_USER', 'ROLE_GM'],
+        isVerified: false,
+        createdAt: '',
+        updatedAt: ''
+      })
+
+      expect(hasAllRoles(['ROLE_USER', 'ROLE_GM'])).toBe(true)
+      expect(hasAllRoles(['ROLE_USER', 'ROLE_ADMIN'])).toBe(false)
+    })
+  })
+
   describe('requireAuth', () => {
     it('retourne true si l\'utilisateur est authentifié', () => {
       const { requireAuth } = useAuth()
@@ -238,11 +294,14 @@ describe('useAuth Composable', () => {
       expect(mockPush).not.toHaveBeenCalled()
     })
 
-    it('redirige vers login et retourne false si non authentifié', () => {
+    it('redirige vers login avec redirect query et retourne false si non authentifié', () => {
       const { requireAuth } = useAuth()
 
       expect(requireAuth()).toBe(false)
-      expect(mockPush).toHaveBeenCalledWith({ name: 'login' })
+      expect(mockPush).toHaveBeenCalledWith({
+        name: 'login',
+        query: { redirect: '/dashboard' }
+      })
     })
   })
 
@@ -300,18 +359,15 @@ describe('useAuth Composable', () => {
       expect(message).toBe('Erreur simple')
     })
 
-    it('getErrorMessage extrait le message d\'un objet avec error', () => {
+    it('getErrorMessage extrait le message d\'un ApiError', () => {
       const { getErrorMessage } = useAuth()
 
-      const message = getErrorMessage({ error: 'Message d\'erreur' })
-      expect(message).toBe('Message d\'erreur')
-    })
-
-    it('getErrorMessage extrait le message d\'un objet avec message', () => {
-      const { getErrorMessage } = useAuth()
-
-      const message = getErrorMessage({ message: 'Autre message' })
-      expect(message).toBe('Autre message')
+      const message = getErrorMessage({ 
+        error: 'Bad Request',
+        message: 'Email déjà utilisé',
+        statusCode: 400 
+      })
+      expect(message).toBe('Email déjà utilisé')
     })
 
     it('getErrorMessage retourne un message par défaut pour erreur inconnue', () => {
@@ -320,50 +376,31 @@ describe('useAuth Composable', () => {
       const message = getErrorMessage({})
       expect(message).toBe('Une erreur inattendue s\'est produite')
     })
-  })
 
-  describe('Scénarios d\'utilisation complets', () => {
-    it('cycle complet d\'authentification', async () => {
-      const { register, login, logout, isAuthenticated } = useAuth()
-      const authStore = useAuthStore()
+    it('formatError inclut le status code', () => {
+      const { formatError } = useAuth()
 
-      // Mock des méthodes du store
-      vi.spyOn(authStore, 'register').mockResolvedValue()
-      vi.spyOn(authStore, 'login').mockResolvedValue()
-      vi.spyOn(authStore, 'logout').mockImplementation(() => {})
-
-      // 1. Inscription
-      await register({
-        pseudo: 'TestUser',
-        email: 'test@onlyroll.com',
-        password: 'Pass123!',
-        confirmPassword: 'Pass123!',
+      const formatted = formatError({
+        error: 'Unauthorized',
+        message: 'Token invalide',
+        statusCode: 401
       })
-      expect(mockPush).toHaveBeenCalledWith({
-        name: 'register-success',
-        query: { email: 'test@onlyroll.com' },
-      })
+      expect(formatted).toBe('[401] Token invalide')
+    })
 
-      // 2. Connexion
-      authStore.setToken('token')
-      authStore.setUser({
-        id: 1,
-        email: 'test@onlyroll.com',
-        pseudo: 'TestUser',
-        roles: ['ROLE_USER'],
-        isVerified: false,
-        createdAt: '',
-        updatedAt: ''
-      })
+    it('isAuthError détecte les erreurs 401', () => {
+      const { isAuthError } = useAuth()
 
-      await login({ email: 'test@onlyroll.com', password: 'Pass123!' })
-      expect(isAuthenticated.value).toBe(true)
+      expect(isAuthError({ statusCode: 401 })).toBe(true)
+      expect(isAuthError({ statusCode: 400 })).toBe(false)
+      expect(isAuthError('error')).toBe(false)
+    })
 
-      // 3. Déconnexion
-      await logout()
-      authStore.setToken(null)
-      authStore.setUser(null)
-      expect(isAuthenticated.value).toBe(false)
+    it('isValidationError détecte les erreurs 422', () => {
+      const { isValidationError } = useAuth()
+
+      expect(isValidationError({ statusCode: 422 })).toBe(true)
+      expect(isValidationError({ statusCode: 400 })).toBe(false)
     })
   })
 })

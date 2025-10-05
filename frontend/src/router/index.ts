@@ -1,10 +1,10 @@
-// src/router/index.ts
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    // ========== PAGE D'ACCUEIL ==========
     {
       path: '/',
       name: 'home',
@@ -12,7 +12,7 @@ const router = createRouter({
       meta: { requiresAuth: false },
     },
 
-    // Routes d'authentification
+    // ========== AUTHENTIFICATION ==========
     {
       path: '/auth',
       component: () => import('@/layouts/AuthLayout.vue'),
@@ -31,8 +31,6 @@ const router = createRouter({
         },
       ],
     },
-
-    // Page de succès d'inscription
     {
       path: '/auth/register-success',
       name: 'register-success',
@@ -40,7 +38,7 @@ const router = createRouter({
       meta: { requiresGuest: true },
     },
 
-    // Routes protégées
+    // ========== DASHBOARD (PROTÉGÉ) ==========
     {
       path: '/dashboard',
       name: 'dashboard',
@@ -48,6 +46,8 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
 
+    // ========== PROFIL UTILISATEUR (PROTÉGÉ) ==========
+    // Décommentez quand vous créerez cette fonctionnalité
     // {
     //   path: '/profile',
     //   name: 'profile',
@@ -55,31 +55,23 @@ const router = createRouter({
     //   meta: { requiresAuth: true }
     // },
 
-    // Routes des parties
+    // ========== GESTION DES PARTIES (PROTÉGÉ) ==========
+    {
+      path: '/games',
+      name: 'games',
+      component: () => import('@/views/games/GameListView.vue'),
+      meta: { requiresAuth: true, title: 'Parties' },
+    },
     // {
-    //   path: '/games',
-    //   meta: { requiresAuth: true },
-    //   children: [
-    //     {
-    //       path: '',
-    //       name: 'games.list',
-    //       component: () => import('@/views/games/GameListView.vue')
-    //     },
-    //     {
-    //       path: 'create',
-    //       name: 'games.create',
-    //       component: () => import('@/views/games/GameCreateView.vue')
-    //     },
-    //     {
-    //       path: ':id',
-    //       name: 'games.play',
-    //       component: () => import('@/views/games/GamePlayView.vue'),
-    //       props: true
-    //     }
-    //   ]
+    //   path: '/games/:id',
+    //   name: 'game-detail',
+    //   component: () => import('@/views/games/GameDetailView.vue'),
+    //   meta: { requiresAuth: true, title: 'Détail de la partie' },
+    //   props: true, // Passe :id comme prop au composant
     // },
 
-    // Wiki D&D
+    // ========== WIKI D&D (PUBLIC) ==========
+    // Décommentez quand vous créerez cette fonctionnalité
     // {
     //   path: '/wiki',
     //   children: [
@@ -102,7 +94,7 @@ const router = createRouter({
     //   ]
     // },
 
-    // Page 404
+    // ========== PAGE 404 ==========
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
@@ -111,35 +103,43 @@ const router = createRouter({
   ],
 })
 
-// Guard de navigation pour l'authentification
-router.beforeEach(async (to) => {
+/**
+ * Guard de navigation global
+ * Gère l'authentification et les redirections
+ */
+router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
 
-  // Initialiser le store auth s'il n'est pas déjà fait
-  if (authStore.token && !authStore.user) {
-    try {
-      await authStore.fetchMe()
-    } catch (error) {
-      console.error('Navigation error:', error)
-      // Le token est invalide, on déconnecte l'utilisateur
-      authStore.logout()
-    }
-  }
+  // ========== VÉRIFICATION DE L'AUTHENTIFICATION ==========
 
-  // Vérifier si la route nécessite une authentification
+  // Si la route nécessite une authentification
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    return {
+    return next({
       name: 'login',
       query: { redirect: to.fullPath },
-    }
+    })
   }
 
-  // Vérifier si la route nécessite d'être déconnecté
+  // Si la route est réservée aux invités (login/register)
   if (to.meta.requiresGuest && authStore.isAuthenticated) {
-    return { name: 'dashboard' }
+    return next({ name: 'dashboard' })
   }
 
-  return true
+  // Continuer la navigation
+  next()
+})
+
+/**
+ * Hook après chaque navigation
+ * Utile pour analytics, scroll reset, etc.
+ */
+router.afterEach((to) => {
+  // Scroll en haut de la page après navigation
+  window.scrollTo(0, 0)
+
+  // Mettre à jour le titre de la page
+  const baseTitle = 'OnlyRoll'
+  document.title = to.meta.title ? `${to.meta.title} - ${baseTitle}` : baseTitle
 })
 
 export default router

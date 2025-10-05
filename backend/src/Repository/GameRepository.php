@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\DTO\Game\GameFilterDTO;
 use App\Entity\Game;
 use App\Entity\User;
 use App\Enum\GameStatus;
@@ -19,7 +20,78 @@ class GameRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve les parties publiques disponibles.
+     * Trouve les parties publiques avec filtres et pagination.
+     *
+     * @return array{data: Game[], total: int, page: int, limit: int, totalPages: int}
+     */
+    public function findPublicGamesWithFilters(GameFilterDTO $filters): array
+    {
+        $qb = $this->createQueryBuilder('g')
+            ->where('g.isPublic = :public')
+            ->setParameter('public', true)
+            ->leftJoin('g.gamePlayers', 'gp')
+            ->addSelect('gp')
+            ->leftJoin('gp.user', 'u')
+            ->addSelect('u')
+            ->leftJoin('g.gameMaster', 'gm')
+            ->addSelect('gm');
+
+        // Exclure les parties archivées par défaut
+        $qb->andWhere('g.status != :archived')
+           ->setParameter('archived', GameStatus::ARCHIVED);
+
+        // Filtre: Recherche globale (search)
+        if ($filters->search) {
+            $qb->andWhere('g.name LIKE :search OR g.description LIKE :search')
+               ->setParameter('search', '%' . $filters->search . '%');
+        }
+
+        // Filtre: Titre spécifique
+        if ($filters->title) {
+            $qb->andWhere('g.name LIKE :title')
+               ->setParameter('title', '%' . $filters->title . '%');
+        }
+
+        // Filtre: Game Master (pseudo)
+        if ($filters->gameMaster) {
+            $qb->andWhere('gm.pseudo LIKE :gameMaster')
+               ->setParameter('gameMaster', '%' . $filters->gameMaster . '%');
+        }
+
+        // Filtre: Status
+        if ($filters->status) {
+            $status = GameStatus::tryFrom($filters->status);
+            if ($status) {
+                $qb->andWhere('g.status = :status')
+                   ->setParameter('status', $status);
+            }
+        }
+
+        // Compter le total AVANT pagination
+        $countQb = clone $qb;
+        $total = (int) $countQb->select('COUNT(DISTINCT g.id)')
+                                ->getQuery()
+                                ->getSingleScalarResult();
+
+        // Pagination
+        $offset = ($filters->page - 1) * $filters->limit;
+        $qb->setFirstResult($offset)
+           ->setMaxResults($filters->limit)
+           ->orderBy('g.createdAt', 'DESC');
+
+        $data = $qb->getQuery()->getResult();
+
+        return [
+            'data' => $data,
+            'total' => $total,
+            'page' => $filters->page,
+            'limit' => $filters->limit,
+            'totalPages' => (int) ceil($total / $filters->limit),
+        ];
+    }
+
+    /**
+     * Trouve les parties publiques disponibles (ancienne méthode, conservée pour compatibilité).
      *
      * @return Game[]
      */

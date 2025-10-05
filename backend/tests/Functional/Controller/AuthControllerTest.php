@@ -236,7 +236,7 @@ class AuthControllerTest extends WebTestCase
     }
 
     /**
-     * POST /api/login_check - Connexion réussie avec JWT.
+     * POST /api/login - Connexion réussie avec JWT.
      */
     public function testItLogsInSuccessfullyAndReturnsJwtToken(): void
     {
@@ -250,7 +250,7 @@ class AuthControllerTest extends WebTestCase
         ]));
 
         // Ensuite se connecter
-        $this->client->request('POST', '/api/login_check', [], [], [
+        $this->client->request('POST', '/api/login', [], [], [
             'CONTENT_TYPE' => 'application/json',
         ], json_encode([
             'email' => 'testlogin@onlyroll.com',
@@ -270,7 +270,7 @@ class AuthControllerTest extends WebTestCase
     }
 
     /**
-     * POST /api/login_check - Échec avec mauvais mot de passe.
+     * POST /api/login - Échec avec mauvais mot de passe.
      */
     public function testItFailsToLoginWithWrongPassword(): void
     {
@@ -284,7 +284,7 @@ class AuthControllerTest extends WebTestCase
         ]));
 
         // Essayer de se connecter avec un mauvais mot de passe
-        $this->client->request('POST', '/api/login_check', [], [], [
+        $this->client->request('POST', '/api/login', [], [], [
             'CONTENT_TYPE' => 'application/json',
         ], json_encode([
             'email' => 'wrongpass@onlyroll.com',
@@ -295,11 +295,11 @@ class AuthControllerTest extends WebTestCase
     }
 
     /**
-     * POST /api/login_check - Échec avec email inexistant.
+     * POST /api/login - Échec avec email inexistant.
      */
     public function testItFailsToLoginWithNonexistentEmail(): void
     {
-        $this->client->request('POST', '/api/login_check', [], [], [
+        $this->client->request('POST', '/api/login', [], [], [
             'CONTENT_TYPE' => 'application/json',
         ], json_encode([
             'email' => 'nonexistent@onlyroll.com',
@@ -323,7 +323,7 @@ class AuthControllerTest extends WebTestCase
             'pseudo' => 'ProfileUser',
         ]));
 
-        $this->client->request('POST', '/api/login_check', [], [], [
+        $this->client->request('POST', '/api/login', [], [], [
             'CONTENT_TYPE' => 'application/json',
         ], json_encode([
             'email' => 'profile@onlyroll.com',
@@ -385,58 +385,6 @@ class AuthControllerTest extends WebTestCase
     }
 
     /**
-     * POST /api/debug-login - Debug login fonctionne avec validation DTO.
-     */
-    public function testItDebugsLoginSuccessfully(): void
-    {
-        // Créer un utilisateur
-        $this->client->request('POST', '/api/register', [], [], [
-            'CONTENT_TYPE' => 'application/json',
-        ], json_encode([
-            'email' => 'debug@onlyroll.com',
-            'password' => 'DebugPass123!',
-            'pseudo' => 'DebugUser',
-        ]));
-
-        // Tester le debug login
-        $this->client->request('POST', '/api/debug-login', [], [], [
-            'CONTENT_TYPE' => 'application/json',
-        ], json_encode([
-            'email' => 'debug@onlyroll.com',
-            'password' => 'DebugPass123!',
-        ]));
-
-        $this->assertResponseIsSuccessful();
-
-        $responseData = json_decode($this->client->getResponse()->getContent(), true);
-
-        // Vérifier que la réponse contient le UserResponseDto
-        $this->assertArrayHasKey('success', $responseData);
-        $this->assertTrue($responseData['success']);
-        $this->assertArrayHasKey('user', $responseData);
-        $this->assertArrayHasKey('email', $responseData['user']);
-        $this->assertEquals('debug@onlyroll.com', $responseData['user']['email']);
-    }
-
-    /**
-     * POST /api/debug-login - Échec avec données invalides (validation DTO).
-     */
-    public function testItFailsDebugLoginWithInvalidData(): void
-    {
-        $this->client->request('POST', '/api/debug-login', [], [], [
-            'CONTENT_TYPE' => 'application/json',
-        ], json_encode([
-            'email' => 'invalid-email',  // Email invalide
-            'password' => 'SomePass',
-        ]));
-
-        $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
-
-        $responseData = json_decode($this->client->getResponse()->getContent(), true);
-        $this->assertEquals('Validation failed', $responseData['error']);
-    }
-
-    /**
      * Scénario complet : Register → Login → Access Protected Route.
      */
     public function testItCompletesFullAuthenticationFlow(): void
@@ -456,7 +404,7 @@ class AuthControllerTest extends WebTestCase
         $this->assertArrayHasKey('id', $registerData['user']);
 
         // 2. Se connecter
-        $this->client->request('POST', '/api/login_check', [], [], [
+        $this->client->request('POST', '/api/login', [], [], [
             'CONTENT_TYPE' => 'application/json',
         ], json_encode([
             'email' => 'fullflow@onlyroll.com',

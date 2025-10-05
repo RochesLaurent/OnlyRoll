@@ -3,6 +3,8 @@
 namespace App\Controller;
 
 use App\DTO\Game\CreateGameDTO;
+use App\DTO\Game\GameFilterDTO;
+use App\DTO\Game\JoinGameDTO;
 use App\DTO\Game\UpdateGameDTO;
 use App\Repository\GameRepository;
 use App\Service\GameService;
@@ -28,17 +30,38 @@ class GameController extends AbstractController
     }
 
     /**
-     * Liste toutes les parties publiques.
+     * Liste toutes les parties publiques avec filtres et pagination.
      */
     #[Route('', name: 'list', methods: ['GET'])]
     public function list(Request $request): JsonResponse
     {
-        $searchParam = $request->query->get('search');
-        $search = (is_string($searchParam) && '' !== $searchParam) ? $searchParam : null;
+        // Créer le DTO à partir des query params
+        $filterDTO = new GameFilterDTO();
+        $filterDTO->search = $request->query->getString('search') ?: null;
+        $filterDTO->title = $request->query->getString('title') ?: null;
+        $filterDTO->gameMaster = $request->query->getString('gameMaster') ?: null;
+        $filterDTO->status = $request->query->getString('status') ?: null;
+        $filterDTO->page = (int) $request->query->get('page', 1);
+        $filterDTO->limit = (int) $request->query->get('limit', 12);
 
-        $games = $this->gameRepository->findPublicGames($search);
+        // Validation
+        $errors = $this->validator->validate($filterDTO);
+        if (count($errors) > 0) {
+            return $this->json(['errors' => (string) $errors], Response::HTTP_BAD_REQUEST);
+        }
 
-        return $this->json($games, Response::HTTP_OK, [], ['groups' => 'game:list']);
+        // Récupérer les parties filtrées et paginées
+        $result = $this->gameRepository->findPublicGamesWithFilters($filterDTO);
+
+        return $this->json([
+            'data' => $result['data'],
+            'meta' => [
+                'total' => $result['total'],
+                'page' => $result['page'],
+                'limit' => $result['limit'],
+                'totalPages' => $result['totalPages'],
+            ],
+        ], Response::HTTP_OK, [], ['groups' => 'game:list']);
     }
 
     /**
@@ -95,9 +118,16 @@ class GameController extends AbstractController
 
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
-        $game = $this->gameService->createGame($dto, $user);
 
-        return $this->json($game, Response::HTTP_CREATED, [], ['groups' => 'game:read']);
+        try {
+            $game = $this->gameService->createGame($dto, $user);
+
+            return $this->json($game, Response::HTTP_CREATED, [], ['groups' => 'game:read']);
+        } catch (\InvalidArgumentException $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
+        } catch (\Exception $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
@@ -141,14 +171,22 @@ class GameController extends AbstractController
     #[Route('/{id}/join', name: 'join', methods: ['POST'])]
     public function join(int $id, Request $request): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
-        $password = $data['password'] ?? null;
+        $dto = $this->serializer->deserialize(
+            $request->getContent(),
+            JoinGameDTO::class,
+            'json'
+        );
+
+        $errors = $this->validator->validate($dto);
+        if (count($errors) > 0) {
+            return $this->json(['errors' => (string) $errors], Response::HTTP_BAD_REQUEST);
+        }
 
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
         try {
-            $gamePlayer = $this->gameService->joinGame($id, $user, $password);
+            $gamePlayer = $this->gameService->joinGame($id, $user, $dto->password);
 
             return $this->json($gamePlayer, Response::HTTP_OK, [], ['groups' => 'game:read']);
         } catch (\Exception $e) {
