@@ -153,6 +153,40 @@ describe('Auth Store', () => {
       
       consoleErrorSpy.mockRestore()
     })
+
+    it('déconnecte l\'utilisateur et nettoie tout', async () => {
+      const authStore = useAuthStore()
+      const mockUser: User = {
+          id: 1,
+          email: 'user@onlyroll.com',
+          pseudo: 'TestUser',
+          roles: ['ROLE_USER'],
+          isVerified: false,
+          createdAt: '',
+          updatedAt: ''
+      }
+
+      authStore.setToken('token-123')
+      authStore.setUser(mockUser)
+
+      vi.mocked(authApi.logout).mockResolvedValue()
+      await authStore.logout()
+
+      expect(authStore.user).toBeNull()
+      expect(authStore.token).toBeNull()
+      expect(authStore.isAuthenticated).toBe(false)
+      expect(localStorage.getItem('auth_token')).toBeNull()
+    })
+
+    it('efface aussi l\'erreur lors du logout', async () => {
+      const authStore = useAuthStore()
+      authStore.setError('Une erreur')
+
+      vi.mocked(authApi.logout).mockResolvedValue()
+      await authStore.logout()
+
+      expect(authStore.error).toBeNull()
+    })
   })
 
   describe('Actions - hasRole', () => {
@@ -242,68 +276,6 @@ describe('Auth Store', () => {
     })
   })
 
-  describe('Actions - logout', () => {
-    it('déconnecte l\'utilisateur et nettoie tout', () => {
-      const authStore = useAuthStore()
-      const mockUser: User = {
-          id: 1,
-          email: 'user@onlyroll.com',
-          pseudo: 'TestUser',
-          roles: ['ROLE_USER'],
-          isVerified: false,
-          createdAt: '',
-          updatedAt: ''
-      }
-
-      // Simuler un utilisateur connecté
-      authStore.setToken('token-123')
-      authStore.setUser(mockUser)
-
-      authStore.logout()
-
-      expect(authStore.user).toBeNull()
-      expect(authStore.token).toBeNull()
-      expect(authStore.isAuthenticated).toBe(false)
-      expect(localStorage.getItem('auth_token')).toBeNull()
-    })
-
-    it('efface aussi l\'erreur lors du logout', () => {
-      const authStore = useAuthStore()
-      authStore.setError('Une erreur')
-
-      authStore.logout()
-
-      expect(authStore.error).toBeNull()
-    })
-  })
-
-  describe('Actions - hasRole', () => {
-    it('vérifie correctement la présence d\'un rôle', () => {
-      const authStore = useAuthStore()
-      const mockUser: User = {
-          id: 1,
-          email: 'user@onlyroll.com',
-          pseudo: 'TestUser',
-          roles: ['ROLE_USER', 'ROLE_GM'],
-          isVerified: false,
-          createdAt: '',
-          updatedAt: ''
-      }
-
-      authStore.setUser(mockUser)
-
-      expect(authStore.hasRole('ROLE_USER')).toBe(true)
-      expect(authStore.hasRole('ROLE_GM')).toBe(true)
-      expect(authStore.hasRole('ROLE_ADMIN')).toBe(false)
-    })
-
-    it('retourne false si pas d\'utilisateur', () => {
-      const authStore = useAuthStore()
-
-      expect(authStore.hasRole('ROLE_USER')).toBe(false)
-    })
-  })
-
   describe('Scénarios complets', () => {
     it('cycle complet : register → login → fetchMe → logout', async () => {
       const authStore = useAuthStore()
@@ -322,7 +294,7 @@ describe('Auth Store', () => {
       })
 
       await authStore.register(registerCreds)
-      expect(authStore.isAuthenticated).toBe(false) // Pas encore connecté
+      expect(authStore.isAuthenticated).toBe(false)
 
       // 2. Connexion
       const loginCreds: LoginCredentials = {
@@ -341,13 +313,7 @@ describe('Auth Store', () => {
       }
 
       vi.mocked(authApi.login).mockResolvedValue({
-        success: true,
-        message: "Login successful",
-        user_id: 1,
-        user_email: loginCreds.email,
-        user_pseudo: "NewUser",
-        user_verified: false,
-        user_roles: ["ROLE_USER"],
+        token: 'fake-token-123'
       })
 
       vi.mocked(authApi.me).mockResolvedValue(mockUser)
@@ -356,7 +322,8 @@ describe('Auth Store', () => {
       expect(authStore.isAuthenticated).toBe(true)
 
       // 3. Déconnexion
-      authStore.logout()
+      vi.mocked(authApi.logout).mockResolvedValue()
+      await authStore.logout()
       expect(authStore.isAuthenticated).toBe(false)
       expect(authStore.user).toBeNull()
       expect(authStore.token).toBeNull()
