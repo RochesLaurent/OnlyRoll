@@ -111,7 +111,8 @@ class GameControllerTest extends WebTestCase
         $secondUserToken = $this->createSecondUser($client);
 
         $client->request('POST', "/api/games/{$gameId}/join",
-            server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $secondUserToken]
+            server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $secondUserToken],
+            content: json_encode([])
         );
 
         $this->assertResponseIsSuccessful();

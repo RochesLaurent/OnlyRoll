@@ -89,6 +89,9 @@ class AuthController extends AbstractController
             'pseudo' => $user->getPseudo(),
             'roles' => $user->getRoles(),
             'isVerified' => $user->isVerified(),
+            'timezone' => $user->getTimezone(),
+            'language' => $user->getLanguage(),
+            'avatar' => $user->getAvatar(),
             'createdAt' => $user->getCreatedAt()->format('c'),
             'updatedAt' => $user->getUpdatedAt()->format('c'),
         ]);
