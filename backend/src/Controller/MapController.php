@@ -38,19 +38,30 @@ class MapController extends AbstractController
         $game = $this->gameRepository->find($gameId);
 
         if (!$game) {
-            return $this->json(['error' => 'Partie introuvable'], Response::HTTP_NOT_FOUND);
+            return $this->json(
+                ['error' => 'Partie introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
         if (!$game->canBeViewedBy($user)) {
-            return $this->json(['error' => 'Accès refusé'], Response::HTTP_FORBIDDEN);
+            return $this->json(
+                ['error' => 'Accès refusé'],
+                Response::HTTP_FORBIDDEN
+            );
         }
 
         $maps = $this->mapService->getMapsByGame($game);
 
-        return $this->json($maps, Response::HTTP_OK, [], ['groups' => 'map:list']);
+        return $this->json(
+            $maps,
+            Response::HTTP_OK,
+            [],
+            ['groups' => 'map:list']
+        );
     }
 
     /**
@@ -62,20 +73,29 @@ class MapController extends AbstractController
         $game = $this->gameRepository->find($gameId);
 
         if (!$game) {
-            return $this->json(['error' => 'Partie introuvable'], Response::HTTP_NOT_FOUND);
+            return $this->json(
+                ['error' => 'Partie introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
         if (!$game->canBeViewedBy($user)) {
-            return $this->json(['error' => 'Accès refusé'], Response::HTTP_FORBIDDEN);
+            return $this->json(
+                ['error' => 'Accès refusé'],
+                Response::HTTP_FORBIDDEN
+            );
         }
 
         $activeMap = $this->mapService->getActiveMap($game);
 
         if (!$activeMap) {
-            return $this->json(['error' => 'Aucune carte active'], Response::HTTP_NOT_FOUND);
+            return $this->json(
+                ['error' => 'Aucune carte active'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         return $this->json($activeMap, Response::HTTP_OK, [], ['groups' => 'map:read']);
@@ -90,23 +110,39 @@ class MapController extends AbstractController
         $game = $this->gameRepository->find($gameId);
 
         if (!$game) {
-            return $this->json(['error' => 'Partie introuvable'], Response::HTTP_NOT_FOUND);
+            return $this->json(
+                ['error' => 'Partie introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         $map = $this->mapRepository->find($id);
 
-        if (!$map || $map->getGame()->getId() !== $gameId) {
-            return $this->json(['error' => 'Carte introuvable'], Response::HTTP_NOT_FOUND);
+        // Vérification null-safety pour PHPStan
+        $mapGame = $map?->getGame();
+        if (!$map || !$mapGame || $mapGame->getId() !== $gameId) {
+            return $this->json(
+                ['error' => 'Carte introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
         if (!$game->canBeViewedBy($user)) {
-            return $this->json(['error' => 'Accès refusé'], Response::HTTP_FORBIDDEN);
+            return $this->json(
+                ['error' => 'Accès refusé'],
+                Response::HTTP_FORBIDDEN
+            );
         }
 
-        return $this->json($map, Response::HTTP_OK, [], ['groups' => 'map:read']);
+        return $this->json(
+            $map,
+            Response::HTTP_OK,
+            [],
+            ['groups' => 'map:read']
+        );
     }
 
     /**
@@ -118,14 +154,20 @@ class MapController extends AbstractController
         $game = $this->gameRepository->find($gameId);
 
         if (!$game) {
-            return $this->json(['error' => 'Partie introuvable'], Response::HTTP_NOT_FOUND);
+            return $this->json(
+                ['error' => 'Partie introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
         if (!$game->isGameMaster($user)) {
-            return $this->json(['error' => 'Seul le maître du jeu peut créer des cartes'], Response::HTTP_FORBIDDEN);
+            return $this->json(
+                ['error' => 'Seul le maître du jeu peut créer des cartes'],
+                Response::HTTP_FORBIDDEN
+            );
         }
 
         $dto = $this->serializer->deserialize(
@@ -136,15 +178,26 @@ class MapController extends AbstractController
 
         $errors = $this->validator->validate($dto);
         if (count($errors) > 0) {
-            return $this->json(['errors' => (string) $errors], Response::HTTP_BAD_REQUEST);
+            return $this->json(
+                ['errors' => (string) $errors],
+                Response::HTTP_BAD_REQUEST
+            );
         }
 
         try {
             $map = $this->mapService->createMap($game, $dto);
 
-            return $this->json($map, Response::HTTP_CREATED, [], ['groups' => 'map:read']);
+            return $this->json(
+                $map,
+                Response::HTTP_CREATED,
+                [],
+                ['groups' => 'map:read']
+            );
         } catch (\Exception $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->json(
+                ['error' => $e->getMessage()],
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
         }
     }
 
@@ -157,20 +210,31 @@ class MapController extends AbstractController
         $game = $this->gameRepository->find($gameId);
 
         if (!$game) {
-            return $this->json(['error' => 'Partie introuvable'], Response::HTTP_NOT_FOUND);
+            return $this->json(
+                ['error' => 'Partie introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         $map = $this->mapRepository->find($id);
 
-        if (!$map || $map->getGame()->getId() !== $gameId) {
-            return $this->json(['error' => 'Carte introuvable'], Response::HTTP_NOT_FOUND);
+        // Vérification null-safety pour PHPStan
+        $mapGame = $map?->getGame();
+        if (!$map || !$mapGame || $mapGame->getId() !== $gameId) {
+            return $this->json(
+                ['error' => 'Carte introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
         if (!$game->isGameMaster($user)) {
-            return $this->json(['error' => 'Seul le maître du jeu peut modifier des cartes'], Response::HTTP_FORBIDDEN);
+            return $this->json(
+                ['error' => 'Seul le maître du jeu peut modifier des cartes'],
+                Response::HTTP_FORBIDDEN
+            );
         }
 
         $dto = $this->serializer->deserialize(
@@ -181,15 +245,26 @@ class MapController extends AbstractController
 
         $errors = $this->validator->validate($dto);
         if (count($errors) > 0) {
-            return $this->json(['errors' => (string) $errors], Response::HTTP_BAD_REQUEST);
+            return $this->json(
+                ['errors' => (string) $errors],
+                Response::HTTP_BAD_REQUEST
+            );
         }
 
         try {
             $map = $this->mapService->updateMap($map, $dto);
 
-            return $this->json($map, Response::HTTP_OK, [], ['groups' => 'map:read']);
+            return $this->json(
+                $map,
+                Response::HTTP_OK,
+                [],
+                ['groups' => 'map:read']
+            );
         } catch (\Exception $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->json(
+                ['error' => $e->getMessage()],
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
         }
     }
 
@@ -202,28 +277,47 @@ class MapController extends AbstractController
         $game = $this->gameRepository->find($gameId);
 
         if (!$game) {
-            return $this->json(['error' => 'Partie introuvable'], Response::HTTP_NOT_FOUND);
+            return $this->json(
+                ['error' => 'Partie introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         $map = $this->mapRepository->find($id);
 
-        if (!$map || $map->getGame()->getId() !== $gameId) {
-            return $this->json(['error' => 'Carte introuvable'], Response::HTTP_NOT_FOUND);
+        // Vérification null-safety pour PHPStan
+        $mapGame = $map?->getGame();
+        if (!$map || !$mapGame || $mapGame->getId() !== $gameId) {
+            return $this->json(
+                ['error' => 'Carte introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
         if (!$game->isGameMaster($user)) {
-            return $this->json(['error' => 'Seul le maître du jeu peut activer des cartes'], Response::HTTP_FORBIDDEN);
+            return $this->json(
+                ['error' => 'Seul le maître du jeu peut activer des cartes'],
+                Response::HTTP_FORBIDDEN
+            );
         }
 
         try {
             $map = $this->mapService->activateMap($map);
 
-            return $this->json($map, Response::HTTP_OK, [], ['groups' => 'map:read']);
+            return $this->json(
+                $map,
+                Response::HTTP_OK,
+                [],
+                ['groups' => 'map:read']
+            );
         } catch (\Exception $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->json(
+                ['error' => $e->getMessage()],
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
         }
     }
 
@@ -236,28 +330,45 @@ class MapController extends AbstractController
         $game = $this->gameRepository->find($gameId);
 
         if (!$game) {
-            return $this->json(['error' => 'Partie introuvable'], Response::HTTP_NOT_FOUND);
+            return $this->json(
+                ['error' => 'Partie introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         $map = $this->mapRepository->find($id);
 
-        if (!$map || $map->getGame()->getId() !== $gameId) {
-            return $this->json(['error' => 'Carte introuvable'], Response::HTTP_NOT_FOUND);
+        // Vérification null-safety pour PHPStan
+        $mapGame = $map?->getGame();
+        if (!$map || !$mapGame || $mapGame->getId() !== $gameId) {
+            return $this->json(
+                ['error' => 'Carte introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
         if (!$game->isGameMaster($user)) {
-            return $this->json(['error' => 'Seul le maître du jeu peut supprimer des cartes'], Response::HTTP_FORBIDDEN);
+            return $this->json(
+                ['error' => 'Seul le maître du jeu peut supprimer des cartes'],
+                Response::HTTP_FORBIDDEN
+            );
         }
 
         try {
             $this->mapService->deleteMap($map);
 
-            return $this->json(['message' => 'Carte supprimée avec succès'], Response::HTTP_OK);
+            return $this->json(
+                ['message' => 'Carte supprimée avec succès'],
+                Response::HTTP_OK
+            );
         } catch (\Exception $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->json(
+                ['error' => $e->getMessage()],
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
         }
     }
 }

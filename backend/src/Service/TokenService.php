@@ -8,15 +8,17 @@ use App\DTO\Token\CreateTokenDTO;
 use App\DTO\Token\MoveTokenDTO;
 use App\Entity\GameMap;
 use App\Entity\GameToken;
+use App\Entity\User;
 use App\Repository\GameTokenRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
-class TokenService
+readonly class TokenService
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
-        private readonly GameTokenRepository $tokenRepository,
+        private EntityManagerInterface $em,
+        private GameTokenRepository $tokenRepository,
+        private MercurePublisher $mercurePublisher,
     ) {
     }
 
@@ -25,33 +27,55 @@ class TokenService
      */
     public function createToken(GameMap $map, CreateTokenDTO $dto): GameToken
     {
-        // Validation: vérifier que les coordonnées sont dans les limites de la carte
-        $this->validatePosition($map, $dto->x, $dto->y);
+        // Validation des coordonnées dans les limites de la carte
+        if (
+            $dto->x < 0
+            || $dto->x > $map->getWidth()
+            || $dto->y < 0
+            || $dto->y > $map->getHeight()
+        ) {
+            throw new BadRequestHttpException('Position invalide pour cette carte.');
+        }
 
         $token = new GameToken();
         $token->setMap($map);
         $token->setName($dto->name);
-        $token->setType($dto->type);
-        $token->setImageUrl($dto->imageUrl);
         $token->setX($dto->x);
         $token->setY($dto->y);
         $token->setSize($dto->size);
-        $token->setRotation($dto->rotation);
-        $token->setIsVisible($dto->isVisible);
-        $token->setIsLocked($dto->isLocked);
-        $token->setLayer($dto->layer);
-        $token->setSettings($dto->settings);
+        $token->setImageUrl($dto->imageUrl);
+        $token->setIsVisible($dto->isVisible ?? true);
+        $token->setIsLocked($dto->isLocked ?? false);
 
-        $this->entityManager->persist($token);
-        $this->entityManager->flush();
+        $this->em->persist($token);
+        $this->em->flush();
+
+        // Vérifications pour PHPStan
+        $game = $map->getGame();
+        assert(null !== $game, 'Map must have a game');
+        $gameId = $game->getId();
+        assert(null !== $gameId, 'Game ID cannot be null after flush');
+
+        // Publication via Mercure
+        $this->mercurePublisher->publishTokenCreated($gameId, [
+            'tokenId' => $token->getId(),
+            'mapId' => $map->getId(),
+            'name' => $token->getName(),
+            'x' => $token->getX(),
+            'y' => $token->getY(),
+            'size' => $token->getSize(),
+            'imageUrl' => $token->getImageUrl(),
+            'isVisible' => $token->isVisible(),
+            'isLocked' => $token->isLocked(),
+        ]);
 
         return $token;
     }
 
     /**
-     * Déplace un token avec validation snap-to-grid.
+     * Déplace un token.
      */
-    public function moveToken(GameToken $token, int $x, int $y): GameToken
+    public function moveToken(GameToken $token, MoveTokenDTO $dto): GameToken
     {
         // Vérifier que le token n'est pas verrouillé
         if ($token->isLocked()) {
@@ -59,37 +83,39 @@ class TokenService
         }
 
         $map = $token->getMap();
-        
-        if (null === $map) {
-            throw new BadRequestHttpException('Le token n\'est associé à aucune carte.');
+        assert(null !== $map, 'Token must have a map');
+
+        // Validation des nouvelles coordonnées
+        if (
+            $dto->x < 0
+            || $dto->x > $map->getWidth()
+            || $dto->y < 0
+            || $dto->y > $map->getHeight()
+        ) {
+            throw new BadRequestHttpException('Position invalide pour cette carte.');
         }
 
-        // Validation snap-to-grid: les coordonnées doivent être des entiers (cases)
-        $this->validatePosition($map, $x, $y);
+        $token->setX($dto->x);
+        $token->setY($dto->y);
 
-        // Snap to grid: s'assurer que les coordonnées sont bien des entiers
-        $snappedX = (int) round($x);
-        $snappedY = (int) round($y);
+        $this->em->flush();
 
-        $token->move($snappedX, $snappedY);
+        // Vérifications pour PHPStan
+        $game = $map->getGame();
+        assert(null !== $game, 'Map must have a game');
+        $gameId = $game->getId();
+        assert(null !== $gameId, 'Game ID cannot be null');
+        $mapId = $map->getId();
+        assert(null !== $mapId, 'Map ID cannot be null');
 
-        $this->entityManager->flush();
-
-        return $token;
-    }
-
-    /**
-     * Déplace un token avec un DTO.
-     */
-    public function moveTokenWithDTO(GameToken $token, MoveTokenDTO $dto): GameToken
-    {
-        $this->moveToken($token, $dto->x, $dto->y);
-
-        // Appliquer la rotation si fournie
-        if (null !== $dto->rotation) {
-            $token->setRotation($dto->rotation);
-            $this->entityManager->flush();
-        }
+        // Publication via Mercure
+        $this->mercurePublisher->publishTokenMove($gameId, [
+            'tokenId' => $token->getId(),
+            'mapId' => $mapId,
+            'x' => $token->getX(),
+            'y' => $token->getY(),
+            'movedAt' => (new \DateTimeImmutable())->format('c'),
+        ]);
 
         return $token;
     }
@@ -99,49 +125,79 @@ class TokenService
      *
      * @return GameToken[]
      */
-    public function getTokensByMap(GameMap $map, bool $visibleOnly = false): array
+    public function getTokensByMap(GameMap $map, ?User $user = null): array
     {
-        return $this->tokenRepository->findTokensByMap($map, $visibleOnly);
+        if ($user) {
+            return $this->tokenRepository->findVisibleByMap($map, $user);
+        }
+
+        return $this->tokenRepository->findByMap($map);
     }
 
     /**
-     * Met à jour un token.
+     * Récupère un token par son ID.
      */
-    public function updateToken(GameToken $token, array $data): GameToken
+    public function getTokenById(int $tokenId): ?GameToken
     {
-        if (isset($data['name'])) {
-            $token->setName($data['name']);
-        }
+        return $this->tokenRepository->find($tokenId);
+    }
 
-        if (isset($data['imageUrl'])) {
-            $token->setImageUrl($data['imageUrl']);
-        }
+    /**
+     * Toggle la visibilité d'un token.
+     */
+    public function toggleVisibility(GameToken $token): GameToken
+    {
+        $token->setIsVisible(!$token->isVisible());
+        $this->em->flush();
 
-        if (isset($data['size'])) {
-            $token->setSize((float) $data['size']);
-        }
+        // Vérifications pour PHPStan
+        $map = $token->getMap();
+        assert(null !== $map, 'Token must have a map');
+        $game = $map->getGame();
+        assert(null !== $game, 'Map must have a game');
+        $gameId = $game->getId();
+        assert(null !== $gameId, 'Game ID cannot be null');
 
-        if (isset($data['rotation'])) {
-            $token->setRotation((int) $data['rotation']);
-        }
+        // Publication Mercure
+        $this->mercurePublisher->publishGameEvent(
+            $gameId,
+            'token',
+            [
+                'action' => 'visibility_changed',
+                'tokenId' => $token->getId(),
+                'isVisible' => $token->isVisible(),
+            ]
+        );
 
-        if (isset($data['isVisible'])) {
-            $token->setIsVisible((bool) $data['isVisible']);
-        }
+        return $token;
+    }
 
-        if (isset($data['isLocked'])) {
-            $token->setIsLocked((bool) $data['isLocked']);
-        }
+    /**
+     * Toggle le verrouillage d'un token.
+     */
+    public function toggleLock(GameToken $token): GameToken
+    {
+        $token->setIsLocked(!$token->isLocked());
+        $this->em->flush();
 
-        if (isset($data['layer'])) {
-            $token->setLayer($data['layer']);
-        }
+        // Vérifications pour PHPStan
+        $map = $token->getMap();
+        assert(null !== $map, 'Token must have a map');
+        $game = $map->getGame();
+        assert(null !== $game, 'Map must have a game');
+        $gameId = $game->getId();
+        assert(null !== $gameId, 'Game ID cannot be null');
 
-        if (isset($data['settings'])) {
-            $token->setSettings($data['settings']);
-        }
-
-        $this->entityManager->flush();
+        // Publication Mercure
+        $this->mercurePublisher->publishGameEvent(
+            $gameId,
+            'token',
+            [
+                'action' => 'lock_changed',
+                'tokenId' => $token->getId(),
+                'isLocked' => $token->isLocked(),
+            ]
+        );
 
         return $token;
     }
@@ -151,61 +207,38 @@ class TokenService
      */
     public function deleteToken(GameToken $token): void
     {
-        $this->entityManager->remove($token);
-        $this->entityManager->flush();
+        // Vérifications pour PHPStan
+        $map = $token->getMap();
+        assert(null !== $map, 'Token must have a map');
+        $game = $map->getGame();
+        assert(null !== $game, 'Map must have a game');
+        $gameId = $game->getId();
+        assert(null !== $gameId, 'Game ID cannot be null');
+        $tokenId = $token->getId();
+        assert(null !== $tokenId, 'Token ID cannot be null');
+
+        $this->em->remove($token);
+        $this->em->flush();
+
+        // Publication Mercure
+        $this->mercurePublisher->publishTokenDeleted($gameId, $tokenId);
     }
 
     /**
-     * Affiche ou masque un token.
+     * Récupère les tokens visibles d'une carte.
+     *
+     * @return GameToken[]
      */
-    public function toggleVisibility(GameToken $token): GameToken
+    public function getVisibleTokens(GameMap $map, User $user): array
     {
-        if ($token->isVisible()) {
-            $token->hide();
-        } else {
-            $token->show();
-        }
-
-        $this->entityManager->flush();
-
-        return $token;
+        return $this->tokenRepository->findVisibleByMap($map, $user);
     }
 
     /**
-     * Verrouille ou déverrouille un token.
+     * Compte le nombre de tokens sur une carte.
      */
-    public function toggleLock(GameToken $token): GameToken
+    public function countTokensOnMap(GameMap $map): int
     {
-        if ($token->isLocked()) {
-            $token->unlock();
-        } else {
-            $token->lock();
-        }
-
-        $this->entityManager->flush();
-
-        return $token;
-    }
-
-    /**
-     * Valide qu'une position est dans les limites de la carte.
-     */
-    private function validatePosition(GameMap $map, int $x, int $y): void
-    {
-        if ($x < 0 || $y < 0) {
-            throw new BadRequestHttpException('Les coordonnées ne peuvent pas être négatives.');
-        }
-
-        if ($x >= $map->getWidth()) {
-            throw new BadRequestHttpException(
-                sprintf('La position X (%d) dépasse la largeur de la carte (%d).', $x, $map->getWidth())
-            );
-        }
-
-        if ($y >= $map->getHeight()) {
-            throw new BadRequestHttpException(
-                sprintf('La position Y (%d) dépasse la hauteur de la carte (%d).', $y, $map->getHeight())
-            );
-        }
+        return $this->tokenRepository->countByMap($map);
     }
 }

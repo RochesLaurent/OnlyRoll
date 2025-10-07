@@ -12,67 +12,86 @@ use App\Repository\GameMessageRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
-class ChatService
+readonly class ChatService
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
-        private readonly GameMessageRepository $messageRepository,
-        private readonly UserRepository $userRepository,
+        private EntityManagerInterface $em,
+        private GameMessageRepository $messageRepository,
+        private UserRepository $userRepository,
+        private MercurePublisher $mercurePublisher,
     ) {
     }
 
-    /**
-     * Envoie un message dans le chat d'un jeu.
-     */
     public function sendMessage(Game $game, User $user, SendMessageDTO $dto): GameMessage
     {
-        $message = new GameMessage();
-        $message->setGame($game);
-        $message->setUser($user);
-        $message->setType($dto->type);
-        $message->setContent($dto->content);
-        $message->setIsInCharacter($dto->isInCharacter);
-
-        // Gestion des résultats de dés
-        if (null !== $dto->diceResult) {
-            $message->setDiceResult($dto->diceResult);
-        }
-
-        // Gestion des chuchotements (whispers)
-        if ($dto->type === GameMessage::TYPE_WHISPER) {
+        // Validation du type whisper
+        $recipient = null;
+        if (GameMessage::TYPE_WHISPER === $dto->type) {
             if (null === $dto->recipientId) {
-                throw new BadRequestHttpException('Un destinataire est requis pour les chuchotements.');
+                throw new BadRequestHttpException('Un destinataire est requis pour un message privé.');
             }
 
             $recipient = $this->userRepository->find($dto->recipientId);
-            
             if (null === $recipient) {
-                throw new NotFoundHttpException('Le destinataire n\'existe pas.');
+                throw new BadRequestHttpException('Destinataire introuvable.');
             }
 
+            // Vérifier que le destinataire est dans la partie
+            if (!$game->hasPlayer($recipient)) {
+                throw new BadRequestHttpException('Le destinataire doit être membre de la partie.');
+            }
+        }
+
+        // Validation messages système (seulement pour le GM)
+        if (GameMessage::TYPE_SYSTEM === $dto->type) {
+            if (!$game->isGameMaster($user)) {
+                throw new BadRequestHttpException('Seul le MJ peut envoyer des messages système.');
+            }
+        }
+
+        // Création du message
+        $message = new GameMessage();
+        $message->setGame($game);
+        $message->setUser($user);
+        $message->setContent($dto->content);
+        $message->setType($dto->type);
+        $message->setIsInCharacter($dto->isInCharacter);
+
+        if ($recipient) {
             $message->setRecipient($recipient);
         }
 
-        // Validation: les messages système ne peuvent être envoyés que par le système
-        if ($dto->type === GameMessage::TYPE_SYSTEM) {
-            // Vous pouvez ajouter une validation ici pour vérifier que l'utilisateur
-            // a les permissions pour envoyer des messages système
-            // Par exemple: vérifier si c'est le Game Master
-            if (!$game->isGameMaster($user)) {
-                throw new BadRequestHttpException('Seul le maître du jeu peut envoyer des messages système.');
-            }
-        }
+        $this->em->persist($message);
+        $this->em->flush();
 
-        $this->entityManager->persist($message);
-        $this->entityManager->flush();
+        // Vérifications pour PHPStan
+        $gameId = $game->getId();
+        assert(null !== $gameId, 'Game ID cannot be null after flush');
+
+        $createdAt = $message->getCreatedAt();
+        assert(null !== $createdAt, 'CreatedAt cannot be null after flush');
+
+        // Publication via Mercure
+        $this->mercurePublisher->publishChatMessage($gameId, [
+            'messageId' => $message->getId(),
+            'userId' => $user->getId(),
+            'userName' => $user->getPseudo(),
+            'content' => $message->getContent(),
+            'type' => $message->getType(),
+            'isIC' => $message->isInCharacter(),
+            'recipientId' => $message->getRecipient()?->getId(),
+            'recipientName' => $message->getRecipient()?->getPseudo(),
+            'createdAt' => $createdAt->format('c'),
+        ]);
 
         return $message;
     }
 
     /**
-     * Récupère les messages récents d'un jeu.
+     * Récupère les messages récents d'une partie.
+     *
+     * @param int $limit Nombre de messages à récupérer (max 200)
      *
      * @return GameMessage[]
      */
@@ -86,114 +105,157 @@ class ChatService
     }
 
     /**
-     * Récupère les messages visibles pour un utilisateur.
+     * Récupère les messages visibles pour un utilisateur
+     * (exclut les whispers dont il n'est pas destinataire).
      *
      * @return GameMessage[]
      */
-    public function getVisibleMessagesForUser(Game $game, User $user, int $limit = 50): array
+    public function getVisibleMessagesForUser(Game $game, User $user, ?int $limit = null): array
     {
-        return $this->messageRepository->findVisibleMessagesForUser($game, $user, $limit);
+        return $this->messageRepository->findVisibleForUser($game, $user);
     }
 
     /**
-     * Récupère les messages par type.
+     * Récupère les messages d'un type spécifique.
      *
      * @return GameMessage[]
      */
-    public function getMessagesByType(Game $game, string $type, int $limit = 50): array
+    public function getMessagesByType(Game $game, string $type, ?int $limit = null): array
     {
-        $validTypes = [
-            GameMessage::TYPE_CHAT,
-            GameMessage::TYPE_EMOTE,
-            GameMessage::TYPE_WHISPER,
-            GameMessage::TYPE_SYSTEM,
-            GameMessage::TYPE_DICE_ROLL,
-        ];
-
-        if (!in_array($type, $validTypes, true)) {
-            throw new BadRequestHttpException('Type de message invalide.');
+        if (!in_array($type, GameMessage::TYPES, true)) {
+            throw new BadRequestHttpException("Type de message invalide: {$type}");
         }
 
-        return $this->messageRepository->findMessagesByType($game, $type, $limit);
+        return $this->messageRepository->findByType($game, $type);
     }
 
     /**
-     * Crée un message système.
+     * Crée un message système
+     * (réservé au Game Master).
      */
     public function createSystemMessage(Game $game, string $content): GameMessage
     {
         $message = new GameMessage();
         $message->setGame($game);
-        $message->setType(GameMessage::TYPE_SYSTEM);
+        $message->setUser($game->getGameMaster());
         $message->setContent($content);
-        
-        // Pour les messages système, on utilise le Game Master comme expéditeur
-        $gameMaster = $game->getGameMaster();
-        if (null === $gameMaster) {
-            throw new BadRequestHttpException('Le jeu doit avoir un maître de jeu.');
-        }
-        
-        $message->setUser($gameMaster);
+        $message->setType(GameMessage::TYPE_SYSTEM);
+        $message->setIsInCharacter(false);
 
-        $this->entityManager->persist($message);
-        $this->entityManager->flush();
+        $this->em->persist($message);
+        $this->em->flush();
+
+        // Vérifications pour PHPStan
+        $gameId = $game->getId();
+        assert(null !== $gameId, 'Game ID cannot be null after flush');
+
+        $createdAt = $message->getCreatedAt();
+        assert(null !== $createdAt, 'CreatedAt cannot be null after flush');
+
+        // Publication Mercure
+        $this->mercurePublisher->publishChatMessage($gameId, [
+            'messageId' => $message->getId(),
+            'userId' => null,
+            'userName' => 'Système',
+            'content' => $message->getContent(),
+            'type' => $message->getType(),
+            'isIC' => false,
+            'recipientId' => null,
+            'recipientName' => null,
+            'createdAt' => $createdAt->format('c'),
+        ]);
 
         return $message;
     }
 
     /**
      * Crée un message de lancer de dés.
+     *
+     * @param string               $diceExpression Expression du lancer (ex: "1d20+5")
+     * @param array<string, mixed> $results        Résultats du lancer
+     * @param bool                 $isPrivate      Si le lancer est privé
      */
     public function createDiceRollMessage(
         Game $game,
         User $user,
-        string $diceFormula,
+        string $diceExpression,
         array $results,
-        int $total
+        bool $isPrivate = false,
     ): GameMessage {
+        $content = sprintf(
+            '%s a lancé %s et obtenu %d',
+            $user->getPseudo(),
+            $diceExpression,
+            $results['total'] ?? 0
+        );
+
         $message = new GameMessage();
         $message->setGame($game);
         $message->setUser($user);
+        $message->setContent($content);
         $message->setType(GameMessage::TYPE_DICE_ROLL);
-        $message->setContent("Lance {$diceFormula}");
-        
-        $message->setDiceRoll(
-            ['formula' => $diceFormula],
-            $results,
-            $total
-        );
+        $message->setIsInCharacter(true);
+        $message->setDiceResult($results);
 
-        $this->entityManager->persist($message);
-        $this->entityManager->flush();
+        $this->em->persist($message);
+        $this->em->flush();
+
+        // Vérifications pour PHPStan
+        $gameId = $game->getId();
+        assert(null !== $gameId, 'Game ID cannot be null after flush');
+
+        $createdAt = $message->getCreatedAt();
+        assert(null !== $createdAt, 'CreatedAt cannot be null after flush');
+
+        // Publication via Mercure
+        $this->mercurePublisher->publishDiceRoll($gameId, [
+            'messageId' => $message->getId(),
+            'userId' => $user->getId(),
+            'userName' => $user->getPseudo(),
+            'expression' => $diceExpression,
+            'results' => $results,
+            'createdAt' => $createdAt->format('c'),
+        ]);
 
         return $message;
     }
 
     /**
-     * Récupère les statistiques de messages pour un jeu.
+     * Récupère les statistiques des messages d'une partie.
      *
-     * @return array<string, int>
+     * @return array{total: int, byType: array<string, int>}
      */
     public function getMessageStats(Game $game): array
     {
-        return $this->messageRepository->countMessagesByType($game);
+        return $this->messageRepository->getStatsByGame($game);
     }
 
     /**
-     * Supprime les anciens messages d'un jeu.
+     * Supprime les messages anciens d'une partie.
+     *
+     * @param \DateTimeInterface $before Supprimer les messages avant cette date
+     *
+     * @return int Nombre de messages supprimés
      */
     public function deleteOldMessages(Game $game, \DateTimeInterface $before): int
     {
-        return $this->messageRepository->deleteOldMessages($game, $before);
+        return $this->messageRepository->deleteOlderThan($game, $before);
     }
 
     /**
-     * Récupère les messages depuis une date donnée.
+     * Récupère les messages créés après une date donnée.
+     * Utile pour le polling ou la récupération incrémentale.
      *
      * @return GameMessage[]
      */
-    public function getMessagesSince(Game $game, \DateTimeInterface $since): array
+    public function getMessagesSince(Game $game, \DateTimeInterface $since, ?User $user = null): array
     {
-        return $this->messageRepository->findMessagesSince($game, $since);
+        if ($user) {
+            // Si un utilisateur est fourni, on filtre les messages visibles pour lui
+            return $this->messageRepository->findVisibleSince($game, $since, $user);
+        }
+
+        // Sinon, on retourne tous les messages depuis cette date
+        return $this->messageRepository->findSince($game, $since);
     }
 }

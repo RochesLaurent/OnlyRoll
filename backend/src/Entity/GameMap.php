@@ -144,14 +144,14 @@ class GameMap
     public function activate(): static
     {
         $this->isActive = true;
-        
+
         return $this;
     }
 
     public function deactivate(): static
     {
         $this->isActive = false;
-        
+
         return $this;
     }
 

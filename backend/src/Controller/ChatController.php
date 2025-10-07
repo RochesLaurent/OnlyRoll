@@ -36,14 +36,20 @@ class ChatController extends AbstractController
         $game = $this->gameRepository->find($gameId);
 
         if (!$game) {
-            return $this->json(['error' => 'Partie introuvable'], Response::HTTP_NOT_FOUND);
+            return $this->json(
+                ['error' => 'Partie introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
         if (!$game->canBeViewedBy($user)) {
-            return $this->json(['error' => 'Accès refusé'], Response::HTTP_FORBIDDEN);
+            return $this->json(
+                ['error' => 'Accès refusé'],
+                Response::HTTP_FORBIDDEN
+            );
         }
 
         $limit = (int) $request->query->get('limit', 50);
@@ -52,7 +58,12 @@ class ChatController extends AbstractController
         // Récupérer uniquement les messages visibles pour l'utilisateur
         $messages = $this->chatService->getVisibleMessagesForUser($game, $user, $limit);
 
-        return $this->json($messages, Response::HTTP_OK, [], ['groups' => 'message:list']);
+        return $this->json(
+            $messages,
+            Response::HTTP_OK,
+            [],
+            ['groups' => 'message:list']
+        );
     }
 
     /**
@@ -64,14 +75,20 @@ class ChatController extends AbstractController
         $game = $this->gameRepository->find($gameId);
 
         if (!$game) {
-            return $this->json(['error' => 'Partie introuvable'], Response::HTTP_NOT_FOUND);
+            return $this->json(
+                ['error' => 'Partie introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
         if (!$game->canBeViewedBy($user)) {
-            return $this->json(['error' => 'Accès refusé'], Response::HTTP_FORBIDDEN);
+            return $this->json(
+                ['error' => 'Accès refusé'],
+                Response::HTTP_FORBIDDEN
+            );
         }
 
         $dto = $this->serializer->deserialize(
@@ -82,15 +99,26 @@ class ChatController extends AbstractController
 
         $errors = $this->validator->validate($dto);
         if (count($errors) > 0) {
-            return $this->json(['errors' => (string) $errors], Response::HTTP_BAD_REQUEST);
+            return $this->json(
+                ['errors' => (string) $errors],
+                Response::HTTP_BAD_REQUEST
+            );
         }
 
         try {
             $message = $this->chatService->sendMessage($game, $user, $dto);
 
-            return $this->json($message, Response::HTTP_CREATED, [], ['groups' => 'message:read']);
+            return $this->json(
+                $message,
+                Response::HTTP_CREATED,
+                [],
+                ['groups' => 'message:read']
+            );
         } catch (\Exception $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
+            return $this->json(
+                ['error' => $e->getMessage()],
+                Response::HTTP_BAD_REQUEST
+            );
         }
     }
 
@@ -103,14 +131,20 @@ class ChatController extends AbstractController
         $game = $this->gameRepository->find($gameId);
 
         if (!$game) {
-            return $this->json(['error' => 'Partie introuvable'], Response::HTTP_NOT_FOUND);
+            return $this->json(
+                ['error' => 'Partie introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
         if (!$game->canBeViewedBy($user)) {
-            return $this->json(['error' => 'Accès refusé'], Response::HTTP_FORBIDDEN);
+            return $this->json(
+                ['error' => 'Accès refusé'],
+                Response::HTTP_FORBIDDEN
+            );
         }
 
         $limit = (int) $request->query->get('limit', 50);
@@ -119,9 +153,17 @@ class ChatController extends AbstractController
         try {
             $messages = $this->chatService->getMessagesByType($game, $type, $limit);
 
-            return $this->json($messages, Response::HTTP_OK, [], ['groups' => 'message:list']);
+            return $this->json(
+                $messages,
+                Response::HTTP_OK,
+                [],
+                ['groups' => 'message:list']
+            );
         } catch (\Exception $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
+            return $this->json(
+                ['error' => $e->getMessage()],
+                Response::HTTP_BAD_REQUEST
+            );
         }
     }
 
@@ -134,14 +176,20 @@ class ChatController extends AbstractController
         $game = $this->gameRepository->find($gameId);
 
         if (!$game) {
-            return $this->json(['error' => 'Partie introuvable'], Response::HTTP_NOT_FOUND);
+            return $this->json(
+                ['error' => 'Partie introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
         if (!$game->canBeViewedBy($user)) {
-            return $this->json(['error' => 'Accès refusé'], Response::HTTP_FORBIDDEN);
+            return $this->json(
+                ['error' => 'Accès refusé'],
+                Response::HTTP_FORBIDDEN
+            );
         }
 
         $limit = (int) $request->query->get('limit', 20);
@@ -149,7 +197,12 @@ class ChatController extends AbstractController
 
         $messages = $this->chatService->getMessagesByType($game, GameMessage::TYPE_DICE_ROLL, $limit);
 
-        return $this->json($messages, Response::HTTP_OK, [], ['groups' => 'message:list']);
+        return $this->json(
+            $messages,
+            Response::HTTP_OK,
+            [],
+            ['groups' => 'message:list']
+        );
     }
 
     /**
@@ -161,20 +214,29 @@ class ChatController extends AbstractController
         $game = $this->gameRepository->find($gameId);
 
         if (!$game) {
-            return $this->json(['error' => 'Partie introuvable'], Response::HTTP_NOT_FOUND);
+            return $this->json(
+                ['error' => 'Partie introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
         if (!$game->canBeViewedBy($user)) {
-            return $this->json(['error' => 'Accès refusé'], Response::HTTP_FORBIDDEN);
+            return $this->json(
+                ['error' => 'Accès refusé'],
+                Response::HTTP_FORBIDDEN
+            );
         }
 
         $data = json_decode($request->getContent(), true);
 
         if (!isset($data['formula'])) {
-            return $this->json(['error' => 'La formule de dés est obligatoire'], Response::HTTP_BAD_REQUEST);
+            return $this->json(
+                ['error' => 'La formule de dés est obligatoire'],
+                Response::HTTP_BAD_REQUEST
+            );
         }
 
         $formula = $data['formula'];
@@ -183,7 +245,10 @@ class ChatController extends AbstractController
             // Exemple simple de parsing de dés (à améliorer selon vos besoins)
             // Format attendu: "2d6+3" ou "1d20"
             if (!preg_match('/^(\d+)d(\d+)([+-]\d+)?$/i', $formula, $matches)) {
-                return $this->json(['error' => 'Format de dés invalide. Utilisez le format XdY ou XdY+Z'], Response::HTTP_BAD_REQUEST);
+                return $this->json(
+                    ['error' => 'Format de dés invalide. Utilisez le format XdY ou XdY+Z'],
+                    Response::HTTP_BAD_REQUEST
+                );
             }
 
             $numberOfDice = (int) $matches[1];
@@ -191,11 +256,17 @@ class ChatController extends AbstractController
             $modifier = isset($matches[3]) ? (int) $matches[3] : 0;
 
             if ($numberOfDice < 1 || $numberOfDice > 100) {
-                return $this->json(['error' => 'Le nombre de dés doit être entre 1 et 100'], Response::HTTP_BAD_REQUEST);
+                return $this->json(
+                    ['error' => 'Le nombre de dés doit être entre 1 et 100'],
+                    Response::HTTP_BAD_REQUEST
+                );
             }
 
             if ($sidesPerDie < 2 || $sidesPerDie > 1000) {
-                return $this->json(['error' => 'Le nombre de faces doit être entre 2 et 1000'], Response::HTTP_BAD_REQUEST);
+                return $this->json(
+                    ['error' => 'Le nombre de faces doit être entre 2 et 1000'],
+                    Response::HTTP_BAD_REQUEST
+                );
             }
 
             // Lancer les dés
@@ -209,11 +280,24 @@ class ChatController extends AbstractController
             }
 
             // Créer le message de lancer de dés
-            $message = $this->chatService->createDiceRollMessage($game, $user, $formula, $results, $total);
+            $message = $this->chatService->createDiceRollMessage(
+                $game,
+                $user,
+                $formula,
+                [
+                    'rolls' => $results,
+                    'total' => $total,
+                    'modifier' => $modifier,
+                    'formula' => $formula,
+                ]
+            );
 
             return $this->json($message, Response::HTTP_CREATED, [], ['groups' => 'message:read']);
         } catch (\Exception $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->json(
+                ['error' => $e->getMessage()],
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
         }
     }
 
@@ -226,14 +310,20 @@ class ChatController extends AbstractController
         $game = $this->gameRepository->find($gameId);
 
         if (!$game) {
-            return $this->json(['error' => 'Partie introuvable'], Response::HTTP_NOT_FOUND);
+            return $this->json(
+                ['error' => 'Partie introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
         if (!$game->isGameMaster($user)) {
-            return $this->json(['error' => 'Seul le maître du jeu peut voir les statistiques'], Response::HTTP_FORBIDDEN);
+            return $this->json(
+                ['error' => 'Seul le maître du jeu peut voir les statistiques'],
+                Response::HTTP_FORBIDDEN
+            );
         }
 
         $stats = $this->chatService->getMessageStats($game);
@@ -253,29 +343,41 @@ class ChatController extends AbstractController
         $game = $this->gameRepository->find($gameId);
 
         if (!$game) {
-            return $this->json(['error' => 'Partie introuvable'], Response::HTTP_NOT_FOUND);
+            return $this->json(
+                ['error' => 'Partie introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
         if (!$game->canBeViewedBy($user)) {
-            return $this->json(['error' => 'Accès refusé'], Response::HTTP_FORBIDDEN);
+            return $this->json(
+                ['error' => 'Accès refusé'],
+                Response::HTTP_FORBIDDEN
+            );
         }
 
         $since = $request->query->get('since');
 
-        if (!$since) {
-            return $this->json(['error' => 'Le paramètre "since" est obligatoire'], Response::HTTP_BAD_REQUEST);
+        if (!$since || !is_string($since)) {
+            return $this->json(
+                ['error' => 'Le paramètre "since" est obligatoire'],
+                Response::HTTP_BAD_REQUEST
+            );
         }
 
         try {
             $sinceDate = new \DateTimeImmutable($since);
-            $messages = $this->chatService->getMessagesSince($game, $sinceDate);
+            $messages = $this->chatService->getMessagesSince($game, $sinceDate, $user);
 
             return $this->json($messages, Response::HTTP_OK, [], ['groups' => 'message:list']);
         } catch (\Exception $e) {
-            return $this->json(['error' => 'Format de date invalide'], Response::HTTP_BAD_REQUEST);
+            return $this->json(
+                ['error' => 'Format de date invalide'],
+                Response::HTTP_BAD_REQUEST
+            );
         }
     }
 }

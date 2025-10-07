@@ -70,15 +70,20 @@ class GameMapRepository extends ServiceEntityRepository
      */
     public function activateMap(GameMap $map): void
     {
+        $game = $map->getGame();
+        if (!$game) {
+            throw new \LogicException('La carte doit être associée à un jeu.');
+        }
+
         $em = $this->getEntityManager();
-        
+
         // Désactiver toutes les cartes du jeu
         $em->createQueryBuilder()
             ->update(GameMap::class, 'm')
             ->set('m.isActive', ':inactive')
             ->where('m.game = :game')
             ->setParameter('inactive', false)
-            ->setParameter('game', $map->getGame())
+            ->setParameter('game', $game)
             ->getQuery()
             ->execute();
 

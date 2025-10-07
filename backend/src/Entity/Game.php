@@ -161,6 +161,34 @@ class Game
         return $gameMasterId === $userId;
     }
 
+    /**
+     * Récupère le GamePlayer d'un utilisateur dans cette partie.
+     */
+    public function getPlayerByUser(User $user): ?GamePlayer
+    {
+        $userId = $user->getId();
+
+        if (null === $userId) {
+            return null;
+        }
+
+        foreach ($this->gamePlayers as $gamePlayer) {
+            if ($gamePlayer->getUser()?->getId() === $userId) {
+                return $gamePlayer;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Vérifie si un utilisateur est dans cette partie.
+     */
+    public function hasPlayer(User $user): bool
+    {
+        return null !== $this->getPlayerByUser($user);
+    }
+
     public function getActivePlayersCount(): int
     {
         return $this->gamePlayers->filter(

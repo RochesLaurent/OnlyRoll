@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\GameMap;
 use App\Entity\GameToken;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -15,6 +16,16 @@ class GameTokenRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, GameToken::class);
+    }
+
+    /**
+     * Trouve tous les tokens d'une carte (alias pour compatibilité).
+     *
+     * @return GameToken[]
+     */
+    public function findByMap(GameMap $map): array
+    {
+        return $this->findTokensByMap($map, false);
     }
 
     /**
@@ -46,6 +57,38 @@ class GameTokenRepository extends ServiceEntityRepository
     public function findVisibleTokensByMap(GameMap $map): array
     {
         return $this->findTokensByMap($map, true);
+    }
+
+    /**
+     * Trouve les tokens visibles pour un utilisateur spécifique.
+     * Les tokens invisibles sont visibles uniquement pour le propriétaire.
+     *
+     * @return GameToken[]
+     */
+    public function findVisibleByMap(GameMap $map, User $user): array
+    {
+        return $this->createQueryBuilder('t')
+            ->where('t.map = :map')
+            ->andWhere('t.isVisible = true OR t.owner = :user')
+            ->setParameter('map', $map)
+            ->setParameter('user', $user)
+            ->orderBy('t.layer', 'ASC')
+            ->addOrderBy('t.createdAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Compte le nombre total de tokens sur une carte.
+     */
+    public function countByMap(GameMap $map): int
+    {
+        return (int) $this->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
+            ->where('t.map = :map')
+            ->setParameter('map', $map)
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 
     /**
@@ -92,7 +135,7 @@ class GameTokenRepository extends ServiceEntityRepository
         int $x,
         int $y,
         int $width,
-        int $height
+        int $height,
     ): array {
         return $this->createQueryBuilder('t')
             ->where('t.map = :map')
@@ -187,7 +230,7 @@ class GameTokenRepository extends ServiceEntityRepository
     public function moveTokens(array $positions): void
     {
         $em = $this->getEntityManager();
-        
+
         foreach ($positions as $tokenId => $position) {
             $token = $this->find($tokenId);
             if ($token && !$token->isLocked()) {
@@ -195,7 +238,7 @@ class GameTokenRepository extends ServiceEntityRepository
                 $em->persist($token);
             }
         }
-        
+
         $em->flush();
     }
 }

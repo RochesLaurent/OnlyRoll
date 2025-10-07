@@ -182,12 +182,18 @@ class GameToken
         return $this->x === $x && $this->y === $y;
     }
 
+    /**
+     * @return array{x: int, y: int}
+     */
     #[Groups(['token:read'])]
     public function getPosition(): array
     {
         return ['x' => $this->x, 'y' => $this->y];
     }
 
+    /**
+     * @return array{x: float, y: float}
+     */
     #[Groups(['token:read'])]
     public function getCenterPosition(): array
     {
@@ -200,10 +206,10 @@ class GameToken
     public function occupiesCell(int $cellX, int $cellY): bool
     {
         $sizeInCells = (int) ceil($this->size);
-        
-        return $cellX >= $this->x 
+
+        return $cellX >= $this->x
             && $cellX < $this->x + $sizeInCells
-            && $cellY >= $this->y 
+            && $cellY >= $this->y
             && $cellY < $this->y + $sizeInCells;
     }
 

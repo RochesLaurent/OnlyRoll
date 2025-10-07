@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { watch } from 'vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -94,6 +95,21 @@ const router = createRouter({
     //   ]
     // },
 
+    {
+      path: '/test/mercure/:gameId',
+      name: 'mercure-test',
+      component: () => import('@/components/game/MercureChatTest.vue'),
+      props: (route) => ({ gameId: Number(route.params.gameId) }),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/test/simple/:gameId',
+      name: 'test-simple',
+      component: () => import('@/views/TestSimple.vue'),
+      props: (route) => ({ gameId: Number(route.params.gameId) }),
+      meta: { requiresAuth: true },
+    },
+
     // ========== PAGE 404 ==========
     {
       path: '/:pathMatch(.*)*',
@@ -109,6 +125,28 @@ const router = createRouter({
  */
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
+
+  // ✅ NOUVEAU : Attendre que l'initialisation soit terminée
+  // Évite la race condition lors du chargement direct de l'URL
+  if (authStore.isLoading) {
+    console.log('⏳ Attente de l\'initialisation du store auth...')
+    
+    await new Promise<void>((resolve) => {
+      const unwatch = watch(
+        () => authStore.isLoading,
+        (loading) => {
+          if (!loading) {
+            unwatch()
+            resolve()
+          }
+        },
+        { immediate: true }
+      )
+    })
+  }
+
+  console.log('🛣️ Navigation vers:', to.path)
+  console.log('🛣️ isAuthenticated:', authStore.isAuthenticated)
 
   // ========== VÉRIFICATION DE L'AUTHENTIFICATION ==========
 

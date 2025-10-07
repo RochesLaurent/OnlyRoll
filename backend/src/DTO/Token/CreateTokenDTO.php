@@ -6,14 +6,17 @@ namespace App\DTO\Token;
 
 use Symfony\Component\Validator\Constraints as Assert;
 
+/**
+ * DTO pour la création d'un token sur une carte.
+ */
 class CreateTokenDTO
 {
     #[Assert\NotBlank(message: 'Le nom du token est obligatoire.')]
     #[Assert\Length(
         min: 1,
         max: 250,
-        minMessage: 'Le nom du token doit faire au moins {{ limit }} caractère.',
-        maxMessage: 'Le nom du token ne peut pas dépasser {{ limit }} caractères.'
+        minMessage: 'Le nom doit faire au moins {{ limit }} caractère.',
+        maxMessage: 'Le nom ne peut pas dépasser {{ limit }} caractères.'
     )]
     public string $name;
 
@@ -24,15 +27,22 @@ class CreateTokenDTO
     )]
     public string $type;
 
-    #[Assert\Url(message: 'L\'URL de l\'image n\'est pas valide.')]
+    #[Assert\Url(message: 'L\'URL de l\'image doit être valide.')]
+    #[Assert\Length(
+        max: 500,
+        maxMessage: 'L\'URL ne peut pas dépasser {{ limit }} caractères.'
+    )]
     public ?string $imageUrl = null;
 
-    #[Assert\PositiveOrZero(message: 'La position X doit être positive ou zéro.')]
+    #[Assert\NotNull(message: 'La position X est obligatoire.')]
+    #[Assert\PositiveOrZero(message: 'La position X doit être positive ou nulle.')]
     public int $x = 0;
 
-    #[Assert\PositiveOrZero(message: 'La position Y doit être positive ou zéro.')]
+    #[Assert\NotNull(message: 'La position Y est obligatoire.')]
+    #[Assert\PositiveOrZero(message: 'La position Y doit être positive ou nulle.')]
     public int $y = 0;
 
+    #[Assert\NotNull(message: 'La taille est obligatoire.')]
     #[Assert\Range(
         min: 0.1,
         max: 10.0,
@@ -55,12 +65,13 @@ class CreateTokenDTO
 
     #[Assert\Choice(
         choices: ['background', 'objects', 'tokens', 'effects'],
-        message: 'Le calque doit être "background", "objects", "tokens" ou "effects".'
+        message: 'Le layer doit être "background", "objects", "tokens" ou "effects".'
     )]
     public string $layer = 'tokens';
 
     /**
      * @var array<string, mixed>|null
      */
+    #[Assert\Type(type: 'array', message: 'Les paramètres doivent être un tableau.')]
     public ?array $settings = null;
 }

@@ -59,6 +59,16 @@ class GameMessageRepository extends ServiceEntityRepository
     }
 
     /**
+     * Alias pour findMessagesByType (requis par ChatService).
+     *
+     * @return GameMessage[]
+     */
+    public function findByType(Game $game, string $type): array
+    {
+        return $this->findMessagesByType($game, $type, 200);
+    }
+
+    /**
      * Trouve les chuchotements (whispers) pour un utilisateur.
      *
      * @return GameMessage[]
@@ -115,6 +125,16 @@ class GameMessageRepository extends ServiceEntityRepository
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Alias pour findVisibleMessagesForUser (requis par ChatService).
+     *
+     * @return GameMessage[]
+     */
+    public function findVisibleForUser(Game $game, User $user): array
+    {
+        return $this->findVisibleMessagesForUser($game, $user, 200);
     }
 
     /**
@@ -195,6 +215,22 @@ class GameMessageRepository extends ServiceEntityRepository
     }
 
     /**
+     * Récupère les statistiques des messages d'une partie.
+     *
+     * @return array{total: int, byType: array<string, int>}
+     */
+    public function getStatsByGame(Game $game): array
+    {
+        $total = $this->countMessagesByGame($game);
+        $byType = $this->countMessagesByType($game);
+
+        return [
+            'total' => $total,
+            'byType' => $byType,
+        ];
+    }
+
+    /**
      * Supprime les vieux messages (nettoyage).
      */
     public function deleteOldMessages(Game $game, \DateTimeInterface $before): int
@@ -207,6 +243,14 @@ class GameMessageRepository extends ServiceEntityRepository
             ->setParameter('before', $before)
             ->getQuery()
             ->execute();
+    }
+
+    /**
+     * Alias pour deleteOldMessages (requis par ChatService).
+     */
+    public function deleteOlderThan(Game $game, \DateTimeInterface $before): int
+    {
+        return $this->deleteOldMessages($game, $before);
     }
 
     /**
@@ -225,6 +269,43 @@ class GameMessageRepository extends ServiceEntityRepository
             ->setParameter('user', $user)
             ->orderBy('m.createdAt', 'DESC')
             ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Récupère les messages créés après une date donnée.
+     *
+     * @return GameMessage[]
+     */
+    public function findSince(Game $game, \DateTimeInterface $since): array
+    {
+        return $this->createQueryBuilder('m')
+            ->where('m.game = :game')
+            ->andWhere('m.createdAt > :since')
+            ->setParameter('game', $game)
+            ->setParameter('since', $since)
+            ->orderBy('m.createdAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Récupère les messages visibles pour un utilisateur depuis une date.
+     *
+     * @return GameMessage[]
+     */
+    public function findVisibleSince(Game $game, \DateTimeInterface $since, User $user): array
+    {
+        return $this->createQueryBuilder('m')
+            ->where('m.game = :game')
+            ->andWhere('m.createdAt > :since')
+            ->andWhere('m.type != :whisper OR m.user = :user OR m.recipient = :user')
+            ->setParameter('game', $game)
+            ->setParameter('since', $since)
+            ->setParameter('whisper', GameMessage::TYPE_WHISPER)
+            ->setParameter('user', $user)
+            ->orderBy('m.createdAt', 'ASC')
             ->getQuery()
             ->getResult();
     }

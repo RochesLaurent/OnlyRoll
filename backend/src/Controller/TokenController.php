@@ -40,27 +40,44 @@ class TokenController extends AbstractController
         $game = $this->gameRepository->find($gameId);
 
         if (!$game) {
-            return $this->json(['error' => 'Partie introuvable'], Response::HTTP_NOT_FOUND);
+            return $this->json(
+                ['error' => 'Partie introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         $map = $this->mapRepository->find($mapId);
 
-        if (!$map || $map->getGame()->getId() !== $gameId) {
-            return $this->json(['error' => 'Carte introuvable'], Response::HTTP_NOT_FOUND);
+        // Vérification null-safety pour PHPStan
+        $mapGame = $map?->getGame();
+        if (!$map || !$mapGame || $mapGame->getId() !== $gameId) {
+            return $this->json(
+                ['error' => 'Carte introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
         if (!$game->canBeViewedBy($user)) {
-            return $this->json(['error' => 'Accès refusé'], Response::HTTP_FORBIDDEN);
+            return $this->json(
+                ['error' => 'Accès refusé'],
+                Response::HTTP_FORBIDDEN
+            );
         }
 
         // Les joueurs normaux ne voient que les tokens visibles
-        $visibleOnly = !$game->isGameMaster($user);
-        $tokens = $this->tokenService->getTokensByMap($map, $visibleOnly);
+        $tokens = $game->isGameMaster($user)
+            ? $this->tokenService->getTokensByMap($map)
+            : $this->tokenService->getTokensByMap($map, $user);
 
-        return $this->json($tokens, Response::HTTP_OK, [], ['groups' => 'token:list']);
+        return $this->json(
+            $tokens,
+            Response::HTTP_OK,
+            [],
+            ['groups' => 'token:list']
+        );
     }
 
     /**
@@ -72,28 +89,47 @@ class TokenController extends AbstractController
         $game = $this->gameRepository->find($gameId);
 
         if (!$game) {
-            return $this->json(['error' => 'Partie introuvable'], Response::HTTP_NOT_FOUND);
+            return $this->json(
+                ['error' => 'Partie introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         $token = $this->tokenRepository->find($id);
 
-        if (!$token || $token->getMap()->getId() !== $mapId) {
-            return $this->json(['error' => 'Token introuvable'], Response::HTTP_NOT_FOUND);
+        // Vérification null-safety pour PHPStan
+        $tokenMap = $token?->getMap();
+        if (!$token || !$tokenMap || $tokenMap->getId() !== $mapId) {
+            return $this->json(
+                ['error' => 'Token introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
         if (!$game->canBeViewedBy($user)) {
-            return $this->json(['error' => 'Accès refusé'], Response::HTTP_FORBIDDEN);
+            return $this->json(
+                ['error' => 'Accès refusé'],
+                Response::HTTP_FORBIDDEN
+            );
         }
 
         // Vérifier si le token est visible pour les joueurs normaux
         if (!$game->isGameMaster($user) && !$token->isVisible()) {
-            return $this->json(['error' => 'Token introuvable'], Response::HTTP_NOT_FOUND);
+            return $this->json(
+                ['error' => 'Token introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
-        return $this->json($token, Response::HTTP_OK, [], ['groups' => 'token:read']);
+        return $this->json(
+            $token,
+            Response::HTTP_OK,
+            [],
+            ['groups' => 'token:read']
+        );
     }
 
     /**
@@ -105,20 +141,31 @@ class TokenController extends AbstractController
         $game = $this->gameRepository->find($gameId);
 
         if (!$game) {
-            return $this->json(['error' => 'Partie introuvable'], Response::HTTP_NOT_FOUND);
+            return $this->json(
+                ['error' => 'Partie introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         $map = $this->mapRepository->find($mapId);
 
-        if (!$map || $map->getGame()->getId() !== $gameId) {
-            return $this->json(['error' => 'Carte introuvable'], Response::HTTP_NOT_FOUND);
+        // Vérification null-safety pour PHPStan
+        $mapGame = $map?->getGame();
+        if (!$map || !$mapGame || $mapGame->getId() !== $gameId) {
+            return $this->json(
+                ['error' => 'Carte introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
         if (!$game->isGameMaster($user)) {
-            return $this->json(['error' => 'Seul le maître du jeu peut créer des tokens'], Response::HTTP_FORBIDDEN);
+            return $this->json(
+                ['error' => 'Seul le maître du jeu peut créer des tokens'],
+                Response::HTTP_FORBIDDEN
+            );
         }
 
         $dto = $this->serializer->deserialize(
@@ -129,15 +176,26 @@ class TokenController extends AbstractController
 
         $errors = $this->validator->validate($dto);
         if (count($errors) > 0) {
-            return $this->json(['errors' => (string) $errors], Response::HTTP_BAD_REQUEST);
+            return $this->json(
+                ['errors' => (string) $errors],
+                Response::HTTP_BAD_REQUEST
+            );
         }
 
         try {
             $token = $this->tokenService->createToken($map, $dto);
 
-            return $this->json($token, Response::HTTP_CREATED, [], ['groups' => 'token:read']);
+            return $this->json(
+                $token,
+                Response::HTTP_CREATED,
+                [],
+                ['groups' => 'token:read']
+            );
         } catch (\Exception $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
+            return $this->json(
+                ['error' => $e->getMessage()],
+                Response::HTTP_BAD_REQUEST
+            );
         }
     }
 
@@ -150,20 +208,31 @@ class TokenController extends AbstractController
         $game = $this->gameRepository->find($gameId);
 
         if (!$game) {
-            return $this->json(['error' => 'Partie introuvable'], Response::HTTP_NOT_FOUND);
+            return $this->json(
+                ['error' => 'Partie introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         $token = $this->tokenRepository->find($id);
 
-        if (!$token || $token->getMap()->getId() !== $mapId) {
-            return $this->json(['error' => 'Token introuvable'], Response::HTTP_NOT_FOUND);
+        // Vérification null-safety pour PHPStan
+        $tokenMap = $token?->getMap();
+        if (!$token || !$tokenMap || $tokenMap->getId() !== $mapId) {
+            return $this->json(
+                ['error' => 'Token introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
         if (!$game->canBeViewedBy($user)) {
-            return $this->json(['error' => 'Accès refusé'], Response::HTTP_FORBIDDEN);
+            return $this->json(
+                ['error' => 'Accès refusé'],
+                Response::HTTP_FORBIDDEN
+            );
         }
 
         $dto = $this->serializer->deserialize(
@@ -174,15 +243,26 @@ class TokenController extends AbstractController
 
         $errors = $this->validator->validate($dto);
         if (count($errors) > 0) {
-            return $this->json(['errors' => (string) $errors], Response::HTTP_BAD_REQUEST);
+            return $this->json(
+                ['errors' => (string) $errors],
+                Response::HTTP_BAD_REQUEST
+            );
         }
 
         try {
-            $token = $this->tokenService->moveTokenWithDTO($token, $dto);
+            $token = $this->tokenService->moveToken($token, $dto);
 
-            return $this->json($token, Response::HTTP_OK, [], ['groups' => 'token:read']);
+            return $this->json(
+                $token,
+                Response::HTTP_OK,
+                [],
+                ['groups' => 'token:read']
+            );
         } catch (\Exception $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
+            return $this->json(
+                ['error' => $e->getMessage()],
+                Response::HTTP_BAD_REQUEST
+            );
         }
     }
 
@@ -195,28 +275,47 @@ class TokenController extends AbstractController
         $game = $this->gameRepository->find($gameId);
 
         if (!$game) {
-            return $this->json(['error' => 'Partie introuvable'], Response::HTTP_NOT_FOUND);
+            return $this->json(
+                ['error' => 'Partie introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         $token = $this->tokenRepository->find($id);
 
-        if (!$token || $token->getMap()->getId() !== $mapId) {
-            return $this->json(['error' => 'Token introuvable'], Response::HTTP_NOT_FOUND);
+        // Vérification null-safety pour PHPStan
+        $tokenMap = $token?->getMap();
+        if (!$token || !$tokenMap || $tokenMap->getId() !== $mapId) {
+            return $this->json(
+                ['error' => 'Token introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
         if (!$game->isGameMaster($user)) {
-            return $this->json(['error' => 'Seul le maître du jeu peut modifier la visibilité'], Response::HTTP_FORBIDDEN);
+            return $this->json(
+                ['error' => 'Seul le maître du jeu peut modifier la visibilité'],
+                Response::HTTP_FORBIDDEN
+            );
         }
 
         try {
             $token = $this->tokenService->toggleVisibility($token);
 
-            return $this->json($token, Response::HTTP_OK, [], ['groups' => 'token:read']);
+            return $this->json(
+                $token,
+                Response::HTTP_OK,
+                [],
+                ['groups' => 'token:read']
+            );
         } catch (\Exception $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->json(
+                ['error' => $e->getMessage()],
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
         }
     }
 
@@ -229,28 +328,47 @@ class TokenController extends AbstractController
         $game = $this->gameRepository->find($gameId);
 
         if (!$game) {
-            return $this->json(['error' => 'Partie introuvable'], Response::HTTP_NOT_FOUND);
+            return $this->json(
+                ['error' => 'Partie introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         $token = $this->tokenRepository->find($id);
 
-        if (!$token || $token->getMap()->getId() !== $mapId) {
-            return $this->json(['error' => 'Token introuvable'], Response::HTTP_NOT_FOUND);
+        // Vérification null-safety pour PHPStan
+        $tokenMap = $token?->getMap();
+        if (!$token || !$tokenMap || $tokenMap->getId() !== $mapId) {
+            return $this->json(
+                ['error' => 'Token introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
         if (!$game->isGameMaster($user)) {
-            return $this->json(['error' => 'Seul le maître du jeu peut verrouiller des tokens'], Response::HTTP_FORBIDDEN);
+            return $this->json(
+                ['error' => 'Seul le maître du jeu peut verrouiller des tokens'],
+                Response::HTTP_FORBIDDEN
+            );
         }
 
         try {
             $token = $this->tokenService->toggleLock($token);
 
-            return $this->json($token, Response::HTTP_OK, [], ['groups' => 'token:read']);
+            return $this->json(
+                $token,
+                Response::HTTP_OK,
+                [],
+                ['groups' => 'token:read']
+            );
         } catch (\Exception $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->json(
+                ['error' => $e->getMessage()],
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
         }
     }
 
@@ -263,28 +381,45 @@ class TokenController extends AbstractController
         $game = $this->gameRepository->find($gameId);
 
         if (!$game) {
-            return $this->json(['error' => 'Partie introuvable'], Response::HTTP_NOT_FOUND);
+            return $this->json(
+                ['error' => 'Partie introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         $token = $this->tokenRepository->find($id);
 
-        if (!$token || $token->getMap()->getId() !== $mapId) {
-            return $this->json(['error' => 'Token introuvable'], Response::HTTP_NOT_FOUND);
+        // Vérification null-safety pour PHPStan
+        $tokenMap = $token?->getMap();
+        if (!$token || !$tokenMap || $tokenMap->getId() !== $mapId) {
+            return $this->json(
+                ['error' => 'Token introuvable'],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
         if (!$game->isGameMaster($user)) {
-            return $this->json(['error' => 'Seul le maître du jeu peut supprimer des tokens'], Response::HTTP_FORBIDDEN);
+            return $this->json(
+                ['error' => 'Seul le maître du jeu peut supprimer des tokens'],
+                Response::HTTP_FORBIDDEN
+            );
         }
 
         try {
             $this->tokenService->deleteToken($token);
 
-            return $this->json(['message' => 'Token supprimé avec succès'], Response::HTTP_OK);
+            return $this->json(
+                ['message' => 'Token supprimé avec succès'],
+                Response::HTTP_OK
+            );
         } catch (\Exception $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->json(
+                ['error' => $e->getMessage()],
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
         }
     }
 }

@@ -1,0 +1,23 @@
+mercure:
+    # Hub Mercure par défaut
+    default_hub: default
+    
+    # Configuration des hubs
+    hubs:
+        default:
+            # URL interne (backend → mercure)
+            url: '%env(MERCURE_URL)%'
+            
+            # URL publique (frontend → mercure)
+            public_url: '%env(MERCURE_PUBLIC_URL)%'
+            
+            # Configuration JWT
+            jwt:
+                # Secret pour signer les tokens
+                secret: '%env(MERCURE_JWT_SECRET)%'
+                
+                # Autoriser la publication sur tous les topics en dev
+                publish: ['*']
+                
+                # Autoriser l'abonnement à tous les topics en dev
+                subscribe: ['*']

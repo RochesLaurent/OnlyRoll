@@ -108,27 +108,27 @@ class GameMessage
 
     public function isDiceRoll(): bool
     {
-        return $this->type === self::TYPE_DICE_ROLL;
+        return self::TYPE_DICE_ROLL === $this->type;
     }
 
     public function isSystemMessage(): bool
     {
-        return $this->type === self::TYPE_SYSTEM;
+        return self::TYPE_SYSTEM === $this->type;
     }
 
     public function isWhisper(): bool
     {
-        return $this->type === self::TYPE_WHISPER;
+        return self::TYPE_WHISPER === $this->type;
     }
 
     public function isEmote(): bool
     {
-        return $this->type === self::TYPE_EMOTE;
+        return self::TYPE_EMOTE === $this->type;
     }
 
     public function isChat(): bool
     {
-        return $this->type === self::TYPE_CHAT;
+        return self::TYPE_CHAT === $this->type;
     }
 
     public function canBeSeenBy(User $user): bool
@@ -166,8 +166,12 @@ class GameMessage
     }
 
     #[Groups(['message:read'])]
-    public function getFormattedContent(): string
+    public function getFormattedContent(): ?string
     {
+        if (null === $this->content) {
+            return null;
+        }
+
         return match ($this->type) {
             self::TYPE_EMOTE => sprintf('*%s*', $this->content),
             self::TYPE_WHISPER => sprintf('[Chuchotement] %s', $this->content),
@@ -176,6 +180,10 @@ class GameMessage
         };
     }
 
+    /**
+     * @param array<string, mixed> $diceConfig
+     * @param array<int>           $results
+     */
     public function setDiceRoll(array $diceConfig, array $results, int $total): static
     {
         $this->type = self::TYPE_DICE_ROLL;

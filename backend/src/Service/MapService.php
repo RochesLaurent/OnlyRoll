@@ -90,10 +90,13 @@ class MapService
 
         if (null !== $dto->isActive) {
             $map->setIsActive($dto->isActive);
-            
+
             // Si on active cette carte, désactiver les autres
             if ($dto->isActive) {
-                $this->deactivateOtherMaps($map->getGame());
+                $mapGame = $map->getGame();
+                if ($mapGame) {
+                    $this->deactivateOtherMaps($mapGame);
+                }
             }
         }
 
@@ -112,7 +115,7 @@ class MapService
     public function activateMap(GameMap $map): GameMap
     {
         $this->mapRepository->activateMap($map);
-        
+
         return $map;
     }
 
@@ -141,7 +144,7 @@ class MapService
     private function deactivateOtherMaps(Game $game): void
     {
         $maps = $this->mapRepository->findMapsByGame($game, true);
-        
+
         foreach ($maps as $existingMap) {
             $existingMap->deactivate();
             $this->entityManager->persist($existingMap);
