@@ -23,7 +23,8 @@ export function useMercure(gameId: number, token?: string | null) {
    * Connexion au montage du composant
    */
   onMounted(() => {
-    mercureService.connect(gameId, token ?? undefined)
+    const tokenToSend = import.meta.env.DEV ? undefined : (token ?? undefined)
+    mercureService.connect(gameId, tokenToSend)
 
     // Mettre à jour l'état de connexion
     const checkConnection = setInterval(() => {

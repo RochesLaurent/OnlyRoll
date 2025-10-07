@@ -17,7 +17,7 @@ const error = ref<string | null>(null)
 // Connexion Mercure et écoute des messages
 const { isConnected, connectionState, onChatMessage, onDiceRoll } = useMercure(
   props.gameId,
-  authStore.token,
+  undefined
 )
 
 // Écouter les nouveaux messages de chat
