@@ -11,6 +11,7 @@ use App\Entity\User;
 use App\Repository\GameMessageRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 readonly class ChatService
@@ -20,6 +21,7 @@ readonly class ChatService
         private GameMessageRepository $messageRepository,
         private UserRepository $userRepository,
         private MercurePublisher $mercurePublisher,
+        private LoggerInterface $logger,
     ) {
     }
 
