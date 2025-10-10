@@ -29,6 +29,48 @@ export enum GameStatus {
   ARCHIVED = 'archived',
 }
 
+/**
+ * Types de tokens disponibles
+ * Correspondent exactement aux valeurs acceptées par le backend
+ */
+export enum TokenType {
+  CHARACTER = 'character',
+  MONSTER = 'monster',
+  NPC = 'npc',
+  OBJECT = 'object',
+}
+
+/**
+ * Layers (couches) pour l'affichage des tokens
+ * Définit l'ordre de superposition sur la carte
+ */
+export enum LayerType {
+  BACKGROUND = 'background',
+  OBJECTS = 'objects',
+  TOKENS = 'tokens',
+  EFFECTS = 'effects',
+}
+
+/**
+ * Types de grille pour les cartes
+ */
+export enum GridType {
+  SQUARE = 'square',
+  HEX = 'hex',
+  NONE = 'none',
+}
+
+/**
+ * Types de messages dans le chat
+ */
+export enum MessageType {
+  CHAT = 'chat',
+  EMOTE = 'emote',
+  WHISPER = 'whisper',
+  SYSTEM = 'system',
+  DICE_ROLL = 'dice_roll',
+}
+
 // ===========================
 // USER
 // ===========================
@@ -86,8 +128,6 @@ export interface GamePlayer {
 // GAME MAP
 // ===========================
 
-export type GridType = 'square' | 'hex' | 'none';
-
 export interface GameMap {
   id: number;
   name: string;
@@ -116,9 +156,6 @@ export interface GameMap {
 // GAME TOKEN
 // ===========================
 
-export type TokenType = 'character' | 'monster' | 'npc' | 'object';
-export type TokenLayer = 'background' | 'objects' | 'tokens' | 'effects';
-
 export interface TokenPosition {
   x: number;
   y: number;
@@ -135,7 +172,7 @@ export interface GameToken {
   rotation: number; // 0-359 degrés
   isVisible: boolean;
   isLocked: boolean;
-  layer: TokenLayer;
+  layer: LayerType;
   settings?: Record<string, any>;
   createdAt: string;
   updatedAt?: string;
@@ -151,11 +188,6 @@ export interface GameToken {
 // ===========================
 // GAME MESSAGE
 // ===========================
-
-/**
- * Types de messages possibles
- */
-export type MessageType = 'chat' | 'emote' | 'whisper' | 'system' | 'dice_roll';
 
 /**
  * Constantes pour les types de messages (pour éviter les typos)
@@ -221,7 +253,7 @@ export interface ApiError {
 }
 
 // ===========================
-// DTOs POUR LES GAMES (compatibilité gameApi.ts)
+// DTOs POUR LES GAMES
 // ===========================
 
 /**
@@ -283,6 +315,138 @@ export interface PaginatedGamesResponse {
   meta: PaginationMeta;
 }
 
+// ===========================
+// DTOs POUR LES MAPS (CARTES)
+// ===========================
+
+/**
+ * DTO pour créer une carte
+ * Correspond à CreateMapDTO.php du backend
+ */
+export interface CreateMapDTO {
+  name: string;
+  description?: string;
+  imageUrl?: string;
+  gridSize?: number;      // Default: 50
+  gridType?: GridType;    // Default: 'square'
+  width?: number;         // Default: 20
+  height?: number;        // Default: 20
+  settings?: Record<string, any>;
+}
+
+/**
+ * DTO pour mettre à jour une carte
+ * Correspond à UpdateMapDTO.php du backend
+ */
+export interface UpdateMapDTO {
+  name?: string;
+  description?: string;
+  imageUrl?: string;
+  gridSize?: number;
+  gridType?: GridType;
+  width?: number;
+  height?: number;
+  settings?: Record<string, any>;
+}
+
+// ===========================
+// DTOs POUR LES TOKENS
+// ===========================
+
+/**
+ * DTO pour créer un token
+ * IMPORTANT: Correspond EXACTEMENT à CreateTokenDTO.php du backend Symfony
+ * 
+ * Champs obligatoires:
+ * - name: string (1-250 caractères)
+ * - type: TokenType (valeurs: 'character', 'monster', 'npc', 'object')
+ * - x: number (position sur la grille, >= 0)
+ * - y: number (position sur la grille, >= 0)
+ * 
+ * Champs optionnels avec valeurs par défaut:
+ * - imageUrl: string | undefined
+ * - size: number (default: 1.0, range: 0.1-10.0)
+ * - rotation: number (default: 0, range: 0-359)
+ * - isVisible: boolean (default: true)
+ * - isLocked: boolean (default: false)
+ * - layer: LayerType (default: 'tokens')
+ * - settings: Record<string, any> | undefined
+ */
+export interface CreateTokenDTO {
+  // Champs obligatoires
+  name: string;
+  type: TokenType;
+  x: number;
+  y: number;
+  
+  // Champs optionnels
+  imageUrl?: string;
+  size?: number;
+  rotation?: number;
+  isVisible?: boolean;
+  isLocked?: boolean;
+  layer?: LayerType;
+  settings?: Record<string, any>;
+}
+
+/**
+ * DTO pour mettre à jour un token
+ * Tous les champs sont optionnels (PATCH)
+ */
+export interface UpdateTokenDTO {
+  name?: string;
+  type?: TokenType;
+  imageUrl?: string;
+  x?: number;
+  y?: number;
+  size?: number;
+  rotation?: number;
+  isVisible?: boolean;
+  isLocked?: boolean;
+  layer?: LayerType;
+  settings?: Record<string, any>;
+}
+
+/**
+ * DTO pour déplacer un token
+ * Correspond à MoveTokenDTO.php du backend
+ */
+export interface MoveTokenDTO {
+  x: number;
+  y: number;
+  rotation?: number;
+}
+
+// ===========================
+// DTOs POUR LES MESSAGES (CHAT)
+// ===========================
+
+/**
+ * DTO pour envoyer un message dans le chat
+ * Correspond à SendMessageDTO.php du backend
+ */
+export interface SendMessageDTO {
+  type: MessageType;
+  content: string;           // 1-2000 caractères
+  recipientId?: number;      // Pour les whispers (messages privés)
+  isInCharacter?: boolean;   // True = message "dans la peau du personnage"
+  metadata?: Record<string, any>;
+}
+
+/**
+ * DTO pour lancer des dés
+ */
+export interface RollDiceDTO {
+  formula: string;           // Ex: "1d20+5", "3d6", "2d10-1"
+  reason?: string;           // Raison du lancer (ex: "Attaque", "Perception")
+  isInCharacter?: boolean;   // Lancer au nom du personnage ou du joueur
+  isVisible?: boolean;       // Visible par tous ou secret (MJ uniquement)
+}
+
+// ===========================
+// TYPES ADDITIONNELS UTILES
+// ===========================
+
 /**
  * Type pour les dimensions de carte
  */
@@ -331,4 +495,23 @@ export interface TokenSettings {
     radius: number;
   };
   [key: string]: any;
+}
+
+/**
+ * Résultat d'un lancer de dés (réponse du backend)
+ */
+export interface DiceRollResult {
+  formula: string;
+  result: number;
+  details: string;
+  rolls: number[];
+}
+
+/**
+ * Statistiques du chat (réponse du backend)
+ */
+export interface ChatStats {
+  totalMessages: number;
+  byType: Record<MessageType, number>;
+  byUser: Record<number, number>;
 }

@@ -12,11 +12,9 @@ import { tokenApi } from './tokenApi';
 export { apiClient } from './apiClient';
 export type { ApiError } from './apiClient';
 
-// Export des services existants
 export { authApi } from './authApi';
 export { gameApi } from './gameApi';
 
-// Export des nouveaux services (cartes, tokens, chat)
 export { mapApi } from './mapApi';
 export type { CreateMapDTO, UpdateMapDTO } from './mapApi';
 

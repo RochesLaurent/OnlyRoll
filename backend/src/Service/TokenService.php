@@ -40,12 +40,17 @@ readonly class TokenService
         $token = new GameToken();
         $token->setMap($map);
         $token->setName($dto->name);
+        
+        $token->setType($dto->type);
+        $token->setImageUrl($dto->imageUrl);
         $token->setX($dto->x);
         $token->setY($dto->y);
         $token->setSize($dto->size);
-        $token->setImageUrl($dto->imageUrl);
+        $token->setRotation($dto->rotation);
         $token->setIsVisible($dto->isVisible ?? true);
         $token->setIsLocked($dto->isLocked ?? false);
+        $token->setLayer($dto->layer ?? 'tokens');
+        $token->setSettings($dto->settings);
 
         $this->em->persist($token);
         $this->em->flush();
@@ -61,12 +66,15 @@ readonly class TokenService
             'tokenId' => $token->getId(),
             'mapId' => $map->getId(),
             'name' => $token->getName(),
+            'type' => $token->getType(),
             'x' => $token->getX(),
             'y' => $token->getY(),
             'size' => $token->getSize(),
+            'rotation' => $token->getRotation(),
             'imageUrl' => $token->getImageUrl(),
             'isVisible' => $token->isVisible(),
             'isLocked' => $token->isLocked(),
+            'layer' => $token->getLayer(),
         ]);
 
         return $token;

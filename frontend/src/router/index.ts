@@ -103,9 +103,9 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
-      path: '/test/simple/:gameId',
-      name: 'test-simple',
-      component: () => import('@/views/TestSimple.vue'),
+      path: '/test/stores/:gameId',
+      name: 'stores-test',
+      component: () => import('@/components/test/StoresTest.vue'),
       props: (route) => ({ gameId: Number(route.params.gameId) }),
       meta: { requiresAuth: true },
     },
@@ -126,7 +126,7 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
 
-  // ✅ NOUVEAU : Attendre que l'initialisation soit terminée
+  // Attendre que l'initialisation soit terminée
   // Évite la race condition lors du chargement direct de l'URL
   if (authStore.isLoading) {
     console.log('⏳ Attente de l\'initialisation du store auth...')
