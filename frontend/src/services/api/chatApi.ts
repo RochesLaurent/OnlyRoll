@@ -1,28 +1,28 @@
 /**
  * Service API pour la gestion du chat (GameMessage)
- * 
+ *
  * Ce service gère toutes les opérations sur les messages de chat d'un jeu.
  * Tous les types sont importés depuis @/types/game pour garantir la cohérence.
  */
 
-import { apiClient } from './apiClient';
-import { 
-  type GameMessage, 
+import { apiClient } from './apiClient'
+import {
+  type GameMessage,
   MessageType,
   type SendMessageDTO,
   type RollDiceDTO,
   type ChatStats,
-} from '@/types/game';
+} from '@/types/game'
 
 /**
  * Options pour récupérer l'historique des messages
  * Permet de filtrer et paginer les résultats
  */
 export interface GetMessagesOptions {
-  limit?: number;            // Nombre maximum de messages à récupérer
-  before?: string;           // ID ou timestamp du message (récupère les messages avant celui-ci)
-  after?: string;            // ID ou timestamp du message (récupère les messages après celui-ci)
-  types?: MessageType[];     // Filtrer par types de messages spécifiques
+  limit?: number // Nombre maximum de messages à récupérer
+  before?: string // ID ou timestamp du message (récupère les messages avant celui-ci)
+  after?: string // ID ou timestamp du message (récupère les messages après celui-ci)
+  types?: MessageType[] // Filtrer par types de messages spécifiques
 }
 
 /**
@@ -37,29 +37,29 @@ export const chatApi = {
    * @returns Liste des messages correspondant aux critères
    */
   async list(gameId: number, options?: GetMessagesOptions): Promise<GameMessage[]> {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams()
 
     if (options?.limit) {
-      params.append('limit', options.limit.toString());
+      params.append('limit', options.limit.toString())
     }
 
     if (options?.before) {
-      params.append('before', options.before);
+      params.append('before', options.before)
     }
 
     if (options?.after) {
-      params.append('after', options.after);
+      params.append('after', options.after)
     }
 
     if (options?.types && options.types.length > 0) {
-      params.append('types', options.types.join(','));
+      params.append('types', options.types.join(','))
     }
 
     const endpoint = params.toString()
       ? `/games/${gameId}/chat/messages?${params.toString()}`
-      : `/games/${gameId}/chat/messages`;
+      : `/games/${gameId}/chat/messages`
 
-    return apiClient.get<GameMessage[]>(endpoint);
+    return apiClient.get<GameMessage[]>(endpoint)
   },
 
   /**
@@ -70,7 +70,7 @@ export const chatApi = {
    * @returns Les messages les plus récents
    */
   async listRecent(gameId: number, limit: number = 50): Promise<GameMessage[]> {
-    return apiClient.get<GameMessage[]>(`/games/${gameId}/chat/messages?limit=${limit}`);
+    return apiClient.get<GameMessage[]>(`/games/${gameId}/chat/messages?limit=${limit}`)
   },
 
   /**
@@ -81,7 +81,9 @@ export const chatApi = {
    * @returns Liste des nouveaux messages depuis le timestamp donné
    */
   async listSince(gameId: number, since: string): Promise<GameMessage[]> {
-    return apiClient.get<GameMessage[]>(`/games/${gameId}/chat/messages/since?since=${encodeURIComponent(since)}`);
+    return apiClient.get<GameMessage[]>(
+      `/games/${gameId}/chat/messages/since?since=${encodeURIComponent(since)}`,
+    )
   },
 
   /**
@@ -92,7 +94,7 @@ export const chatApi = {
    * @returns Le message créé avec son ID et timestamp
    */
   async send(gameId: number, dto: SendMessageDTO): Promise<GameMessage> {
-    return apiClient.post<GameMessage>(`/games/${gameId}/chat/messages`, dto);
+    return apiClient.post<GameMessage>(`/games/${gameId}/chat/messages`, dto)
   },
 
   /**
@@ -106,13 +108,13 @@ export const chatApi = {
   async sendChat(
     gameId: number,
     content: string,
-    isInCharacter: boolean = false
+    isInCharacter: boolean = false,
   ): Promise<GameMessage> {
     return this.send(gameId, {
       type: MessageType.CHAT,
       content,
       isInCharacter,
-    });
+    })
   },
 
   /**
@@ -127,7 +129,7 @@ export const chatApi = {
       type: MessageType.EMOTE,
       content,
       isInCharacter: true, // Les emotes sont toujours "in character"
-    });
+    })
   },
 
   /**
@@ -143,7 +145,7 @@ export const chatApi = {
       type: MessageType.WHISPER,
       content,
       recipientId,
-    });
+    })
   },
 
   /**
@@ -157,7 +159,7 @@ export const chatApi = {
     return this.send(gameId, {
       type: MessageType.SYSTEM,
       content,
-    });
+    })
   },
 
   /**
@@ -173,7 +175,7 @@ export const chatApi = {
       reason: dto.reason,
       isInCharacter: dto.isInCharacter,
       isVisible: dto.isVisible,
-    });
+    })
   },
 
   /**
@@ -182,7 +184,7 @@ export const chatApi = {
    * @param messageId - ID du message à supprimer
    */
   async delete(messageId: number): Promise<void> {
-    await apiClient.delete<void>(`/messages/${messageId}`);
+    await apiClient.delete<void>(`/messages/${messageId}`)
   },
 
   /**
@@ -196,13 +198,15 @@ export const chatApi = {
   async listWhispers(gameId: number, userId?: number, limit: number = 50): Promise<GameMessage[]> {
     const params = new URLSearchParams({
       limit: limit.toString(),
-    });
+    })
 
     if (userId) {
-      params.append('userId', userId.toString());
+      params.append('userId', userId.toString())
     }
 
-    return apiClient.get<GameMessage[]>(`/games/${gameId}/chat/messages/type/whisper?${params.toString()}`);
+    return apiClient.get<GameMessage[]>(
+      `/games/${gameId}/chat/messages/type/whisper?${params.toString()}`,
+    )
   },
 
   /**
@@ -214,7 +218,7 @@ export const chatApi = {
   async markAsRead(gameId: number, messageIds: number[]): Promise<void> {
     await apiClient.post<void>(`/games/${gameId}/chat/messages/read`, {
       messageIds,
-    });
+    })
   },
 
   /**
@@ -224,6 +228,6 @@ export const chatApi = {
    * @returns Statistiques détaillées du chat
    */
   async getStats(gameId: number): Promise<ChatStats> {
-    return apiClient.get<ChatStats>(`/games/${gameId}/chat/stats`);
+    return apiClient.get<ChatStats>(`/games/${gameId}/chat/stats`)
   },
-};
+}

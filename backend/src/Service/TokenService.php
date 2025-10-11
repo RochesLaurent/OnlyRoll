@@ -40,7 +40,7 @@ readonly class TokenService
         $token = new GameToken();
         $token->setMap($map);
         $token->setName($dto->name);
-        
+
         $token->setType($dto->type);
         $token->setImageUrl($dto->imageUrl);
         $token->setX($dto->x);

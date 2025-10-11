@@ -8,7 +8,7 @@ const MERCURE_URL = import.meta.env.VITE_MERCURE_URL || 'http://localhost:3000/.
 /**
  * Interface pour les événements Mercure reçus
  */
-export interface MercureEvent<T = any> {
+export interface MercureEvent<T = unknown> {
   type: string
   gameId: number
   data: T
@@ -23,14 +23,14 @@ export type EventType = 'chat' | 'token' | 'map' | 'dice' | 'player' | 'system'
 /**
  * Callback pour les événements
  */
-type EventCallback<T = any> = (data: T) => void
+type EventCallback<T = unknown> = (data: T) => void
 
 /**
  * Service de gestion de la connexion Mercure
  */
 export class MercureService {
   private eventSource: EventSource | null = null
-  private listeners = new Map<string, Set<EventCallback>>()
+  private listeners = new Map<string, Set<EventCallback<unknown>>>()
   private reconnectAttempts = 0
   private maxReconnectAttempts = 5
 
@@ -121,11 +121,11 @@ export class MercureService {
    * @param eventType - Type d'événement (chat, token, map, etc.)
    * @param callback - Fonction à appeler lors de la réception
    */
-  on<T = any>(eventType: EventType, callback: EventCallback<T>): void {
+  on<T = unknown>(eventType: EventType, callback: EventCallback<T>): void {
     if (!this.listeners.has(eventType)) {
       this.listeners.set(eventType, new Set())
     }
-    this.listeners.get(eventType)!.add(callback)
+    this.listeners.get(eventType)!.add(callback as EventCallback<unknown>)
   }
 
   /**
@@ -136,7 +136,7 @@ export class MercureService {
   off(eventType: EventType, callback: EventCallback): void {
     const listeners = this.listeners.get(eventType)
     if (listeners) {
-      listeners.delete(callback)
+      listeners.delete(callback as EventCallback<unknown>)
       if (listeners.size === 0) {
         this.listeners.delete(eventType)
       }
@@ -147,7 +147,7 @@ export class MercureService {
    * Notifier tous les listeners d'un type d'événement
    * @private
    */
-  private notifyListeners(eventType: string, data: any): void {
+  private notifyListeners(eventType: string, data: unknown): void {
     const listeners = this.listeners.get(eventType as EventType)
     if (listeners && listeners.size > 0) {
       listeners.forEach((callback) => {

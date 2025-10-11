@@ -9,7 +9,7 @@ const props = defineProps<{
 }>()
 
 const authStore = useAuthStore()
-const messages = ref<any[]>([])
+const messages = ref<unknown[]>([])
 const newMessage = ref('')
 const isLoading = ref(false)
 const error = ref<string | null>(null)
@@ -17,7 +17,7 @@ const error = ref<string | null>(null)
 // Connexion Mercure et écoute des messages
 const { isConnected, connectionState, onChatMessage, onDiceRoll } = useMercure(
   props.gameId,
-  undefined
+  undefined,
 )
 
 // Écouter les nouveaux messages de chat

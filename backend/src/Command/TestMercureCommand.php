@@ -15,7 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class TestMercureCommand extends Command
 {
     public function __construct(
-        private readonly MercurePublisher $mercurePublisher
+        private readonly MercurePublisher $mercurePublisher,
     ) {
         parent::__construct();
     }
@@ -34,13 +34,15 @@ class TestMercureCommand extends Command
                 'isIC' => false,
                 'recipientId' => null,
                 'recipientName' => null,
-                'createdAt' => (new \DateTimeImmutable())->format('c')
+                'createdAt' => (new \DateTimeImmutable())->format('c'),
             ]);
 
             $output->writeln('Événement publié avec succès !');
+
             return Command::SUCCESS;
         } catch (\Exception $e) {
             $output->writeln('Erreur : ' . $e->getMessage());
+
             return Command::FAILURE;
         }
     }

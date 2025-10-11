@@ -1,117 +1,117 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { useMapStore } from '@/stores/mapStore';
-import { useChatStore } from '@/stores/chatStore';
-import { useMercure } from '@/composables/useMercure';
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useMapStore } from '@/stores/mapStore'
+import { useChatStore } from '@/stores/chatStore'
+import { useMercure } from '@/composables/useMercure'
 // ⭐ AJOUT: Import de l'enum TokenType depuis le fichier centralisé
-import { TokenType } from '@/types/game';
+import { TokenType } from '@/types/game'
 
 const props = defineProps<{
-  gameId: number;
-}>();
+  gameId: number
+}>()
 
 // Stores
-const mapStore = useMapStore();
-const chatStore = useChatStore();
+const mapStore = useMapStore()
+const chatStore = useChatStore()
 
 // État local pour les tests
-const testMessage = ref('');
-const testTokenName = ref('Test Token');
-const testTokenX = ref(5);
-const testTokenY = ref(5);
-const selectedTokenId = ref<number | null>(null);
-const moveX = ref(0);
-const moveY = ref(0);
+const testMessage = ref('')
+const testTokenName = ref('Test Token')
+const testTokenX = ref(5)
+const testTokenY = ref(5)
+const selectedTokenId = ref<number | null>(null)
+const moveX = ref(0)
+const moveY = ref(0)
 
 // Mercure
 const { isConnected, connectionState, onTokenEvent, onMapChange, onChatMessage } = useMercure(
-  props.gameId
-);
+  props.gameId,
+)
 
 // Computed
 const connectionStatusClass = computed(() => {
   switch (connectionState.value) {
     case 'open':
-      return 'bg-green-500';
+      return 'bg-green-500'
     case 'connecting':
-      return 'bg-yellow-500 animate-pulse';
+      return 'bg-yellow-500 animate-pulse'
     case 'closed':
-      return 'bg-red-500';
+      return 'bg-red-500'
     default:
-      return 'bg-gray-500';
+      return 'bg-gray-500'
   }
-});
+})
 
 // Lifecycle
 onMounted(async () => {
-  console.log('🧪 Test des stores - Démarrage');
-  await initializeStores();
-  setupMercureListeners();
-});
+  console.log('🧪 Test des stores - Démarrage')
+  await initializeStores()
+  setupMercureListeners()
+})
 
 onUnmounted(() => {
-  console.log('🧪 Test des stores - Nettoyage');
-});
+  console.log('🧪 Test des stores - Nettoyage')
+})
 
 // Initialisation
 async function initializeStores() {
   try {
-    console.log('📥 Chargement des données...');
-    
+    console.log('📥 Chargement des données...')
+
     // Charger en parallèle
     await Promise.all([
       mapStore.loadActiveMap(props.gameId),
       chatStore.loadRecentMessages(props.gameId, 20),
-    ]);
-    
-    console.log('✅ Données chargées avec succès');
-    console.log('Carte active:', mapStore.activeMap);
-    console.log('Tokens:', mapStore.tokens);
-    console.log('Messages:', chatStore.messages);
+    ])
+
+    console.log('✅ Données chargées avec succès')
+    console.log('Carte active:', mapStore.activeMap)
+    console.log('Tokens:', mapStore.tokens)
+    console.log('Messages:', chatStore.messages)
   } catch (error) {
-    console.error('❌ Erreur lors du chargement:', error);
+    console.error('❌ Erreur lors du chargement:', error)
   }
 }
 
 function setupMercureListeners() {
-  console.log('🔌 Configuration des listeners Mercure...');
-  
+  console.log('🔌 Configuration des listeners Mercure...')
+
   // Écouter les événements de carte
   onMapChange((data) => {
-    console.log('📡 Événement carte reçu:', data);
-    mapStore.handleMapEvent(data);
-  });
-  
+    console.log('📡 Événement carte reçu:', data)
+    mapStore.handleMapEvent(data)
+  })
+
   // Écouter les événements de tokens
   onTokenEvent((data) => {
-    console.log('📡 Événement token reçu:', data);
-    mapStore.handleTokenEvent(data);
-  });
-  
+    console.log('📡 Événement token reçu:', data)
+    mapStore.handleTokenEvent(data)
+  })
+
   // Écouter les messages
   onChatMessage((data) => {
-    console.log('📡 Message reçu:', data);
-    chatStore.handleChatMessage(data);
-  });
-  
-  console.log('✅ Listeners Mercure configurés');
+    console.log('📡 Message reçu:', data)
+    chatStore.handleChatMessage(data)
+  })
+
+  console.log('✅ Listeners Mercure configurés')
 }
 
 // Tests MapStore
 async function testCreateToken() {
   try {
-    console.log('🧪 Test: Création de token');
-    
+    console.log('🧪 Test: Création de token')
+
     if (!mapStore.activeMap) {
-      alert('Aucune carte active !');
-      return;
+      alert('Aucune carte active !')
+      return
     }
-    
+
     // ⭐ CORRECTION: Utilisation de l'enum TokenType au lieu d'une chaîne littérale
     // Cela garantit que la valeur envoyée est valide et évite les fautes de frappe
     const token = await mapStore.createToken(mapStore.activeMap.id, {
       name: testTokenName.value,
-      type: TokenType.CHARACTER,  // ← Utilisation de l'enum au lieu de 'character'
+      type: TokenType.CHARACTER, // ← Utilisation de l'enum au lieu de 'character'
       x: testTokenX.value,
       y: testTokenY.value,
       // Les champs ci-dessous sont optionnels et auront des valeurs par défaut
@@ -119,112 +119,108 @@ async function testCreateToken() {
       // Nous les spécifions quand même ici pour être explicite dans les tests
       size: 1.0,
       isVisible: true,
-    });
-    
-    console.log('✅ Token créé:', token);
-    alert(`Token "${token.name}" créé avec succès !`);
+    })
+
+    console.log('✅ Token créé:', token)
+    alert(`Token "${token.name}" créé avec succès !`)
   } catch (error) {
-    console.error('❌ Erreur création token:', error);
-    alert('Erreur lors de la création du token');
+    console.error('❌ Erreur création token:', error)
+    alert('Erreur lors de la création du token')
   }
 }
 
 async function testMoveToken() {
   if (!selectedTokenId.value) {
-    alert('Sélectionnez un token !');
-    return;
+    alert('Sélectionnez un token !')
+    return
   }
-  
+
   try {
-    console.log('🧪 Test: Déplacement de token');
-    
-    const token = await mapStore.moveToken(
-      selectedTokenId.value,
-      moveX.value,
-      moveY.value
-    );
-    
-    console.log('✅ Token déplacé:', token);
-    alert(`Token déplacé à (${token.x}, ${token.y}) !`);
+    console.log('🧪 Test: Déplacement de token')
+
+    const token = await mapStore.moveToken(selectedTokenId.value, moveX.value, moveY.value)
+
+    console.log('✅ Token déplacé:', token)
+    alert(`Token déplacé à (${token.x}, ${token.y}) !`)
   } catch (error) {
-    console.error('❌ Erreur déplacement token:', error);
-    alert('Erreur lors du déplacement du token');
+    console.error('❌ Erreur déplacement token:', error)
+    alert('Erreur lors du déplacement du token')
   }
 }
 
 async function testToggleVisibility() {
   if (!selectedTokenId.value) {
-    alert('Sélectionnez un token !');
-    return;
+    alert('Sélectionnez un token !')
+    return
   }
-  
+
   try {
-    console.log('🧪 Test: Toggle visibilité');
-    await mapStore.toggleTokenVisibility(selectedTokenId.value);
-    console.log('✅ Visibilité modifiée');
+    console.log('🧪 Test: Toggle visibilité')
+    await mapStore.toggleTokenVisibility(selectedTokenId.value)
+    console.log('✅ Visibilité modifiée')
   } catch (error) {
-    console.error('❌ Erreur toggle visibilité:', error);
-    alert('Erreur lors du changement de visibilité');
+    console.error('❌ Erreur toggle visibilité:', error)
+    alert('Erreur lors du changement de visibilité')
   }
 }
 
 async function testDeleteToken() {
   if (!selectedTokenId.value) {
-    alert('Sélectionnez un token !');
-    return;
+    alert('Sélectionnez un token !')
+    return
   }
-  
-  if (!confirm('Supprimer ce token ?')) return;
-  
+
+  if (!confirm('Supprimer ce token ?')) return
+
   try {
-    console.log('🧪 Test: Suppression de token');
-    await mapStore.deleteToken(selectedTokenId.value);
-    console.log('✅ Token supprimé');
-    selectedTokenId.value = null;
-    alert('Token supprimé !');
+    console.log('🧪 Test: Suppression de token')
+    await mapStore.deleteToken(selectedTokenId.value)
+    console.log('✅ Token supprimé')
+    selectedTokenId.value = null
+    alert('Token supprimé !')
   } catch (error) {
-    console.error('❌ Erreur suppression token:', error);
-    alert('Erreur lors de la suppression du token');
+    console.error('❌ Erreur suppression token:', error)
+    alert('Erreur lors de la suppression du token')
   }
 }
 
 // Tests ChatStore
 async function testSendMessage() {
   if (!testMessage.value.trim()) {
-    alert('Entrez un message !');
-    return;
+    alert('Entrez un message !')
+    return
   }
-  
+
   try {
-    console.log('🧪 Test: Envoi de message');
-    await chatStore.sendMessage(props.gameId, testMessage.value, false);
-    console.log('✅ Message envoyé');
-    testMessage.value = '';
+    console.log('🧪 Test: Envoi de message')
+    await chatStore.sendMessage(props.gameId, testMessage.value, false)
+    console.log('✅ Message envoyé')
+    testMessage.value = ''
   } catch (error) {
-    console.error('❌ Erreur envoi message:', error);
-    alert('Erreur lors de l\'envoi du message');
+    console.error('❌ Erreur envoi message:', error)
+    alert("Erreur lors de l'envoi du message")
   }
 }
 
 async function testRollDice() {
   try {
-    console.log('🧪 Test: Lancer de dés');
+    console.log('🧪 Test: Lancer de dés')
     // ⭐ Le paramètre est maintenant "formula" (cohérent avec le backend)
-    await chatStore.rollDice(props.gameId, '2d6+3', true);
-    console.log('✅ Dés lancés');
+    await chatStore.rollDice(props.gameId, '2d6+3', true)
+    console.log('✅ Dés lancés')
   } catch (error) {
-    console.error('❌ Erreur lancer de dés:', error);
-    alert('Erreur lors du lancer de dés');
+    console.error('❌ Erreur lancer de dés:', error)
+    alert('Erreur lors du lancer de dés')
   }
 }
 
 // Formatage
 function formatTime(dateString: string) {
-  const date = new Date(dateString);
+  const date = new Date(dateString)
   return date.toLocaleTimeString('fr-FR', {
     hour: '2-digit',
     minute: '2-digit',
-  });
+  })
 }
 </script>
 
@@ -237,9 +233,7 @@ function formatTime(dateString: string) {
         <div class="flex items-center gap-4">
           <div class="flex items-center gap-2">
             <div :class="connectionStatusClass" class="w-3 h-3 rounded-full" />
-            <span class="text-sm">
-              Mercure: {{ isConnected ? 'Connecté' : 'Déconnecté' }}
-            </span>
+            <span class="text-sm"> Mercure: {{ isConnected ? 'Connecté' : 'Déconnecté' }} </span>
           </div>
           <div class="text-sm text-gray-400">Game ID: {{ gameId }}</div>
         </div>
@@ -258,9 +252,7 @@ function formatTime(dateString: string) {
               <div>Carte active: {{ mapStore.activeMap?.name || 'Aucune' }}</div>
               <div>Tokens: {{ mapStore.tokensCount }}</div>
               <div>Tokens visibles: {{ mapStore.visibleTokens.length }}</div>
-              <div v-if="mapStore.error" class="text-red-400">
-                Erreur: {{ mapStore.error }}
-              </div>
+              <div v-if="mapStore.error" class="text-red-400">Erreur: {{ mapStore.error }}</div>
             </div>
           </div>
 
@@ -277,7 +269,7 @@ function formatTime(dateString: string) {
               >
                 <div class="font-semibold">{{ token.name }}</div>
                 <div class="text-xs text-gray-300">
-                  Position: ({{ token.x }}, {{ token.y }}) | 
+                  Position: ({{ token.x }}, {{ token.y }}) |
                   {{ token.isVisible ? '👁️ Visible' : '🚫 Caché' }} |
                   {{ token.isLocked ? '🔒 Verrouillé' : '🔓 Libre' }}
                 </div>
@@ -374,9 +366,7 @@ function formatTime(dateString: string) {
               <div>Sending: {{ chatStore.isSending ? '✅' : '❌' }}</div>
               <div>Messages: {{ chatStore.messagesCount }}</div>
               <div>Has more: {{ chatStore.hasMore ? '✅' : '❌' }}</div>
-              <div v-if="chatStore.error" class="text-red-400">
-                Erreur: {{ chatStore.error }}
-              </div>
+              <div v-if="chatStore.error" class="text-red-400">Erreur: {{ chatStore.error }}</div>
             </div>
           </div>
 

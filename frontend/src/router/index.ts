@@ -129,8 +129,8 @@ router.beforeEach(async (to, from, next) => {
   // Attendre que l'initialisation soit terminée
   // Évite la race condition lors du chargement direct de l'URL
   if (authStore.isLoading) {
-    console.log('⏳ Attente de l\'initialisation du store auth...')
-    
+    console.log("⏳ Attente de l'initialisation du store auth...")
+
     await new Promise<void>((resolve) => {
       const unwatch = watch(
         () => authStore.isLoading,
@@ -140,13 +140,13 @@ router.beforeEach(async (to, from, next) => {
             resolve()
           }
         },
-        { immediate: true }
+        { immediate: true },
       )
     })
   }
 
-  console.log('🛣️ Navigation vers:', to.path)
-  console.log('🛣️ isAuthenticated:', authStore.isAuthenticated)
+  console.log('Navigation vers:', to.path)
+  console.log('isAuthenticated:', authStore.isAuthenticated)
 
   // ========== VÉRIFICATION DE L'AUTHENTIFICATION ==========
 

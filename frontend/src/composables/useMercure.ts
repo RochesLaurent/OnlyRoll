@@ -1,154 +1,190 @@
-import { onMounted, onUnmounted, ref, readonly } from 'vue'
-import { mercureService, type EventType } from '@/services/mercure'
+/**
+ * Service Mercure pour gérer la connexion SSE (Server-Sent Events)
+ * Permet de recevoir les événements temps réel depuis le backend
+ */
+
+const MERCURE_URL = import.meta.env.VITE_MERCURE_URL || 'http://localhost:3000/.well-known/mercure'
 
 /**
- * Composable Vue pour gérer Mercure facilement dans les composants
- *
- * Usage:
- * ```vue
- * <script setup>
- * const { onChatMessage, isConnected } = useMercure(gameId)
- *
- * onChatMessage((message) => {
- *   console.log('Nouveau message:', message)
- * })
- * </script>
- * ```
+ * Interface pour les événements Mercure reçus
  */
-export function useMercure(gameId: number, token?: string | null) {
-  const isConnected = ref(false)
-  const connectionState = ref<'connecting' | 'open' | 'closed'>('closed')
+export interface MercureEvent<T = unknown> {
+  type: string
+  gameId: number
+  data: T
+  timestamp: string
+}
+
+/**
+ * Types d'événements supportés
+ */
+export type EventType = 'chat' | 'token' | 'map' | 'dice' | 'player' | 'system'
+
+/**
+ * Callback pour les événements
+ */
+type EventCallback<T = unknown> = (data: T) => void
+
+/**
+ * Service de gestion de la connexion Mercure
+ */
+export class MercureService {
+  private eventSource: EventSource | null = null
+  private listeners = new Map<string, Set<EventCallback<unknown>>>()
+  private reconnectAttempts = 0
+  private maxReconnectAttempts = 5
 
   /**
-   * Connexion au montage du composant
+   * Se connecter aux événements d'une partie
+   * @param gameId - ID de la partie
+   * @param token - Token JWT optionnel pour les événements privés
    */
-  onMounted(() => {
-    const tokenToSend = import.meta.env.DEV ? undefined : (token ?? undefined)
-    mercureService.connect(gameId, tokenToSend)
+  connect(gameId: number, token?: string): void {
+    // Fermer la connexion existante si présente
+    if (this.eventSource) {
+      this.disconnect()
+    }
 
-    // Mettre à jour l'état de connexion
-    const checkConnection = setInterval(() => {
-      isConnected.value = mercureService.isConnected()
-      connectionState.value = mercureService.getConnectionState()
-    }, 1000)
+    // Construction de l'URL avec les topics à écouter
+    const topics: EventType[] = ['chat', 'token', 'map', 'dice', 'player', 'system']
+    const url = new URL(MERCURE_URL)
 
-    // Nettoyer l'interval au démontage
-    onUnmounted(() => {
-      clearInterval(checkConnection)
+    topics.forEach((topic) => {
+      url.searchParams.append('topic', `game/${gameId}/${topic}`)
     })
-  })
 
-  /**
-   * Déconnexion au démontage du composant
-   */
-  onUnmounted(() => {
-    mercureService.disconnect()
-  })
+    // Ajout du token JWT si fourni (pour événements privés)
+    if (token) {
+      url.searchParams.append('authorization', `Bearer ${token}`)
+    }
 
-  /**
-   * Écouter les messages de chat
-   *
-   * @param callback - Fonction appelée à chaque nouveau message
-   * @returns Fonction de nettoyage
-   */
-  const onChatMessage = (callback: (message: any) => void) => {
-    mercureService.on('chat', callback)
+    console.log('Connexion à Mercure...', url.toString())
 
-    // Retourner une fonction de nettoyage
-    return () => mercureService.off('chat', callback)
+    // Création de la connexion EventSource
+    this.eventSource = new EventSource(url.toString())
+
+    // Gestion des messages entrants
+    this.eventSource.onmessage = (event: MessageEvent) => {
+      try {
+        const mercureEvent: MercureEvent = JSON.parse(event.data)
+
+        console.log('Événement Mercure reçu:', mercureEvent)
+
+        // Notifier tous les listeners du type d'événement
+        this.notifyListeners(mercureEvent.type, mercureEvent.data)
+
+        // Réinitialiser le compteur de reconnexions après un message réussi
+        this.reconnectAttempts = 0
+      } catch (error) {
+        console.error('Erreur parsing événement Mercure:', error)
+      }
+    }
+
+    // Gestion de l'ouverture de connexion
+    this.eventSource.onopen = () => {
+      console.log('Connecté à Mercure pour la partie', gameId)
+      this.reconnectAttempts = 0
+    }
+
+    // Gestion des erreurs
+    this.eventSource.onerror = (error) => {
+      console.error('Erreur connexion Mercure:', error)
+
+      // EventSource reconnecte automatiquement, mais on peut ajouter une logique custom
+      if (this.reconnectAttempts < this.maxReconnectAttempts) {
+        this.reconnectAttempts++
+        console.log(
+          `Tentative de reconnexion ${this.reconnectAttempts}/${this.maxReconnectAttempts}`,
+        )
+      } else {
+        console.error('Nombre maximum de tentatives de reconnexion atteint')
+        this.disconnect()
+      }
+    }
   }
 
   /**
-   * Écouter les déplacements de tokens
-   *
-   * @param callback - Fonction appelée à chaque déplacement
-   * @returns Fonction de nettoyage
+   * Se déconnecter de Mercure
    */
-  const onTokenMove = (callback: (token: any) => void) => {
-    mercureService.on('token', callback)
-    return () => mercureService.off('token', callback)
+  disconnect(): void {
+    if (this.eventSource) {
+      this.eventSource.close()
+      this.eventSource = null
+      this.listeners.clear()
+      this.reconnectAttempts = 0
+      console.log('Déconnecté de Mercure')
+    }
   }
 
   /**
-   * Écouter tous les événements de tokens (création, déplacement, suppression)
-   *
-   * @param callback - Fonction appelée pour chaque événement token
-   * @returns Fonction de nettoyage
+   * Écouter un type d'événement spécifique
+   * @param eventType - Type d'événement (chat, token, map, etc.)
+   * @param callback - Fonction à appeler lors de la réception
    */
-  const onTokenEvent = (callback: (event: any) => void) => {
-    mercureService.on('token', callback)
-    return () => mercureService.off('token', callback)
+  on<T = unknown>(eventType: EventType, callback: EventCallback<T>): void {
+    if (!this.listeners.has(eventType)) {
+      this.listeners.set(eventType, new Set())
+    }
+    this.listeners.get(eventType)!.add(callback as EventCallback<unknown>)
   }
 
   /**
-   * Écouter les changements de carte
-   *
-   * @param callback - Fonction appelée lors d'un changement de carte
-   * @returns Fonction de nettoyage
+   * Arrêter d'écouter un événement
+   * @param eventType - Type d'événement
+   * @param callback - Fonction à retirer
    */
-  const onMapChange = (callback: (map: any) => void) => {
-    mercureService.on('map', callback)
-    return () => mercureService.off('map', callback)
+  off<T = unknown>(eventType: EventType, callback: EventCallback<T>): void {
+    const listeners = this.listeners.get(eventType)
+    if (listeners) {
+      listeners.delete(callback as EventCallback<unknown>)
+      if (listeners.size === 0) {
+        this.listeners.delete(eventType)
+      }
+    }
   }
 
   /**
-   * Écouter les lancers de dés
-   *
-   * @param callback - Fonction appelée à chaque lancer
-   * @returns Fonction de nettoyage
+   * Notifier tous les listeners d'un type d'événement
+   * @private
    */
-  const onDiceRoll = (callback: (dice: any) => void) => {
-    mercureService.on('dice', callback)
-    return () => mercureService.off('dice', callback)
+  private notifyListeners(eventType: string, data: unknown): void {
+    const listeners = this.listeners.get(eventType as EventType)
+    if (listeners && listeners.size > 0) {
+      listeners.forEach((callback) => {
+        try {
+          callback(data)
+        } catch (error) {
+          console.error(`Erreur dans le callback ${eventType}:`, error)
+        }
+      })
+    }
   }
 
   /**
-   * Écouter les événements de joueurs (connexion/déconnexion)
-   *
-   * @param callback - Fonction appelée pour chaque événement joueur
-   * @returns Fonction de nettoyage
+   * Vérifier si la connexion est active
    */
-  const onPlayerEvent = (callback: (player: any) => void) => {
-    mercureService.on('player', callback)
-    return () => mercureService.off('player', callback)
+  isConnected(): boolean {
+    return this.eventSource !== null && this.eventSource.readyState === EventSource.OPEN
   }
 
   /**
-   * Écouter les événements système
-   *
-   * @param callback - Fonction appelée pour chaque événement système
-   * @returns Fonction de nettoyage
+   * Obtenir l'état de la connexion
    */
-  const onSystemEvent = (callback: (event: any) => void) => {
-    mercureService.on('system', callback)
-    return () => mercureService.off('system', callback)
-  }
+  getConnectionState(): 'connecting' | 'open' | 'closed' {
+    if (!this.eventSource) return 'closed'
 
-  /**
-   * Écouter un type d'événement personnalisé
-   *
-   * @param eventType - Type d'événement à écouter
-   * @param callback - Fonction à appeler
-   * @returns Fonction de nettoyage
-   */
-  const on = (eventType: EventType, callback: (data: any) => void) => {
-    mercureService.on(eventType, callback)
-    return () => mercureService.off(eventType, callback)
-  }
-
-  return {
-    // État de connexion (readonly pour éviter les modifications)
-    isConnected: readonly(isConnected),
-    connectionState: readonly(connectionState),
-
-    // Méthodes d'écoute d'événements
-    onChatMessage,
-    onTokenMove,
-    onTokenEvent,
-    onMapChange,
-    onDiceRoll,
-    onPlayerEvent,
-    onSystemEvent,
-    on,
+    switch (this.eventSource.readyState) {
+      case EventSource.CONNECTING:
+        return 'connecting'
+      case EventSource.OPEN:
+        return 'open'
+      case EventSource.CLOSED:
+        return 'closed'
+      default:
+        return 'closed'
+    }
   }
 }
+
+// Instance singleton pour toute l'application
+export const mercureService = new MercureService()

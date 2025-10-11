@@ -1,17 +1,12 @@
 /**
  * Service API pour la gestion des tokens (GameToken)
- * 
+ *
  * Ce service gère toutes les opérations CRUD sur les tokens d'une carte.
  * Tous les types sont importés depuis @/types/game pour garantir la cohérence.
  */
 
-import { apiClient } from './apiClient';
-import type { 
-  GameToken,
-  CreateTokenDTO,
-  UpdateTokenDTO,
-  MoveTokenDTO,
-} from '@/types/game';
+import { apiClient } from './apiClient'
+import type { GameToken, CreateTokenDTO, UpdateTokenDTO, MoveTokenDTO } from '@/types/game'
 
 /**
  * Service pour gérer les tokens sur les cartes
@@ -23,9 +18,8 @@ export const tokenApi = {
    * Note: Cette fonction est dépréciée, utilisez listByMapWithGame ou listVisible à la place
    * @deprecated
    */
-  async listByMap(mapId: number): Promise<GameToken[]> {
-    // On force l'utilisation de listByMapWithGame qui nécessite le gameId
-    throw new Error('Use listByMapWithGame instead - needs gameId');
+  async listByMap(): Promise<GameToken[]> {
+    throw new Error('Use listByMapWithGame instead - needs gameId')
   },
 
   /**
@@ -35,7 +29,7 @@ export const tokenApi = {
    * @returns Liste de tous les tokens de la carte
    */
   async listByMapWithGame(gameId: number, mapId: number): Promise<GameToken[]> {
-    return apiClient.get<GameToken[]>(`/games/${gameId}/maps/${mapId}/tokens`);
+    return apiClient.get<GameToken[]>(`/games/${gameId}/maps/${mapId}/tokens`)
   },
 
   /**
@@ -47,7 +41,7 @@ export const tokenApi = {
    * @returns Liste des tokens visibles pour l'utilisateur connecté
    */
   async listVisible(gameId: number, mapId: number): Promise<GameToken[]> {
-    return apiClient.get<GameToken[]>(`/games/${gameId}/maps/${mapId}/tokens`);
+    return apiClient.get<GameToken[]>(`/games/${gameId}/maps/${mapId}/tokens`)
   },
 
   /**
@@ -58,7 +52,7 @@ export const tokenApi = {
    * @returns Le token complet avec toutes ses propriétés
    */
   async getById(gameId: number, mapId: number, tokenId: number): Promise<GameToken> {
-    return apiClient.get<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}`);
+    return apiClient.get<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}`)
   },
 
   /**
@@ -71,7 +65,7 @@ export const tokenApi = {
    * @returns Le token nouvellement créé avec son ID généré
    */
   async create(gameId: number, mapId: number, dto: CreateTokenDTO): Promise<GameToken> {
-    return apiClient.post<GameToken>(`/games/${gameId}/maps/${mapId}/tokens`, dto);
+    return apiClient.post<GameToken>(`/games/${gameId}/maps/${mapId}/tokens`, dto)
   },
 
   /**
@@ -83,8 +77,13 @@ export const tokenApi = {
    * @param dto - Nouvelles données du token (UpdateTokenDTO)
    * @returns Le token mis à jour
    */
-  async update(gameId: number, mapId: number, tokenId: number, dto: UpdateTokenDTO): Promise<GameToken> {
-    return apiClient.put<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}`, dto);
+  async update(
+    gameId: number,
+    mapId: number,
+    tokenId: number,
+    dto: UpdateTokenDTO,
+  ): Promise<GameToken> {
+    return apiClient.put<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}`, dto)
   },
 
   /**
@@ -96,8 +95,13 @@ export const tokenApi = {
    * @param dto - Propriétés à modifier (partiel de UpdateTokenDTO)
    * @returns Le token mis à jour
    */
-  async partialUpdate(gameId: number, mapId: number, tokenId: number, dto: Partial<UpdateTokenDTO>): Promise<GameToken> {
-    return apiClient.patch<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}`, dto);
+  async partialUpdate(
+    gameId: number,
+    mapId: number,
+    tokenId: number,
+    dto: Partial<UpdateTokenDTO>,
+  ): Promise<GameToken> {
+    return apiClient.patch<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}`, dto)
   },
 
   /**
@@ -109,8 +113,16 @@ export const tokenApi = {
    * @param position - Nouvelles coordonnées (MoveTokenDTO)
    * @returns Le token avec sa nouvelle position
    */
-  async move(gameId: number, mapId: number, tokenId: number, position: MoveTokenDTO): Promise<GameToken> {
-    return apiClient.post<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}/move`, position);
+  async move(
+    gameId: number,
+    mapId: number,
+    tokenId: number,
+    position: MoveTokenDTO,
+  ): Promise<GameToken> {
+    return apiClient.post<GameToken>(
+      `/games/${gameId}/maps/${mapId}/tokens/${tokenId}/move`,
+      position,
+    )
   },
 
   /**
@@ -121,10 +133,15 @@ export const tokenApi = {
    * @param degrees - Nouvel angle de rotation (0-359)
    * @returns Le token avec sa nouvelle rotation
    */
-  async rotate(gameId: number, mapId: number, tokenId: number, degrees: number): Promise<GameToken> {
+  async rotate(
+    gameId: number,
+    mapId: number,
+    tokenId: number,
+    degrees: number,
+  ): Promise<GameToken> {
     return apiClient.patch<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}/rotate`, {
       degrees,
-    });
+    })
   },
 
   /**
@@ -136,7 +153,9 @@ export const tokenApi = {
    * @returns Le token avec isVisible mis à jour
    */
   async show(gameId: number, mapId: number, tokenId: number): Promise<GameToken> {
-    return apiClient.post<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}/toggle-visibility`);
+    return apiClient.post<GameToken>(
+      `/games/${gameId}/maps/${mapId}/tokens/${tokenId}/toggle-visibility`,
+    )
   },
 
   /**
@@ -148,7 +167,9 @@ export const tokenApi = {
    * @returns Le token avec isVisible mis à jour
    */
   async hide(gameId: number, mapId: number, tokenId: number): Promise<GameToken> {
-    return apiClient.post<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}/toggle-visibility`);
+    return apiClient.post<GameToken>(
+      `/games/${gameId}/maps/${mapId}/tokens/${tokenId}/toggle-visibility`,
+    )
   },
 
   /**
@@ -160,7 +181,7 @@ export const tokenApi = {
    * @returns Le token avec isLocked mis à jour
    */
   async lock(gameId: number, mapId: number, tokenId: number): Promise<GameToken> {
-    return apiClient.post<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}/toggle-lock`);
+    return apiClient.post<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}/toggle-lock`)
   },
 
   /**
@@ -172,7 +193,7 @@ export const tokenApi = {
    * @returns Le token avec isLocked mis à jour
    */
   async unlock(gameId: number, mapId: number, tokenId: number): Promise<GameToken> {
-    return apiClient.post<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}/toggle-lock`);
+    return apiClient.post<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}/toggle-lock`)
   },
 
   /**
@@ -183,7 +204,7 @@ export const tokenApi = {
    * @param tokenId - ID du token à supprimer
    */
   async delete(gameId: number, mapId: number, tokenId: number): Promise<void> {
-    await apiClient.delete<void>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}`);
+    await apiClient.delete<void>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}`)
   },
 
   /**
@@ -195,10 +216,15 @@ export const tokenApi = {
    * @param offset - Décalage x/y par rapport au token original (optionnel)
    * @returns Le nouveau token créé (copie)
    */
-  async duplicate(gameId: number, mapId: number, tokenId: number, offset?: { x: number; y: number }): Promise<GameToken> {
+  async duplicate(
+    gameId: number,
+    mapId: number,
+    tokenId: number,
+    offset?: { x: number; y: number },
+  ): Promise<GameToken> {
     return apiClient.post<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}/duplicate`, {
       offset,
-    });
+    })
   },
 
   /**
@@ -212,11 +238,11 @@ export const tokenApi = {
   async moveBulk(
     gameId: number,
     mapId: number,
-    movements: Array<{ tokenId: number; x: number; y: number }>
+    movements: Array<{ tokenId: number; x: number; y: number }>,
   ): Promise<GameToken[]> {
     return apiClient.patch<GameToken[]>(`/games/${gameId}/maps/${mapId}/tokens/move-bulk`, {
       movements,
-    });
+    })
   },
 
   /**
@@ -228,10 +254,15 @@ export const tokenApi = {
    * @param isVisible - Nouvelle valeur de visibilité pour tous les tokens
    * @returns Liste des tokens mis à jour
    */
-  async toggleBulkVisibility(gameId: number, mapId: number, tokenIds: number[], isVisible: boolean): Promise<GameToken[]> {
+  async toggleBulkVisibility(
+    gameId: number,
+    mapId: number,
+    tokenIds: number[],
+    isVisible: boolean,
+  ): Promise<GameToken[]> {
     return apiClient.patch<GameToken[]>(`/games/${gameId}/maps/${mapId}/tokens/visibility-bulk`, {
       tokenIds,
       isVisible,
-    });
+    })
   },
-};
+}
