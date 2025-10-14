@@ -1,55 +1,57 @@
 import { apiClient } from './apiClient'
-import type {
-  LoginCredentials,
-  RegisterCredentials,
-  RegisterResponse,
-  MeResponse,
-} from '@/types/auth'
+import type { LoginCredentials, RegisterCredentials, MeResponse } from '@/types/auth'
 
 /**
- * Service d'authentification
- * Gère l'inscription, la connexion et la récupération de mot de passe
+ * Type de réponse adapté au nouveau format avec cookie
+ */
+interface LoginResponse {
+  success: boolean
+  message: string
+  user?: {
+    id: number
+    email: string
+    pseudo: string
+  }
+}
+
+interface RegisterResponse {
+  message: string
+  user: {
+    id: number
+    email: string
+    pseudo: string
+  }
+}
+
+/**
+ * Service API pour l'authentification
  */
 export const authApi = {
-  register: async (credentials: RegisterCredentials): Promise<RegisterResponse> => {
-    const registerData = {
-      pseudo: credentials.pseudo,
-      email: credentials.email,
-      password: credentials.password,
-    }
-    return apiClient.post<RegisterResponse>('/register', registerData)
-  },
-
-  login: async (credentials: LoginCredentials): Promise<{ token: string }> => {
-    return apiClient.post<{ token: string }>('/login', credentials)
-  },
-
-  logout: async (): Promise<void> => {
-    await apiClient.post('/logout')
-  },
-
-  me: async (): Promise<MeResponse> => {
-    return apiClient.get<MeResponse>('/me')
+  /**
+   * Connexion de l'utilisateur
+   */
+  async login(credentials: LoginCredentials): Promise<LoginResponse> {
+    return apiClient.post<LoginResponse>('/login', credentials).then((res) => res.data)
   },
 
   /**
-   * Vérification de l'email via token
+   * Inscription d'un nouvel utilisateur
    */
-  verifyEmail: async (token: string): Promise<{ message: string }> => {
-    return apiClient.get<{ message: string }>(`/auth/verify-email/${token}`)
+  async register(credentials: RegisterCredentials): Promise<RegisterResponse> {
+    return apiClient.post<RegisterResponse>('/register', credentials).then((res) => res.data)
   },
 
   /**
-   * Demande de réinitialisation de mot de passe
+   * Récupération des informations de l'utilisateur connecté
    */
-  forgotPassword: async (email: string): Promise<{ message: string }> => {
-    return apiClient.post<{ message: string }>('/auth/forgot-password', { email })
+  async me(): Promise<MeResponse> {
+    return apiClient.get<MeResponse>('/me').then((res) => res.data)
   },
 
   /**
-   * Réinitialisation du mot de passe avec token
+   * Déconnexion de l'utilisateur
    */
-  resetPassword: async (token: string, password: string): Promise<{ message: string }> => {
-    return apiClient.post<{ message: string }>('/auth/reset-password', { token, password })
+  async logout(): Promise<{ message: string }> {
+    return apiClient.post<{ message: string }>('/logout').then((res) => res.data)
   },
 }

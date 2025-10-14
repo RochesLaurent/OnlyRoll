@@ -8,6 +8,7 @@ use App\Entity\User;
 use App\Service\DtoValidatorService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -100,8 +101,21 @@ class AuthController extends AbstractController
     #[Route('/api/logout', name: 'api_logout', methods: ['POST'])]
     public function logout(): JsonResponse
     {
-        // Avec JWT, la déconnexion est gérée côté client
-        // Le serveur n'a pas besoin de blacklister le token
-        return $this->json(['message' => 'Déconnexion réussie']);
+        // Créer la réponse
+        $response = new JsonResponse(['message' => 'Déconnexion réussie']);
+        
+        // On crée un cookie expiré pour le supprimer côté client
+        $isProduction = ($_ENV['APP_ENV'] ?? 'dev') === 'prod';
+        
+        $response->headers->clearCookie(
+            'jwt_token',
+            '/',
+            null,
+            $isProduction, // secure
+            true, // httpOnly
+            Cookie::SAMESITE_STRICT
+        );
+        
+        return $response;
     }
 }

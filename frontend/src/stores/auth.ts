@@ -6,12 +6,10 @@ import type { User, LoginCredentials, RegisterCredentials } from '@/types/auth'
 
 /**
  * Store Pinia pour la gestion de l'authentification
- * Gère l'état utilisateur, le token JWT et les opérations d'auth
  */
 export const useAuthStore = defineStore('auth', () => {
   // ========== STATE ==========
   const user = ref<User | null>(null)
-  const token = ref<string | null>(localStorage.getItem('auth_token'))
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
@@ -20,7 +18,7 @@ export const useAuthStore = defineStore('auth', () => {
   /**
    * Vérifie si l'utilisateur est authentifié
    */
-  const isAuthenticated = computed(() => !!token.value && !!user.value)
+  const isAuthenticated = computed(() => !!user.value)
 
   /**
    * Retourne l'utilisateur courant
@@ -28,18 +26,6 @@ export const useAuthStore = defineStore('auth', () => {
   const currentUser = computed(() => user.value)
 
   // ========== MUTATIONS (setters privés) ==========
-
-  /**
-   * Définit le token JWT et le persiste dans localStorage
-   */
-  const setToken = (newToken: string | null): void => {
-    token.value = newToken
-    if (newToken) {
-      localStorage.setItem('auth_token', newToken)
-    } else {
-      localStorage.removeItem('auth_token')
-    }
-  }
 
   /**
    * Définit l'utilisateur courant
@@ -101,7 +87,6 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       await authApi.register(credentials)
       // Pas de connexion automatique après inscription
-      // L'utilisateur devra confirmer son email ou se connecter manuellement
     } catch (err: unknown) {
       const errorMessage = getErrorMessage(err, "Erreur lors de l'inscription")
       error.value = errorMessage
@@ -119,13 +104,12 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
 
     try {
-      // Appel à /api/login qui retourne { token: string }
-      const response = await authApi.login(credentials)
+      // L'API /api/login place automatiquement le JWT dans un cookie HttpOnly
+      // Le backend renvoie maintenant juste { success: true, message: '...' }
+      await authApi.login(credentials)
 
-      // Stocker le vrai token JWT
-      setToken(response.token)
-
-      // Récupérer les infos utilisateur avec le token
+      // Le cookie est automatiquement stocké par le navigateur
+      // On récupère juste les infos utilisateur
       await fetchMe()
     } catch (err: unknown) {
       const errorMessage = getErrorMessage(err, 'Erreur lors de la connexion')
@@ -140,8 +124,6 @@ export const useAuthStore = defineStore('auth', () => {
    * Récupère les informations de l'utilisateur connecté
    */
   const fetchMe = async (): Promise<void> => {
-    if (!token.value) return
-
     isLoading.value = true
     error.value = null
 
@@ -161,7 +143,7 @@ export const useAuthStore = defineStore('auth', () => {
 
       setUser(userData)
     } catch (err: unknown) {
-      // Si la récupération échoue (token invalide), on déconnecte
+      // Si la récupération échoue (cookie invalide/expiré), on déconnecte
       await logout()
       const errorMessage = getErrorMessage(err, 'Session expirée')
       error.value = errorMessage
@@ -173,17 +155,16 @@ export const useAuthStore = defineStore('auth', () => {
 
   /**
    * Déconnexion de l'utilisateur
+   *
    */
   const logout = async (): Promise<void> => {
     try {
-      // Appel API pour invalider le token côté serveur
+      // L'API /api/logout supprime le cookie HttpOnly
       await authApi.logout()
     } catch (err) {
-      // On déconnecte quand même côté client même si l'API échoue
       console.error('Erreur lors de la déconnexion:', err)
     } finally {
       // Nettoyage de l'état local
-      setToken(null)
       setUser(null)
       clearError()
     }
@@ -191,17 +172,14 @@ export const useAuthStore = defineStore('auth', () => {
 
   /**
    * Initialise le store au démarrage de l'application
-   * Charge l'utilisateur si un token existe
    */
   const initialize = async (): Promise<void> => {
-    if (token.value) {
-      try {
-        await fetchMe()
-      } catch (err) {
-        // Si l'initialisation échoue, on nettoie
-        console.error("Erreur lors de l'initialisation:", err)
-        await logout()
-      }
+    try {
+      // Si un cookie JWT valide existe, cette requête réussira
+      await fetchMe()
+    } catch (err) {
+      // Si ça échoue, c'est qu'il n'y a pas de session valide
+      console.log('No valid session, user not authenticated')
     }
   }
 
@@ -209,7 +187,6 @@ export const useAuthStore = defineStore('auth', () => {
    * Réinitialise complètement le store
    */
   const reset = (): void => {
-    setToken(null)
     setUser(null)
     clearError()
     isLoading.value = false
@@ -252,7 +229,6 @@ export const useAuthStore = defineStore('auth', () => {
   return {
     // State
     user,
-    token,
     isLoading,
     error,
 
@@ -279,6 +255,5 @@ export const useAuthStore = defineStore('auth', () => {
     setError,
     clearError,
     setUser,
-    setToken,
   }
 })
