@@ -98,6 +98,7 @@ export const useMapStore = defineStore('map', () => {
 
   /**
    * Charger la carte active d'un jeu et ses tokens
+   * Ne charge les tokens QUE si la carte existe
    */
   async function loadActiveMap(gameId: number) {
     isLoading.value = true
@@ -107,14 +108,20 @@ export const useMapStore = defineStore('map', () => {
     try {
       const map = await mapApi.getActive(gameId)
 
-      if (map) {
+      if (map && map.id) {
         activeMap.value = map
         await loadMapTokens(map.id)
       } else {
+        // Aucune carte active
         activeMap.value = null
         tokens.value = []
+        console.log('ℹAucune carte active pour cette partie')
       }
     } catch (e: unknown) {
+      // En cas d'erreur, réinitialiser
+      activeMap.value = null
+      tokens.value = []
+      
       if (e && typeof e === 'object' && 'message' in e) {
         error.value =
           (e as { message: string }).message || 'Erreur lors du chargement de la carte active'
@@ -138,8 +145,14 @@ export const useMapStore = defineStore('map', () => {
 
     try {
       activeMap.value = await mapApi.getById(mapId)
-      await loadMapTokens(mapId)
+      
+      if (activeMap.value && activeMap.value.id) {
+        await loadMapTokens(activeMap.value.id)
+      }
     } catch (e: unknown) {
+      activeMap.value = null
+      tokens.value = []
+      
       if (e && typeof e === 'object' && 'message' in e) {
         error.value = (e as { message: string }).message || 'Erreur lors du chargement de la carte'
       } else {
@@ -162,7 +175,10 @@ export const useMapStore = defineStore('map', () => {
 
     try {
       activeMap.value = await mapApi.activate(mapId)
-      await loadMapTokens(mapId)
+      
+      if (activeMap.value && activeMap.value.id) {
+        await loadMapTokens(activeMap.value.id)
+      }
     } catch (e: unknown) {
       if (e && typeof e === 'object' && 'message' in e) {
         error.value =
@@ -183,22 +199,35 @@ export const useMapStore = defineStore('map', () => {
 
   /**
    * Charger les tokens d'une carte
+   * Validation stricte des paramètres avant l'appel API
    */
   async function loadMapTokens(mapId: number) {
     if (!currentGameId.value) {
+      console.error('GameId not set. Call loadActiveMap first.')
       throw new Error('GameId not set. Call loadActiveMap first.')
     }
 
+    if (!mapId || typeof mapId !== 'number' || mapId <= 0) {
+      console.error('Invalid mapId:', mapId)
+      tokens.value = []
+      return
+    }
+
     try {
+      console.log('Chargement des tokens:', { gameId: currentGameId.value, mapId })
       tokens.value = await tokenApi.listVisible(currentGameId.value, mapId)
+      console.log('Tokens chargés:', tokens.value.length)
     } catch (e: unknown) {
+      // En cas d'erreur, vider les tokens plutôt que de crasher
+      tokens.value = []
+      
       if (e && typeof e === 'object' && 'message' in e) {
         error.value = (e as { message: string }).message || 'Erreur lors du chargement des tokens'
       } else {
         error.value = 'Erreur lors du chargement des tokens'
       }
       console.error('Erreur loadMapTokens:', e)
-      throw e
+      // Ne pas throw ici, car c'est un problème non-bloquant
     }
   }
 
@@ -234,7 +263,7 @@ export const useMapStore = defineStore('map', () => {
       dto.settings = data.settings
     }
 
-    console.log('✅ DTO Token construit:', dto)
+    console.log('DTO Token construit:', dto)
     return dto
   }
 

@@ -63,13 +63,13 @@ const router = createRouter({
       component: () => import('@/views/games/GameListView.vue'),
       meta: { requiresAuth: true, title: 'Parties' },
     },
-    // {
-    //   path: '/games/:id',
-    //   name: 'game-detail',
-    //   component: () => import('@/views/games/GameDetailView.vue'),
-    //   meta: { requiresAuth: true, title: 'Détail de la partie' },
-    //   props: true, // Passe :id comme prop au composant
-    // },
+    {
+      path: '/games/:id/play',
+      name: 'game-play',
+      component: () => import('@/views/games/GamePlayView.vue'),
+      meta: { requiresAuth: true, title: 'Partie en cours' },
+      props: true,
+    },
 
     // ========== WIKI D&D (PUBLIC) ==========
     // Décommentez quand vous créerez cette fonctionnalité

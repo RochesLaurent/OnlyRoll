@@ -6,6 +6,7 @@ use App\DTO\Map\CreateMapDTO;
 use App\DTO\Map\UpdateMapDTO;
 use App\Repository\GameMapRepository;
 use App\Repository\GameRepository;
+use App\Service\FileUploader;
 use App\Service\MapService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -24,6 +25,7 @@ class MapController extends AbstractController
         private readonly MapService $mapService,
         private readonly GameRepository $gameRepository,
         private readonly GameMapRepository $mapRepository,
+        private readonly FileUploader $fileUploader,
         private readonly SerializerInterface $serializer,
         private readonly ValidatorInterface $validator,
     ) {
@@ -118,7 +120,6 @@ class MapController extends AbstractController
 
         $map = $this->mapRepository->find($id);
 
-        // Vérification null-safety pour PHPStan
         $mapGame = $map?->getGame();
         if (!$map || !$mapGame || $mapGame->getId() !== $gameId) {
             return $this->json(
@@ -146,7 +147,8 @@ class MapController extends AbstractController
     }
 
     /**
-     * Créer une nouvelle carte.
+     * Créer une nouvelle carte avec upload d'image.
+     * Supporte à la fois JSON et multipart/form-data.
      */
     #[Route('', name: 'create', methods: ['POST'])]
     public function create(int $gameId, Request $request): JsonResponse
@@ -170,21 +172,46 @@ class MapController extends AbstractController
             );
         }
 
-        $dto = $this->serializer->deserialize(
-            $request->getContent(),
-            CreateMapDTO::class,
-            'json'
-        );
-
-        $errors = $this->validator->validate($dto);
-        if (count($errors) > 0) {
-            return $this->json(
-                ['errors' => (string) $errors],
-                Response::HTTP_BAD_REQUEST
-            );
-        }
-
         try {
+            $imageUrl = null;
+            $imageFile = $request->files->get('image');
+            
+            if ($imageFile) {
+                $imageUrl = $this->fileUploader->uploadMapImage($imageFile);
+            }
+
+            $contentType = $request->headers->get('Content-Type', '');
+            
+            if (str_contains($contentType, 'multipart/form-data')) {
+                $dto = new CreateMapDTO();
+                $dto->name = $request->request->get('name');
+                $dto->description = $request->request->get('description');
+                $dto->gridSize = (int) $request->request->get('gridSize', 50);
+                $dto->gridType = $request->request->get('gridType', 'square');
+                $dto->width = (int) $request->request->get('width', 20);
+                $dto->height = (int) $request->request->get('height', 20);
+                
+                $dto->imageUrl = $imageUrl;
+            } else {
+                $dto = $this->serializer->deserialize(
+                    $request->getContent(),
+                    CreateMapDTO::class,
+                    'json'
+                );
+                
+                if ($imageUrl) {
+                    $dto->imageUrl = $imageUrl;
+                }
+            }
+
+            $errors = $this->validator->validate($dto);
+            if (count($errors) > 0) {
+                return $this->json(
+                    ['errors' => (string) $errors],
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+
             $map = $this->mapService->createMap($game, $dto);
 
             return $this->json(
@@ -192,6 +219,11 @@ class MapController extends AbstractController
                 Response::HTTP_CREATED,
                 [],
                 ['groups' => 'map:read']
+            );
+        } catch (\InvalidArgumentException $e) {
+            return $this->json(
+                ['error' => $e->getMessage()],
+                Response::HTTP_BAD_REQUEST
             );
         } catch (\Exception $e) {
             return $this->json(
@@ -237,21 +269,35 @@ class MapController extends AbstractController
             );
         }
 
-        $dto = $this->serializer->deserialize(
-            $request->getContent(),
-            UpdateMapDTO::class,
-            'json'
-        );
-
-        $errors = $this->validator->validate($dto);
-        if (count($errors) > 0) {
-            return $this->json(
-                ['errors' => (string) $errors],
-                Response::HTTP_BAD_REQUEST
-            );
-        }
-
         try {
+            $imageFile = $request->files->get('image');
+            
+            if ($imageFile) {
+                if ($map->getImageUrl()) {
+                    $this->fileUploader->deleteFile($map->getImageUrl());
+                }
+                
+                $imageUrl = $this->fileUploader->uploadMapImage($imageFile);
+            }
+
+            $dto = $this->serializer->deserialize(
+                $request->getContent(),
+                UpdateMapDTO::class,
+                'json'
+            );
+            
+            if (isset($imageUrl)) {
+                $dto->imageUrl = $imageUrl;
+            }
+
+            $errors = $this->validator->validate($dto);
+            if (count($errors) > 0) {
+                return $this->json(
+                    ['errors' => (string) $errors],
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+
             $map = $this->mapService->updateMap($map, $dto);
 
             return $this->json(
@@ -285,7 +331,6 @@ class MapController extends AbstractController
 
         $map = $this->mapRepository->find($id);
 
-        // Vérification null-safety pour PHPStan
         $mapGame = $map?->getGame();
         if (!$map || !$mapGame || $mapGame->getId() !== $gameId) {
             return $this->json(
@@ -338,7 +383,6 @@ class MapController extends AbstractController
 
         $map = $this->mapRepository->find($id);
 
-        // Vérification null-safety pour PHPStan
         $mapGame = $map?->getGame();
         if (!$map || !$mapGame || $mapGame->getId() !== $gameId) {
             return $this->json(
@@ -358,6 +402,10 @@ class MapController extends AbstractController
         }
 
         try {
+            if ($map->getImageUrl()) {
+                $this->fileUploader->deleteFile($map->getImageUrl());
+            }
+            
             $this->mapService->deleteMap($map);
 
             return $this->json(

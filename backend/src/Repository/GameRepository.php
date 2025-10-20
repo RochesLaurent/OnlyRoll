@@ -107,6 +107,8 @@ class GameRepository extends ServiceEntityRepository
             ->addSelect('gp')
             ->leftJoin('gp.user', 'u')
             ->addSelect('u')
+            ->leftJoin('g.gameMaster', 'gm')
+            ->addSelect('gm')
             ->orderBy('g.createdAt', 'DESC');
 
         if ($search) {
@@ -139,6 +141,9 @@ class GameRepository extends ServiceEntityRepository
             ->addSelect('gp')
             ->leftJoin('gp.user', 'u')
             ->addSelect('u')
+            // 🔧 FIX: Ajouter le JOIN sur gameMaster
+            ->leftJoin('g.gameMaster', 'gm')
+            ->addSelect('gm')
             ->where('gp.user = :user')
             ->setParameter('user', $user)
             ->orderBy('g.updatedAt', 'DESC')
@@ -147,15 +152,20 @@ class GameRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve une partie avec tous ses joueurs (pour éviter N+1).
+     * 🔧 FIX CRITIQUE: Trouve une partie avec tous ses joueurs ET son gameMaster (pour éviter N+1).
      */
     public function findGameWithPlayers(int $id): ?Game
     {
         return $this->createQueryBuilder('g')
+            // Charger les joueurs de la partie
             ->leftJoin('g.gamePlayers', 'gp')
             ->addSelect('gp')
+            // Charger les utilisateurs des joueurs
             ->leftJoin('gp.user', 'u')
             ->addSelect('u')
+            // 🔧 FIX: Charger le Game Master (CRITIQUE!)
+            ->leftJoin('g.gameMaster', 'gm')
+            ->addSelect('gm')
             ->where('g.id = :id')
             ->setParameter('id', $id)
             ->getQuery()
@@ -167,7 +177,14 @@ class GameRepository extends ServiceEntityRepository
      */
     public function findByInviteCode(string $code): ?Game
     {
-        return $this->findOneBy(['inviteCode' => $code]);
+        return $this->createQueryBuilder('g')
+            // 🔧 FIX: Charger aussi le gameMaster ici
+            ->leftJoin('g.gameMaster', 'gm')
+            ->addSelect('gm')
+            ->where('g.inviteCode = :code')
+            ->setParameter('code', $code)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 
     /**

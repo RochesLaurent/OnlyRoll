@@ -1,110 +1,129 @@
-import { apiClient } from './apiClient'
+/**
+ * Service API pour la gestion des parties (Game)
+ */
+import { get, post, put, delete as del } from './apiClient'
 import type {
   Game,
   CreateGameDTO,
   UpdateGameDTO,
-  JoinGameDTO,
   GameFilters,
-  PaginatedGamesResponse,
+  PaginatedGamesResponse
 } from '@/types/game'
 
 /**
- * Service de gestion des parties de jeu
- * CRUD complet + actions spécifiques (rejoindre, quitter)
+ * Service pour gérer les parties de jeu
  */
 export const gameApi = {
   /**
-   * Liste toutes les parties publiques avec filtres et pagination
-   * @param filters - Filtres de recherche optionnels
+   * Récupérer toutes les parties publiques avec filtres et pagination
    */
   async listPublic(filters?: GameFilters): Promise<PaginatedGamesResponse> {
     const params = new URLSearchParams()
-
+    
     if (filters?.search) params.append('search', filters.search)
     if (filters?.title) params.append('title', filters.title)
     if (filters?.gameMaster) params.append('gameMaster', filters.gameMaster)
     if (filters?.status) params.append('status', filters.status)
     if (filters?.page) params.append('page', filters.page.toString())
     if (filters?.limit) params.append('limit', filters.limit.toString())
-
-    const endpoint = params.toString() ? `/games?${params.toString()}` : '/games'
-    return apiClient.get<PaginatedGamesResponse>(endpoint)
+    
+    const query = params.toString()
+    const url = query ? `/games?${query}` : '/games'
+    
+    return get<PaginatedGamesResponse>(url)
   },
 
   /**
-   * Liste les parties de l'utilisateur connecté
+   * Récupérer les parties de l'utilisateur connecté
    */
   async myGames(): Promise<Game[]> {
-    return apiClient.get<Game[]>('/games/my-games')
+    return get<Game[]>('/games/my-games')
   },
 
   /**
-   * Récupère les détails d'une partie par son ID
+   * Récupérer une partie par son ID
    */
   async getById(id: number): Promise<Game> {
-    return apiClient.get<Game>(`/games/${id}`)
+    return get<Game>(`/games/${id}`)
   },
 
   /**
-   * Crée une nouvelle partie
+   * Créer une nouvelle partie
    */
   async create(dto: CreateGameDTO): Promise<Game> {
-    return apiClient.post<Game>('/games', dto)
+    return post<Game>('/games', dto)
   },
 
   /**
-   * Met à jour une partie existante
+   * Mettre à jour une partie
    */
   async update(id: number, dto: UpdateGameDTO): Promise<Game> {
-    return apiClient.put<Game>(`/games/${id}`, dto)
+    return put<Game>(`/games/${id}`, dto)
   },
 
   /**
-   * Met à jour partiellement une partie
+   * Supprimer une partie
    */
-  async partialUpdate(id: number, dto: Partial<UpdateGameDTO>): Promise<Game> {
-    return apiClient.patch<Game>(`/games/${id}`, dto)
+  async delete(id: number): Promise<void> {
+    await del<void>(`/games/${id}`)
   },
 
   /**
-   * Rejoindre une partie (avec mot de passe optionnel)
+   * Rejoindre une partie par code d'invitation
    */
-  async join(id: number, dto?: JoinGameDTO): Promise<void> {
-    await apiClient.post<void>(`/games/${id}/join`, dto)
+  async joinByCode(inviteCode: string, password?: string): Promise<Game> {
+    return post<Game>('/games/join', {
+      inviteCode,
+      password
+    })
+  },
+
+  /**
+   * Rejoindre une partie par ID (si on connaît déjà l'ID)
+   */
+  async join(id: number, password?: string): Promise<Game> {
+    return post<Game>(`/games/${id}/join`, { password })
   },
 
   /**
    * Quitter une partie
    */
   async leave(id: number): Promise<void> {
-    await apiClient.post<void>(`/games/${id}/leave`)
+    await post<void>(`/games/${id}/leave`)
   },
 
   /**
-   * Supprimer ou archiver une partie
-   */
-  async delete(id: number): Promise<void> {
-    await apiClient.delete<void>(`/games/${id}`)
-  },
-
-  /**
-   * Démarrer une partie
+   * Démarrer une partie (MJ uniquement)
    */
   async start(id: number): Promise<Game> {
-    return apiClient.post<Game>(`/games/${id}/start`)
+    return post<Game>(`/games/${id}/start`)
   },
 
   /**
    * Mettre en pause une partie
    */
   async pause(id: number): Promise<Game> {
-    return apiClient.post<Game>(`/games/${id}/pause`)
+    return post<Game>(`/games/${id}/pause`)
+  },
+
+  /**
+   * Reprendre une partie en pause
+   */
+  async resume(id: number): Promise<Game> {
+    return post<Game>(`/games/${id}/resume`)
   },
 
   /**
    * Terminer une partie
    */
   async complete(id: number): Promise<Game> {
-    return apiClient.post<Game>(`/games/${id}/complete`)
+    return post<Game>(`/games/${id}/complete`)
+  },
+
+  /**
+   * Archiver une partie
+   */
+  async archive(id: number): Promise<Game> {
+    return post<Game>(`/games/${id}/archive`)
   },
 }

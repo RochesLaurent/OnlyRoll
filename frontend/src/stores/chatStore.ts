@@ -33,8 +33,16 @@ export const useChatStore = defineStore('chat', () => {
 
   /**
    * Messages triés par date (plus récents en bas)
+   * Protection contre messages undefined/null
    */
   const sortedMessages = computed(() => {
+    // Protection supplémentaire pour garantir que messages.value est un tableau
+    if (!Array.isArray(messages.value)) {
+      console.error('messages.value is not an array:', messages.value)
+      messages.value = []
+      return []
+    }
+    
     return [...messages.value].sort((a, b) => {
       return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     })
@@ -44,13 +52,17 @@ export const useChatStore = defineStore('chat', () => {
    * Filtrer les messages par type
    */
   const messagesByType = computed(() => {
-    return (type: MessageType) => messages.value.filter((msg) => msg.type === type)
+    return (type: MessageType) => {
+      if (!Array.isArray(messages.value)) return []
+      return messages.value.filter((msg) => msg.type === type)
+    }
   })
 
   /**
    * Messages de chat uniquement (pas système, pas dés)
    */
   const chatMessages = computed(() => {
+    if (!Array.isArray(messages.value)) return []
     return messages.value.filter(
       (msg) => msg.type === 'chat' || msg.type === 'emote' || msg.type === 'whisper',
     )
@@ -60,6 +72,7 @@ export const useChatStore = defineStore('chat', () => {
    * Messages système uniquement
    */
   const systemMessages = computed(() => {
+    if (!Array.isArray(messages.value)) return []
     return messages.value.filter((msg) => msg.type === 'system')
   })
 
@@ -67,20 +80,25 @@ export const useChatStore = defineStore('chat', () => {
    * Lancers de dés uniquement
    */
   const diceRolls = computed(() => {
+    if (!Array.isArray(messages.value)) return []
     return messages.value.filter((msg) => msg.type === 'dice_roll')
   })
 
   /**
    * Nombre total de messages
    */
-  const messagesCount = computed(() => messages.value.length)
+  const messagesCount = computed(() => {
+    if (!Array.isArray(messages.value)) return 0
+    return messages.value.length
+  })
 
   /**
    * Dernier message
    */
   const lastMessage = computed(() => {
-    if (messages.value.length === 0) return null
-    return sortedMessages.value[sortedMessages.value.length - 1]
+    if (!Array.isArray(messages.value) || messages.value.length === 0) return null
+    const sorted = sortedMessages.value
+    return sorted[sorted.length - 1]
   })
 
   // ===========================
@@ -89,6 +107,7 @@ export const useChatStore = defineStore('chat', () => {
 
   /**
    * Charger les messages récents d'un jeu
+   * Garantit que messages est toujours un tableau
    */
   async function loadRecentMessages(gameId: number, limit: number = 50) {
     isLoading.value = true
@@ -96,16 +115,21 @@ export const useChatStore = defineStore('chat', () => {
 
     try {
       const loadedMessages = await chatApi.listRecent(gameId, limit)
-      messages.value = loadedMessages
+      
+      messages.value = Array.isArray(loadedMessages) ? loadedMessages : []
 
       // Mettre à jour l'ID du plus ancien message pour la pagination
-      if (loadedMessages.length > 0) {
-        oldestMessageId.value = loadedMessages[0].id
+      if (messages.value.length > 0) {
+        oldestMessageId.value = messages.value[0].id
       }
 
       // Si on a moins de messages que demandé, il n'y en a plus
-      hasMore.value = loadedMessages.length === limit
+      hasMore.value = messages.value.length === limit
+      
+      console.log('Messages chargés:', messages.value.length)
     } catch (e: unknown) {
+      messages.value = []
+      
       if (e && typeof e === 'object' && 'message' in e) {
         error.value = (e as { message: string }).message || 'Erreur lors du chargement des messages'
       } else {
@@ -133,16 +157,15 @@ export const useChatStore = defineStore('chat', () => {
         before: oldestMessageId.value?.toString(),
       })
 
-      // Ajouter les messages plus anciens au début
-      messages.value.unshift(...olderMessages)
+      if (Array.isArray(olderMessages) && olderMessages.length > 0) {
+        messages.value.unshift(...olderMessages)
 
-      // Mettre à jour l'ID du plus ancien message
-      if (olderMessages.length > 0) {
         oldestMessageId.value = olderMessages[0].id
-      }
 
-      // Si on a moins de messages que demandé, il n'y en a plus
-      hasMore.value = olderMessages.length === limit
+        hasMore.value = olderMessages.length === limit
+      } else {
+        hasMore.value = false
+      }
     } catch (e: unknown) {
       if (e && typeof e === 'object' && 'message' in e) {
         error.value = (e as { message: string }).message || 'Erreur lors du chargement des messages'
@@ -163,13 +186,14 @@ export const useChatStore = defineStore('chat', () => {
     try {
       const newMessages = await chatApi.listSince(gameId, since)
 
-      // Ajouter uniquement les messages qui n'existent pas déjà
-      newMessages.forEach((msg) => {
-        const exists = messages.value.some((m) => m.id === msg.id)
-        if (!exists) {
-          messages.value.push(msg)
-        }
-      })
+      if (Array.isArray(newMessages)) {
+        newMessages.forEach((msg) => {
+          const exists = messages.value.some((m) => m.id === msg.id)
+          if (!exists) {
+            messages.value.push(msg)
+          }
+        })
+      }
     } catch (e: unknown) {
       if (e && typeof e === 'object' && 'message' in e) {
         error.value =
@@ -195,9 +219,7 @@ export const useChatStore = defineStore('chat', () => {
 
     try {
       const message = await chatApi.sendChat(gameId, content, isInCharacter)
-
       addMessageToList(message)
-
       return message
     } catch (e: unknown) {
       if (e && typeof e === 'object' && 'message' in e) {
@@ -221,10 +243,7 @@ export const useChatStore = defineStore('chat', () => {
 
     try {
       const message = await chatApi.sendEmote(gameId, content)
-
-      // Ajout optimistic
       addMessageToList(message)
-
       return message
     } catch (e: unknown) {
       if (e && typeof e === 'object' && 'message' in e) {
@@ -248,10 +267,7 @@ export const useChatStore = defineStore('chat', () => {
 
     try {
       const message = await chatApi.sendWhisper(gameId, recipientId, content)
-
-      // Ajout optimistic
       addMessageToList(message)
-
       return message
     } catch (e: unknown) {
       if (e && typeof e === 'object' && 'message' in e) {
@@ -275,10 +291,7 @@ export const useChatStore = defineStore('chat', () => {
 
     try {
       const message = await chatApi.sendSystem(gameId, content)
-
-      // Ajout optimistic
       addMessageToList(message)
-
       return message
     } catch (e: unknown) {
       if (e && typeof e === 'object' && 'message' in e) {
@@ -306,10 +319,7 @@ export const useChatStore = defineStore('chat', () => {
         formula,
         isInCharacter,
       })
-
-      // Ajout optimistic
       addMessageToList(message)
-
       return message
     } catch (e: unknown) {
       if (e && typeof e === 'object' && 'message' in e) {
@@ -355,9 +365,6 @@ export const useChatStore = defineStore('chat', () => {
   function handleChatMessage(data: MercureChatMessageData) {
     console.log('Message reçu via Mercure:', data)
 
-    // Le backend envoie { messageId, userId, userName, content, type, isIC, recipientId, recipientName, createdAt }
-    // On doit reconstruire un objet GameMessage complet
-
     if (data.messageId) {
       const message: GameMessage = {
         id: data.messageId,
@@ -378,7 +385,7 @@ export const useChatStore = defineStore('chat', () => {
         user: {
           id: data.userId,
           pseudo: data.userName,
-          email: '', // Non fourni par Mercure, pas grave
+          email: '',
         },
         recipient: data.recipientId
           ? {
@@ -399,7 +406,6 @@ export const useChatStore = defineStore('chat', () => {
   function handleDiceRoll(data: MercureDiceRollData) {
     console.log('Dés reçus via Mercure:', data)
 
-    // Convertir les données de dés en message si nécessaire
     if (data.message) {
       addMessageToList(data.message)
     }
@@ -424,6 +430,10 @@ export const useChatStore = defineStore('chat', () => {
    * Ajouter un message à la liste (évite les doublons)
    */
   function addMessageToList(message: GameMessage) {
+    if (!Array.isArray(messages.value)) {
+      messages.value = []
+    }
+    
     const exists = messages.value.some((m) => m.id === message.id)
     if (!exists) {
       messages.value.push(message)
@@ -437,6 +447,8 @@ export const useChatStore = defineStore('chat', () => {
    * Retirer un message de la liste
    */
   function removeMessageFromList(messageId: number) {
+    if (!Array.isArray(messages.value)) return
+    
     const index = messages.value.findIndex((m) => m.id === messageId)
     if (index !== -1) {
       messages.value.splice(index, 1)
@@ -453,7 +465,7 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   /**
-   * Réinitialiser le store
+   * Réinitialiser le store avec garantie de tableau vide
    */
   function $reset() {
     messages.value = []

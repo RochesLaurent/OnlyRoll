@@ -166,7 +166,53 @@ class GameController extends AbstractController
     }
 
     /**
-     * Rejoindre une partie.
+     * 🆕 Rejoindre une partie par code d'invitation
+     * Endpoint dédié pour rejoindre avec un code plutôt qu'un ID
+     */
+    #[Route('/join', name: 'join_by_code', methods: ['POST'])]
+    public function joinByCode(Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+        
+        $inviteCode = $data['inviteCode'] ?? null;
+        $password = $data['password'] ?? null;
+
+        if (!$inviteCode) {
+            return $this->json(
+                ['error' => 'Code d\'invitation requis'],
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        // Chercher la partie par son code d'invitation
+        $game = $this->gameRepository->findByInviteCode($inviteCode);
+
+        if (!$game) {
+            return $this->json(
+                ['error' => 'Code d\'invitation invalide'],
+                Response::HTTP_NOT_FOUND
+            );
+        }
+
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+
+        try {
+            $gamePlayer = $this->gameService->joinGame($game->getId(), $user, $password);
+
+            return $this->json(
+                $game,
+                Response::HTTP_OK,
+                [],
+                ['groups' => 'game:read']
+            );
+        } catch (\Exception $e) {
+            return $this->json(['error' => $e->getMessage()], $e->getCode() ?: Response::HTTP_BAD_REQUEST);
+        }
+    }
+
+    /**
+     * Rejoindre une partie par ID.
      */
     #[Route('/{id}/join', name: 'join', methods: ['POST'])]
     public function join(int $id, Request $request): JsonResponse
