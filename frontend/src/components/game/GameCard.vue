@@ -53,7 +53,7 @@ const campaignLevel = computed(() => {
 })
 
 function viewGame() {
-  router.push({ name: 'game-detail', params: { id: props.game.id } })
+  router.push({ name: 'game-play', params: { id: props.game.id } })
 }
 
 function handleJoin(event: Event) {
