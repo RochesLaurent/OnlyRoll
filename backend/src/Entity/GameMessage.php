@@ -74,6 +74,7 @@ class GameMessage
     private ?string $content = null;
 
     /**
+     * Résultat d'un lancer de dés.
      * @var array<string, mixed>|null
      */
     #[ORM\Column(name: 'message_dice_result', type: Types::JSON, nullable: true)]
@@ -178,23 +179,6 @@ class GameMessage
             self::TYPE_SYSTEM => sprintf('[Système] %s', $this->content),
             default => $this->content,
         };
-    }
-
-    /**
-     * @param array<string, mixed> $diceConfig
-     * @param array<int>           $results
-     */
-    public function setDiceRoll(array $diceConfig, array $results, int $total): static
-    {
-        $this->type = self::TYPE_DICE_ROLL;
-        $this->diceResult = [
-            'config' => $diceConfig,
-            'results' => $results,
-            'total' => $total,
-            'timestamp' => (new \DateTimeImmutable())->format('c'),
-        ];
-
-        return $this;
     }
 
     // Getters & Setters

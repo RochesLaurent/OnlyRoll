@@ -47,7 +47,6 @@ class GameMap
     private ?string $description = null;
 
     #[ORM\Column(name: 'map_image_url', type: Types::STRING, length: 500, nullable: true)]
-    #[Assert\Url(message: 'L\'URL de l\'image n\'est pas valide')]
     #[Groups(['map:read', 'map:write'])]
     private ?string $imageUrl = null;
 

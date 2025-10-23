@@ -5,7 +5,7 @@
  * Tous les types sont importés depuis @/types/game pour garantir la cohérence.
  */
 
-import { apiClient } from './apiClient'
+import { get, post, patch, delete as del } from './apiClient'
 import type { GameToken, CreateTokenDTO, UpdateTokenDTO, MoveTokenDTO } from '@/types/game'
 
 /**
@@ -29,7 +29,7 @@ export const tokenApi = {
    * @returns Liste de tous les tokens de la carte
    */
   async listByMapWithGame(gameId: number, mapId: number): Promise<GameToken[]> {
-    return apiClient.get<GameToken[]>(`/games/${gameId}/maps/${mapId}/tokens`)
+    return get<GameToken[]>(`/games/${gameId}/maps/${mapId}/tokens`)
   },
 
   /**
@@ -41,7 +41,7 @@ export const tokenApi = {
    * @returns Liste des tokens visibles pour l'utilisateur connecté
    */
   async listVisible(gameId: number, mapId: number): Promise<GameToken[]> {
-    return apiClient.get<GameToken[]>(`/games/${gameId}/maps/${mapId}/tokens`)
+    return get<GameToken[]>(`/games/${gameId}/maps/${mapId}/tokens`)
   },
 
   /**
@@ -52,7 +52,7 @@ export const tokenApi = {
    * @returns Le token complet avec toutes ses propriétés
    */
   async getById(gameId: number, mapId: number, tokenId: number): Promise<GameToken> {
-    return apiClient.get<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}`)
+    return get<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}`)
   },
 
   /**
@@ -65,7 +65,7 @@ export const tokenApi = {
    * @returns Le token nouvellement créé avec son ID généré
    */
   async create(gameId: number, mapId: number, dto: CreateTokenDTO): Promise<GameToken> {
-    return apiClient.post<GameToken>(`/games/${gameId}/maps/${mapId}/tokens`, dto)
+    return post<GameToken>(`/games/${gameId}/maps/${mapId}/tokens`, dto)
   },
 
   /**
@@ -83,7 +83,7 @@ export const tokenApi = {
     tokenId: number,
     dto: UpdateTokenDTO,
   ): Promise<GameToken> {
-    return apiClient.put<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}`, dto)
+    return post<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}`, dto)
   },
 
   /**
@@ -101,7 +101,7 @@ export const tokenApi = {
     tokenId: number,
     dto: Partial<UpdateTokenDTO>,
   ): Promise<GameToken> {
-    return apiClient.patch<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}`, dto)
+    return patch<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}`, dto)
   },
 
   /**
@@ -119,7 +119,7 @@ export const tokenApi = {
     tokenId: number,
     position: MoveTokenDTO,
   ): Promise<GameToken> {
-    return apiClient.post<GameToken>(
+    return post<GameToken>(
       `/games/${gameId}/maps/${mapId}/tokens/${tokenId}/move`,
       position,
     )
@@ -139,7 +139,7 @@ export const tokenApi = {
     tokenId: number,
     degrees: number,
   ): Promise<GameToken> {
-    return apiClient.patch<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}/rotate`, {
+    return patch<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}/rotate`, {
       degrees,
     })
   },
@@ -153,7 +153,7 @@ export const tokenApi = {
    * @returns Le token avec isVisible mis à jour
    */
   async show(gameId: number, mapId: number, tokenId: number): Promise<GameToken> {
-    return apiClient.post<GameToken>(
+    return post<GameToken>(
       `/games/${gameId}/maps/${mapId}/tokens/${tokenId}/toggle-visibility`,
     )
   },
@@ -167,7 +167,7 @@ export const tokenApi = {
    * @returns Le token avec isVisible mis à jour
    */
   async hide(gameId: number, mapId: number, tokenId: number): Promise<GameToken> {
-    return apiClient.post<GameToken>(
+    return post<GameToken>(
       `/games/${gameId}/maps/${mapId}/tokens/${tokenId}/toggle-visibility`,
     )
   },
@@ -181,7 +181,7 @@ export const tokenApi = {
    * @returns Le token avec isLocked mis à jour
    */
   async lock(gameId: number, mapId: number, tokenId: number): Promise<GameToken> {
-    return apiClient.post<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}/toggle-lock`)
+    return post<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}/toggle-lock`)
   },
 
   /**
@@ -193,7 +193,7 @@ export const tokenApi = {
    * @returns Le token avec isLocked mis à jour
    */
   async unlock(gameId: number, mapId: number, tokenId: number): Promise<GameToken> {
-    return apiClient.post<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}/toggle-lock`)
+    return post<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}/toggle-lock`)
   },
 
   /**
@@ -204,7 +204,7 @@ export const tokenApi = {
    * @param tokenId - ID du token à supprimer
    */
   async delete(gameId: number, mapId: number, tokenId: number): Promise<void> {
-    await apiClient.delete<void>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}`)
+    await del<void>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}`)
   },
 
   /**
@@ -222,7 +222,7 @@ export const tokenApi = {
     tokenId: number,
     offset?: { x: number; y: number },
   ): Promise<GameToken> {
-    return apiClient.post<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}/duplicate`, {
+    return post<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}/duplicate`, {
       offset,
     })
   },
@@ -240,7 +240,7 @@ export const tokenApi = {
     mapId: number,
     movements: Array<{ tokenId: number; x: number; y: number }>,
   ): Promise<GameToken[]> {
-    return apiClient.patch<GameToken[]>(`/games/${gameId}/maps/${mapId}/tokens/move-bulk`, {
+    return patch<GameToken[]>(`/games/${gameId}/maps/${mapId}/tokens/move-bulk`, {
       movements,
     })
   },
@@ -260,7 +260,7 @@ export const tokenApi = {
     tokenIds: number[],
     isVisible: boolean,
   ): Promise<GameToken[]> {
-    return apiClient.patch<GameToken[]>(`/games/${gameId}/maps/${mapId}/tokens/visibility-bulk`, {
+    return patch<GameToken[]>(`/games/${gameId}/maps/${mapId}/tokens/visibility-bulk`, {
       tokenIds,
       isVisible,
     })

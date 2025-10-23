@@ -19,7 +19,6 @@ class CreateMapDTO
 
     public ?string $description = null;
 
-    #[Assert\Url(message: 'L\'URL de l\'image n\'est pas valide.')]
     public ?string $imageUrl = null;
 
     #[Assert\Range(

@@ -200,14 +200,15 @@ export const MESSAGE_TYPES = {
   DICE_ROLL: 'dice_roll' as const,
 } as const
 
+/**
+ * Structure du résultat de dés
+ * Correspond EXACTEMENT à ce que renvoie ChatController.php (ligne 257-264)
+ */
 export interface DiceResult {
-  config: {
-    dice: string // Ex: "2d6+3"
-    [key: string]: unknown
-  }
-  results: number[] // Résultats individuels des dés
-  total: number // Total du lancer
-  timestamp: string
+  formula: string // Ex: "2d6+3" - La formule complète du lancer
+  rolls: number[] // Résultats individuels des dés lancés
+  total: number // Total du lancer (somme des rolls + modifier)
+  modifier: number // Modificateur appliqué (+3, -1, etc.)
 }
 
 export interface GameMessage {

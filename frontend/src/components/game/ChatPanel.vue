@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, watch, onMounted } from 'vue'
+import { ref, nextTick, watch, onMounted } from 'vue'
 import { useChatStore } from '@/stores/chatStore'
-import type { GameMessage, MessageType } from '@/types/game'
+import type { GameMessage, MessageType, DiceResult } from '@/types/game'
 
 const props = defineProps<{
   messages: GameMessage[]
@@ -54,23 +54,23 @@ async function sendMessage() {
     if (messageInput.value.startsWith('/roll ')) {
       const formula = messageInput.value.replace('/roll ', '').trim()
       await chatStore.rollDice(props.gameId, formula, isInCharacter.value)
-      console.log('✅ Dés lancés:', formula)
+      console.log('Dés lancés:', formula)
     } 
     // Commande emote
     else if (messageInput.value.startsWith('/me ')) {
       const content = messageInput.value.replace('/me ', '').trim()
       await chatStore.sendEmote(props.gameId, content)
-      console.log('✅ Emote envoyée')
+      console.log('Emote envoyée')
     } 
     // Message normal
     else {
       await chatStore.sendMessage(props.gameId, messageInput.value, isInCharacter.value)
-      console.log('✅ Message envoyé')
+      console.log('Message envoyé')
     }
     
     messageInput.value = ''
   } catch (error) {
-    console.error('❌ Erreur envoi message:', error)
+    console.error('Erreur envoi message:', error)
   }
 }
 
@@ -112,6 +112,41 @@ function getMessageIcon(type: MessageType) {
   }
   return icons[type] || '💬'
 }
+
+/**
+ * Normalise diceResult
+ * 
+ * Gère la compatibilité entre l'ancienne structure (fixtures) et la nouvelle :
+ * - Ancienne : { config, results, total, timestamp }
+ * - Nouvelle : { formula, rolls, total, modifier }
+ * 
+ * Cette fonction assure que le composant fonctionne même avec d'anciennes données.
+ */
+function normalizeDiceResult(result: any): DiceResult | null {
+  if (!result) return null
+
+  if (result.rolls && result.formula !== undefined) {
+    return {
+      formula: result.formula || '',
+      rolls: result.rolls || [],
+      total: result.total || 0,
+      modifier: result.modifier || 0
+    }
+  }
+
+  if (result.results) {
+    console.warn('Ancienne structure diceResult détectée, conversion en cours...')
+    return {
+      formula: result.config?.dice || 'N/A',
+      rolls: result.results || [],
+      total: result.total || 0,
+      modifier: 0
+    }
+  }
+
+  console.error('Structure diceResult invalide:', result)
+  return null
+}
 </script>
 
 <template>
@@ -151,19 +186,22 @@ function getMessageIcon(type: MessageType) {
         <!-- Contenu -->
         <p class="text-secondary-100 text-sm">{{ msg.content }}</p>
         
-        <!-- Résultat de dés -->
-        <div v-if="msg.diceResult" class="mt-2 p-3 bg-black/30 rounded-lg">
+        <!-- Résultat de dés - ✅ Avec sécurité -->
+        <div v-if="normalizeDiceResult(msg.diceResult)" class="mt-2 p-3 bg-black/30 rounded-lg">
           <div class="flex items-center justify-between">
             <div>
               <div class="text-sm text-secondary-400 mb-1">
-                {{ msg.diceResult.config.dice }}
+                🎲 {{ normalizeDiceResult(msg.diceResult)!.formula }}
               </div>
               <div class="text-xs text-secondary-500">
-                Lancés: {{ msg.diceResult.results.join(' + ') }}
+                Lancés: {{ normalizeDiceResult(msg.diceResult)!.rolls.join(' + ') }}
+                <span v-if="normalizeDiceResult(msg.diceResult)!.modifier !== 0">
+                  {{ normalizeDiceResult(msg.diceResult)!.modifier > 0 ? '+' : '' }}{{ normalizeDiceResult(msg.diceResult)!.modifier }}
+                </span>
               </div>
             </div>
             <div class="text-3xl font-bold text-white">
-              {{ msg.diceResult.total }}
+              {{ normalizeDiceResult(msg.diceResult)!.total }}
             </div>
           </div>
         </div>

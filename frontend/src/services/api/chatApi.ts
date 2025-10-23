@@ -5,7 +5,7 @@
  * Tous les types sont importés depuis @/types/game pour garantir la cohérence.
  */
 
-import { apiClient } from './apiClient'
+import { get, post, delete as del } from './apiClient'
 import {
   type GameMessage,
   MessageType,
@@ -59,7 +59,7 @@ export const chatApi = {
       ? `/games/${gameId}/chat/messages?${params.toString()}`
       : `/games/${gameId}/chat/messages`
 
-    return apiClient.get<GameMessage[]>(endpoint)
+    return get<GameMessage[]>(endpoint)
   },
 
   /**
@@ -70,7 +70,7 @@ export const chatApi = {
    * @returns Les messages les plus récents
    */
   async listRecent(gameId: number, limit: number = 50): Promise<GameMessage[]> {
-    return apiClient.get<GameMessage[]>(`/games/${gameId}/chat/messages?limit=${limit}`)
+    return get<GameMessage[]>(`/games/${gameId}/chat/messages?limit=${limit}`)
   },
 
   /**
@@ -81,7 +81,7 @@ export const chatApi = {
    * @returns Liste des nouveaux messages depuis le timestamp donné
    */
   async listSince(gameId: number, since: string): Promise<GameMessage[]> {
-    return apiClient.get<GameMessage[]>(
+    return get<GameMessage[]>(
       `/games/${gameId}/chat/messages/since?since=${encodeURIComponent(since)}`,
     )
   },
@@ -94,7 +94,7 @@ export const chatApi = {
    * @returns Le message créé avec son ID et timestamp
    */
   async send(gameId: number, dto: SendMessageDTO): Promise<GameMessage> {
-    return apiClient.post<GameMessage>(`/games/${gameId}/chat/messages`, dto)
+    return post<GameMessage>(`/games/${gameId}/chat/messages`, dto)
   },
 
   /**
@@ -170,7 +170,7 @@ export const chatApi = {
    * @returns Le message avec le résultat du lancer de dés intégré
    */
   async rollDice(gameId: number, dto: RollDiceDTO): Promise<GameMessage> {
-    return apiClient.post<GameMessage>(`/games/${gameId}/chat/roll-dice`, {
+    return post<GameMessage>(`/games/${gameId}/chat/roll-dice`, {
       formula: dto.formula,
       reason: dto.reason,
       isInCharacter: dto.isInCharacter,
@@ -184,7 +184,7 @@ export const chatApi = {
    * @param messageId - ID du message à supprimer
    */
   async delete(messageId: number): Promise<void> {
-    await apiClient.delete<void>(`/messages/${messageId}`)
+    await del<void>(`/messages/${messageId}`)
   },
 
   /**
@@ -204,7 +204,7 @@ export const chatApi = {
       params.append('userId', userId.toString())
     }
 
-    return apiClient.get<GameMessage[]>(
+    return get<GameMessage[]>(
       `/games/${gameId}/chat/messages/type/whisper?${params.toString()}`,
     )
   },
@@ -216,7 +216,7 @@ export const chatApi = {
    * @param messageIds - Liste des IDs de messages à marquer comme lus
    */
   async markAsRead(gameId: number, messageIds: number[]): Promise<void> {
-    await apiClient.post<void>(`/games/${gameId}/chat/messages/read`, {
+    await post<void>(`/games/${gameId}/chat/messages/read`, {
       messageIds,
     })
   },
@@ -228,6 +228,6 @@ export const chatApi = {
    * @returns Statistiques détaillées du chat
    */
   async getStats(gameId: number): Promise<ChatStats> {
-    return apiClient.get<ChatStats>(`/games/${gameId}/chat/stats`)
+    return get<ChatStats>(`/games/${gameId}/chat/stats`)
   },
 }

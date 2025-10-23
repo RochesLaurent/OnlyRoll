@@ -289,7 +289,7 @@ class GameFixtures extends Fixture
                 ->setSize($objData['size'])
                 ->setRotation(0)
                 ->setIsVisible(true)
-                ->setIsLocked(true) // Les objets sont verrouillés par défaut
+                ->setIsLocked(true)
                 ->setLayer('objects');
             $manager->persist($token);
         }
@@ -333,10 +333,10 @@ class GameFixtures extends Fixture
                 'content' => 'Jet de Perception',
                 'isInCharacter' => true,
                 'diceResult' => [
-                    'config' => ['dice' => '1d20+3'],
-                    'results' => [15],
+                    'formula' => '1d20+3',
+                    'rolls' => [15],
                     'total' => 18,
-                    'timestamp' => (new \DateTimeImmutable())->format('c'),
+                    'modifier' => 3,
                 ],
             ],
             [
@@ -357,6 +357,30 @@ class GameFixtures extends Fixture
                 'content' => 'Oui, fais un jet de Discrétion.',
                 'isInCharacter' => false,
             ],
+            [
+                'user' => $users[3],
+                'type' => GameMessage::TYPE_DICE_ROLL,
+                'content' => 'Jet de Discrétion',
+                'isInCharacter' => true,
+                'diceResult' => [
+                    'formula' => '1d20-1',
+                    'rolls' => [12],
+                    'total' => 11,
+                    'modifier' => -1,
+                ],
+            ],
+            [
+                'user' => $users[2],
+                'type' => GameMessage::TYPE_DICE_ROLL,
+                'content' => 'Jet d\'attaque avec plusieurs dés',
+                'isInCharacter' => true,
+                'diceResult' => [
+                    'formula' => '2d6+5',
+                    'rolls' => [4, 3],
+                    'total' => 12,
+                    'modifier' => 5,
+                ],
+            ],
         ];
 
         foreach ($messages as $msgData) {
@@ -373,8 +397,7 @@ class GameFixtures extends Fixture
 
             $manager->persist($message);
 
-            // Petit délai entre les messages pour avoir des timestamps différents
-            usleep(100000); // 0.1 seconde
+            usleep(100000);
         }
     }
 }
