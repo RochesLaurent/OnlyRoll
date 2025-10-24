@@ -42,7 +42,7 @@ export const useChatStore = defineStore('chat', () => {
       messages.value = []
       return []
     }
-    
+
     return [...messages.value].sort((a, b) => {
       return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     })
@@ -64,7 +64,7 @@ export const useChatStore = defineStore('chat', () => {
   const chatMessages = computed(() => {
     if (!Array.isArray(messages.value)) return []
     return messages.value.filter(
-      (msg) => msg.type === 'chat' || msg.type === 'emote' || msg.type === 'whisper',
+      (msg) => msg.type === 'chat' || msg.type === 'emote' || msg.type === 'whisper'
     )
   })
 
@@ -115,7 +115,7 @@ export const useChatStore = defineStore('chat', () => {
 
     try {
       const loadedMessages = await chatApi.listRecent(gameId, limit)
-      
+
       messages.value = Array.isArray(loadedMessages) ? loadedMessages : []
 
       // Mettre à jour l'ID du plus ancien message pour la pagination
@@ -125,11 +125,11 @@ export const useChatStore = defineStore('chat', () => {
 
       // Si on a moins de messages que demandé, il n'y en a plus
       hasMore.value = messages.value.length === limit
-      
+
       console.log('Messages chargés:', messages.value.length)
     } catch (e: unknown) {
       messages.value = []
-      
+
       if (e && typeof e === 'object' && 'message' in e) {
         error.value = (e as { message: string }).message || 'Erreur lors du chargement des messages'
       } else {
@@ -374,10 +374,10 @@ export const useChatStore = defineStore('chat', () => {
         createdAt: data.createdAt,
         diceResult: data.diceResult
           ? {
-              config: { dice: data.diceResult.formula || '' },
-              results: data.diceResult.rolls || [],
-              total: data.diceResult.total,
-              timestamp: data.createdAt,
+              formula: data.diceResult.formula ?? '',
+              results: data.diceResult.rolls ?? [],
+              total: data.diceResult.total ?? 0,
+              modifier: data.diceResult.modifier ?? 0,
             }
           : undefined,
         diceTotal: data.diceResult?.total || undefined,
@@ -433,7 +433,7 @@ export const useChatStore = defineStore('chat', () => {
     if (!Array.isArray(messages.value)) {
       messages.value = []
     }
-    
+
     const exists = messages.value.some((m) => m.id === message.id)
     if (!exists) {
       messages.value.push(message)
@@ -448,7 +448,7 @@ export const useChatStore = defineStore('chat', () => {
    */
   function removeMessageFromList(messageId: number) {
     if (!Array.isArray(messages.value)) return
-    
+
     const index = messages.value.findIndex((m) => m.id === messageId)
     if (index !== -1) {
       messages.value.splice(index, 1)

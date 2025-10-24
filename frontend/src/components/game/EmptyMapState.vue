@@ -27,14 +27,14 @@ const emit = defineEmits<{
 
       <!-- Message pour GM -->
       <p v-if="isGameMaster" class="text-secondary-300 mb-6">
-        Cette partie n'a pas encore de carte. Uploadez une carte pour commencer à jouer et
-        placer des tokens.
+        Cette partie n'a pas encore de carte. Uploadez une carte pour commencer à jouer et placer
+        des tokens.
       </p>
 
       <!-- Message pour joueurs -->
       <p v-else class="text-secondary-300 mb-6">
-        Le maître du jeu n'a pas encore créé de carte pour cette session. Patientez pendant
-        qu'il prépare le terrain de jeu.
+        Le maître du jeu n'a pas encore créé de carte pour cette session. Patientez pendant qu'il
+        prépare le terrain de jeu.
       </p>
 
       <!-- Action pour GM uniquement -->

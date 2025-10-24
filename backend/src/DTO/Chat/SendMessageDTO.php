@@ -11,7 +11,7 @@ class SendMessageDTO
     #[Assert\NotBlank(message: 'Le type de message est obligatoire.')]
     #[Assert\Choice(
         choices: ['chat', 'emote', 'whisper', 'system', 'dice_roll'],
-        message: 'Le type doit être "chat", "emote", "whisper", "system" ou "dice_roll".'
+        message: 'Le type doit être "chat", "emote", "whisper", "system" ou "dice_roll".',
     )]
     public string $type;
 
@@ -20,7 +20,7 @@ class SendMessageDTO
         min: 1,
         max: 5000,
         minMessage: 'Le message doit faire au moins {{ limit }} caractère.',
-        maxMessage: 'Le message ne peut pas dépasser {{ limit }} caractères.'
+        maxMessage: 'Le message ne peut pas dépasser {{ limit }} caractères.',
     )]
     public string $content;
 

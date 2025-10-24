@@ -20,12 +20,12 @@ const tools = [
   { id: 'fog', icon: '☁️', label: 'Brouillard', gmOnly: true },
   { id: 'measure', icon: '📏', label: 'Mesure', gmOnly: false },
   { id: 'draw', icon: '✏️', label: 'Dessin', gmOnly: false },
-  { id: 'ping', icon: '📍', label: 'Ping', gmOnly: false }
+  { id: 'ping', icon: '📍', label: 'Ping', gmOnly: false },
 ]
 
 // Filtrer les outils selon le rôle
 const availableTools = computed(() => {
-  return tools.filter(tool => !tool.gmOnly || props.isGameMaster)
+  return tools.filter((tool) => !tool.gmOnly || props.isGameMaster)
 })
 
 // ============================================
@@ -53,7 +53,9 @@ function centerMap() {
 </script>
 
 <template>
-  <div class="bg-secondary-800 border-b border-secondary-700 px-4 py-2 flex items-center gap-2 flex-shrink-0">
+  <div
+    class="bg-secondary-800 border-b border-secondary-700 px-4 py-2 flex items-center gap-2 flex-shrink-0"
+  >
     <!-- Outils -->
     <div class="flex items-center gap-1">
       <button
@@ -64,7 +66,7 @@ function centerMap() {
           'px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2',
           selectedTool === tool.id
             ? 'bg-primary-500 text-white shadow-purple'
-            : 'bg-secondary-700 text-secondary-300 hover:bg-secondary-600'
+            : 'bg-secondary-700 text-secondary-300 hover:bg-secondary-600',
         ]"
         :title="tool.label"
       >
@@ -85,7 +87,7 @@ function centerMap() {
       >
         −
       </button>
-      
+
       <button
         @click="resetZoom"
         class="px-4 py-2 bg-secondary-700 text-secondary-300 rounded-lg hover:bg-secondary-600 font-mono min-w-[80px] transition-colors"
@@ -93,7 +95,7 @@ function centerMap() {
       >
         {{ zoomLevel }}%
       </button>
-      
+
       <button
         @click="adjustZoom(25)"
         class="px-3 py-2 bg-secondary-700 text-secondary-300 rounded-lg hover:bg-secondary-600 font-bold transition-colors"
@@ -115,7 +117,9 @@ function centerMap() {
 
     <!-- Badge MJ -->
     <div v-if="isGameMaster" class="ml-auto">
-      <span class="px-3 py-1.5 bg-accent-purple text-white text-sm font-medium rounded-lg flex items-center gap-2 shadow-lg">
+      <span
+        class="px-3 py-1.5 bg-accent-purple text-white text-sm font-medium rounded-lg flex items-center gap-2 shadow-lg"
+      >
         <span>👑</span>
         <span>Maître du Jeu</span>
       </span>

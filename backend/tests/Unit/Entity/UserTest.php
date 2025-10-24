@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Entity;
 
 use App\Entity\User;
+use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -28,8 +29,8 @@ class UserTest extends TestCase
         $this->assertFalse($user->isVerified());
         $this->assertEquals('UTC', $user->getTimezone());
         $this->assertEquals('en', $user->getLanguage());
-        $this->assertInstanceOf(\DateTimeImmutable::class, $user->getCreatedAt());
-        $this->assertInstanceOf(\DateTimeImmutable::class, $user->getUpdatedAt());
+        $this->assertInstanceOf(DateTimeImmutable::class, $user->getCreatedAt());
+        $this->assertInstanceOf(DateTimeImmutable::class, $user->getUpdatedAt());
         $this->assertNull($user->getLastLogin());
     }
 
@@ -182,7 +183,7 @@ class UserTest extends TestCase
     public function testItCanSetAndGetLastLogin(): void
     {
         $user = new User();
-        $lastLogin = new \DateTimeImmutable('2025-01-15 10:30:00');
+        $lastLogin = new DateTimeImmutable('2025-01-15 10:30:00');
 
         $user->setLastLogin($lastLogin);
 
@@ -208,9 +209,9 @@ class UserTest extends TestCase
      */
     public function testItSetsTimestampsAutomatically(): void
     {
-        $beforeCreation = new \DateTimeImmutable();
+        $beforeCreation = new DateTimeImmutable();
         $user = new User();
-        $afterCreation = new \DateTimeImmutable();
+        $afterCreation = new DateTimeImmutable();
 
         $this->assertGreaterThanOrEqual($beforeCreation, $user->getCreatedAt());
         $this->assertLessThanOrEqual($afterCreation, $user->getCreatedAt());
@@ -249,7 +250,7 @@ class UserTest extends TestCase
         $user->setTimezone('Europe/Paris');
         $user->setLanguage('fr');
         $user->setAvatar('https://example.com/avatar.png');
-        $user->setLastLogin(new \DateTimeImmutable('2025-01-15 10:30:00'));
+        $user->setLastLogin(new DateTimeImmutable('2025-01-15 10:30:00'));
 
         $this->assertEquals('complete@onlyroll.com', $user->getEmail());
         $this->assertEquals('CompleteUser', $user->getPseudo());
@@ -259,8 +260,8 @@ class UserTest extends TestCase
         $this->assertEquals('Europe/Paris', $user->getTimezone());
         $this->assertEquals('fr', $user->getLanguage());
         $this->assertEquals('https://example.com/avatar.png', $user->getAvatar());
-        $this->assertInstanceOf(\DateTimeImmutable::class, $user->getLastLogin());
-        $this->assertInstanceOf(\DateTimeImmutable::class, $user->getCreatedAt());
-        $this->assertInstanceOf(\DateTimeImmutable::class, $user->getUpdatedAt());
+        $this->assertInstanceOf(DateTimeImmutable::class, $user->getLastLogin());
+        $this->assertInstanceOf(DateTimeImmutable::class, $user->getCreatedAt());
+        $this->assertInstanceOf(DateTimeImmutable::class, $user->getUpdatedAt());
     }
 }

@@ -6,7 +6,7 @@
  */
 export function getErrorMessage(
   error: unknown,
-  defaultMessage = "Une erreur inattendue s'est produite",
+  defaultMessage = "Une erreur inattendue s'est produite"
 ): string {
   // Cas 1: C'est déjà une string
   if (typeof error === 'string') {

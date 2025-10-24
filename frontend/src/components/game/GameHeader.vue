@@ -49,7 +49,7 @@ const connectionStatusText = computed(() => {
 })
 
 const playersCount = computed(() => {
-  return props.game?.gamePlayers?.filter(p => p.status === 'active').length || 0
+  return props.game?.gamePlayers?.filter((p) => p.status === 'active').length || 0
 })
 
 const maxPlayers = computed(() => {
@@ -63,10 +63,12 @@ const maxPlayers = computed(() => {
       <!-- Infos partie -->
       <div class="flex items-center gap-4">
         <!-- Logo/Icon de la partie -->
-        <div class="w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center shadow-purple">
+        <div
+          class="w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center shadow-purple"
+        >
           <span class="text-2xl">🎭</span>
         </div>
-        
+
         <!-- Détails -->
         <div>
           <h1 class="text-xl font-bold text-secondary-50">
@@ -94,7 +96,7 @@ const maxPlayers = computed(() => {
       <!-- Status & Actions -->
       <div class="flex items-center gap-4">
         <!-- Statut connexion temps réel -->
-        <div 
+        <div
           class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary-700/50"
           :title="connectionStatusText"
         >
@@ -103,7 +105,7 @@ const maxPlayers = computed(() => {
             {{ connectionStatusText }}
           </span>
         </div>
-        
+
         <!-- Boutons d'action -->
         <div class="flex items-center gap-2">
           <!-- Paramètres -->
@@ -112,19 +114,21 @@ const maxPlayers = computed(() => {
             class="p-2 hover:bg-secondary-700 rounded-lg transition-colors"
             title="Paramètres de la partie"
           >
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              class="w-5 h-5 text-secondary-300" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-5 h-5 text-secondary-300"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
               stroke-width="2"
             >
               <circle cx="12" cy="12" r="3"></circle>
-              <path d="M12 1v6m0 6v6m-9-9h6m6 0h6M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24M4.93 19.07l4.24-4.24m5.66-5.66l4.24-4.24"></path>
+              <path
+                d="M12 1v6m0 6v6m-9-9h6m6 0h6M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24M4.93 19.07l4.24-4.24m5.66-5.66l4.24-4.24"
+              ></path>
             </svg>
           </button>
-          
+
           <!-- Quitter -->
           <button
             @click="emit('leaveGame')"

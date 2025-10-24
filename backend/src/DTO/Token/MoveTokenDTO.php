@@ -19,7 +19,7 @@ class MoveTokenDTO
     #[Assert\Range(
         min: 0,
         max: 359,
-        notInRangeMessage: 'La rotation doit être entre {{ min }}° et {{ max }}°.'
+        notInRangeMessage: 'La rotation doit être entre {{ min }}° et {{ max }}°.',
     )]
     public ?int $rotation = null;
 }

@@ -16,21 +16,21 @@ class CreateTokenDTO
         min: 1,
         max: 250,
         minMessage: 'Le nom doit faire au moins {{ limit }} caractère.',
-        maxMessage: 'Le nom ne peut pas dépasser {{ limit }} caractères.'
+        maxMessage: 'Le nom ne peut pas dépasser {{ limit }} caractères.',
     )]
     public string $name;
 
     #[Assert\NotBlank(message: 'Le type du token est obligatoire.')]
     #[Assert\Choice(
         choices: ['character', 'monster', 'npc', 'object'],
-        message: 'Le type doit être "character", "monster", "npc" ou "object".'
+        message: 'Le type doit être "character", "monster", "npc" ou "object".',
     )]
     public string $type;
 
     #[Assert\Url(message: 'L\'URL de l\'image doit être valide.')]
     #[Assert\Length(
         max: 500,
-        maxMessage: 'L\'URL ne peut pas dépasser {{ limit }} caractères.'
+        maxMessage: 'L\'URL ne peut pas dépasser {{ limit }} caractères.',
     )]
     public ?string $imageUrl = null;
 
@@ -46,14 +46,14 @@ class CreateTokenDTO
     #[Assert\Range(
         min: 0.1,
         max: 10.0,
-        notInRangeMessage: 'La taille doit être entre {{ min }} et {{ max }}.'
+        notInRangeMessage: 'La taille doit être entre {{ min }} et {{ max }}.',
     )]
     public float $size = 1.0;
 
     #[Assert\Range(
         min: 0,
         max: 359,
-        notInRangeMessage: 'La rotation doit être entre {{ min }}° et {{ max }}°.'
+        notInRangeMessage: 'La rotation doit être entre {{ min }}° et {{ max }}°.',
     )]
     public int $rotation = 0;
 
@@ -65,7 +65,7 @@ class CreateTokenDTO
 
     #[Assert\Choice(
         choices: ['background', 'objects', 'tokens', 'effects'],
-        message: 'Le layer doit être "background", "objects", "tokens" ou "effects".'
+        message: 'Le layer doit être "background", "objects", "tokens" ou "effects".',
     )]
     public string $layer = 'tokens';
 

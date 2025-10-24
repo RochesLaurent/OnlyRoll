@@ -8,6 +8,8 @@ use App\Repository\GameMapRepository;
 use App\Repository\GameRepository;
 use App\Service\FileUploader;
 use App\Service\MapService;
+use Exception;
+use InvalidArgumentException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -42,7 +44,7 @@ class MapController extends AbstractController
         if (!$game) {
             return $this->json(
                 ['error' => 'Partie introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -52,7 +54,7 @@ class MapController extends AbstractController
         if (!$game->canBeViewedBy($user)) {
             return $this->json(
                 ['error' => 'Accès refusé'],
-                Response::HTTP_FORBIDDEN
+                Response::HTTP_FORBIDDEN,
             );
         }
 
@@ -62,7 +64,7 @@ class MapController extends AbstractController
             $maps,
             Response::HTTP_OK,
             [],
-            ['groups' => 'map:list']
+            ['groups' => 'map:list'],
         );
     }
 
@@ -77,7 +79,7 @@ class MapController extends AbstractController
         if (!$game) {
             return $this->json(
                 ['error' => 'Partie introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -87,7 +89,7 @@ class MapController extends AbstractController
         if (!$game->canBeViewedBy($user)) {
             return $this->json(
                 ['error' => 'Accès refusé'],
-                Response::HTTP_FORBIDDEN
+                Response::HTTP_FORBIDDEN,
             );
         }
 
@@ -96,7 +98,7 @@ class MapController extends AbstractController
         if (!$activeMap) {
             return $this->json(
                 ['error' => 'Aucune carte active'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -114,7 +116,7 @@ class MapController extends AbstractController
         if (!$game) {
             return $this->json(
                 ['error' => 'Partie introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -124,7 +126,7 @@ class MapController extends AbstractController
         if (!$map || !$mapGame || $mapGame->getId() !== $gameId) {
             return $this->json(
                 ['error' => 'Carte introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -134,7 +136,7 @@ class MapController extends AbstractController
         if (!$game->canBeViewedBy($user)) {
             return $this->json(
                 ['error' => 'Accès refusé'],
-                Response::HTTP_FORBIDDEN
+                Response::HTTP_FORBIDDEN,
             );
         }
 
@@ -142,7 +144,7 @@ class MapController extends AbstractController
             $map,
             Response::HTTP_OK,
             [],
-            ['groups' => 'map:read']
+            ['groups' => 'map:read'],
         );
     }
 
@@ -158,7 +160,7 @@ class MapController extends AbstractController
         if (!$game) {
             return $this->json(
                 ['error' => 'Partie introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -168,47 +170,61 @@ class MapController extends AbstractController
         if (!$game->isGameMaster($user)) {
             return $this->json(
                 ['error' => 'Seul le maître du jeu peut créer des cartes'],
-                Response::HTTP_FORBIDDEN
+                Response::HTTP_FORBIDDEN,
             );
         }
 
         try {
             $imageUrl = null;
             $imageFile = $request->files->get('image');
-            
+
             if ($imageFile) {
                 $imageUrl = $this->fileUploader->uploadMapImage($imageFile);
             }
 
-            $contentType = $request->headers->get('Content-Type', '');
-            
+            $contentType = $request->headers->get('Content-Type') ?? '';
+
             if (str_contains($contentType, 'multipart/form-data')) {
                 $dto = new CreateMapDTO();
-                $dto->name = $request->request->get('name');
-                $dto->description = $request->request->get('description');
+
+                $name = $request->request->get('name');
+                if (!\is_string($name)) {
+                    return $this->json(
+                        ['error' => 'Le nom est requis et doit être une chaîne de caractères'],
+                        Response::HTTP_BAD_REQUEST,
+                    );
+                }
+                $dto->name = $name;
+
+                $description = $request->request->get('description');
+                $dto->description = \is_string($description) ? $description : null;
+
                 $dto->gridSize = (int) $request->request->get('gridSize', 50);
-                $dto->gridType = $request->request->get('gridType', 'square');
+
+                $gridType = $request->request->get('gridType', 'square');
+                $dto->gridType = \is_string($gridType) ? $gridType : 'square';
+
                 $dto->width = (int) $request->request->get('width', 20);
                 $dto->height = (int) $request->request->get('height', 20);
-                
+
                 $dto->imageUrl = $imageUrl;
             } else {
                 $dto = $this->serializer->deserialize(
                     $request->getContent(),
                     CreateMapDTO::class,
-                    'json'
+                    'json',
                 );
-                
+
                 if ($imageUrl) {
                     $dto->imageUrl = $imageUrl;
                 }
             }
 
             $errors = $this->validator->validate($dto);
-            if (count($errors) > 0) {
+            if (\count($errors) > 0) {
                 return $this->json(
                     ['errors' => (string) $errors],
-                    Response::HTTP_BAD_REQUEST
+                    Response::HTTP_BAD_REQUEST,
                 );
             }
 
@@ -218,17 +234,17 @@ class MapController extends AbstractController
                 $map,
                 Response::HTTP_CREATED,
                 [],
-                ['groups' => 'map:read']
+                ['groups' => 'map:read'],
             );
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             return $this->json(
                 ['error' => $e->getMessage()],
-                Response::HTTP_BAD_REQUEST
+                Response::HTTP_BAD_REQUEST,
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->json(
                 ['error' => $e->getMessage()],
-                Response::HTTP_INTERNAL_SERVER_ERROR
+                Response::HTTP_INTERNAL_SERVER_ERROR,
             );
         }
     }
@@ -244,7 +260,7 @@ class MapController extends AbstractController
         if (!$game) {
             return $this->json(
                 ['error' => 'Partie introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -255,7 +271,7 @@ class MapController extends AbstractController
         if (!$map || !$mapGame || $mapGame->getId() !== $gameId) {
             return $this->json(
                 ['error' => 'Carte introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -265,36 +281,36 @@ class MapController extends AbstractController
         if (!$game->isGameMaster($user)) {
             return $this->json(
                 ['error' => 'Seul le maître du jeu peut modifier des cartes'],
-                Response::HTTP_FORBIDDEN
+                Response::HTTP_FORBIDDEN,
             );
         }
 
         try {
             $imageFile = $request->files->get('image');
-            
+
             if ($imageFile) {
                 if ($map->getImageUrl()) {
                     $this->fileUploader->deleteFile($map->getImageUrl());
                 }
-                
+
                 $imageUrl = $this->fileUploader->uploadMapImage($imageFile);
             }
 
             $dto = $this->serializer->deserialize(
                 $request->getContent(),
                 UpdateMapDTO::class,
-                'json'
+                'json',
             );
-            
+
             if (isset($imageUrl)) {
                 $dto->imageUrl = $imageUrl;
             }
 
             $errors = $this->validator->validate($dto);
-            if (count($errors) > 0) {
+            if (\count($errors) > 0) {
                 return $this->json(
                     ['errors' => (string) $errors],
-                    Response::HTTP_BAD_REQUEST
+                    Response::HTTP_BAD_REQUEST,
                 );
             }
 
@@ -304,12 +320,12 @@ class MapController extends AbstractController
                 $map,
                 Response::HTTP_OK,
                 [],
-                ['groups' => 'map:read']
+                ['groups' => 'map:read'],
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->json(
                 ['error' => $e->getMessage()],
-                Response::HTTP_INTERNAL_SERVER_ERROR
+                Response::HTTP_INTERNAL_SERVER_ERROR,
             );
         }
     }
@@ -325,7 +341,7 @@ class MapController extends AbstractController
         if (!$game) {
             return $this->json(
                 ['error' => 'Partie introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -335,7 +351,7 @@ class MapController extends AbstractController
         if (!$map || !$mapGame || $mapGame->getId() !== $gameId) {
             return $this->json(
                 ['error' => 'Carte introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -345,7 +361,7 @@ class MapController extends AbstractController
         if (!$game->isGameMaster($user)) {
             return $this->json(
                 ['error' => 'Seul le maître du jeu peut activer des cartes'],
-                Response::HTTP_FORBIDDEN
+                Response::HTTP_FORBIDDEN,
             );
         }
 
@@ -356,12 +372,12 @@ class MapController extends AbstractController
                 $map,
                 Response::HTTP_OK,
                 [],
-                ['groups' => 'map:read']
+                ['groups' => 'map:read'],
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->json(
                 ['error' => $e->getMessage()],
-                Response::HTTP_INTERNAL_SERVER_ERROR
+                Response::HTTP_INTERNAL_SERVER_ERROR,
             );
         }
     }
@@ -377,7 +393,7 @@ class MapController extends AbstractController
         if (!$game) {
             return $this->json(
                 ['error' => 'Partie introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -387,7 +403,7 @@ class MapController extends AbstractController
         if (!$map || !$mapGame || $mapGame->getId() !== $gameId) {
             return $this->json(
                 ['error' => 'Carte introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -397,7 +413,7 @@ class MapController extends AbstractController
         if (!$game->isGameMaster($user)) {
             return $this->json(
                 ['error' => 'Seul le maître du jeu peut supprimer des cartes'],
-                Response::HTTP_FORBIDDEN
+                Response::HTTP_FORBIDDEN,
             );
         }
 
@@ -405,17 +421,17 @@ class MapController extends AbstractController
             if ($map->getImageUrl()) {
                 $this->fileUploader->deleteFile($map->getImageUrl());
             }
-            
+
             $this->mapService->deleteMap($map);
 
             return $this->json(
                 ['message' => 'Carte supprimée avec succès'],
-                Response::HTTP_OK
+                Response::HTTP_OK,
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->json(
                 ['error' => $e->getMessage()],
-                Response::HTTP_INTERNAL_SERVER_ERROR
+                Response::HTTP_INTERNAL_SERVER_ERROR,
             );
         }
     }

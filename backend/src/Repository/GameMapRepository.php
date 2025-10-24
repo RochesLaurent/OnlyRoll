@@ -6,6 +6,7 @@ use App\Entity\Game;
 use App\Entity\GameMap;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use LogicException;
 
 /**
  * @extends ServiceEntityRepository<GameMap>
@@ -72,7 +73,7 @@ class GameMapRepository extends ServiceEntityRepository
     {
         $game = $map->getGame();
         if (!$game) {
-            throw new \LogicException('La carte doit être associée à un jeu.');
+            throw new LogicException('La carte doit être associée à un jeu.');
         }
 
         $em = $this->getEntityManager();

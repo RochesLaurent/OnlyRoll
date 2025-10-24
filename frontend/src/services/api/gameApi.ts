@@ -7,7 +7,7 @@ import type {
   CreateGameDTO,
   UpdateGameDTO,
   GameFilters,
-  PaginatedGamesResponse
+  PaginatedGamesResponse,
 } from '@/types/game'
 
 /**
@@ -19,17 +19,17 @@ export const gameApi = {
    */
   async listPublic(filters?: GameFilters): Promise<PaginatedGamesResponse> {
     const params = new URLSearchParams()
-    
+
     if (filters?.search) params.append('search', filters.search)
     if (filters?.title) params.append('title', filters.title)
     if (filters?.gameMaster) params.append('gameMaster', filters.gameMaster)
     if (filters?.status) params.append('status', filters.status)
     if (filters?.page) params.append('page', filters.page.toString())
     if (filters?.limit) params.append('limit', filters.limit.toString())
-    
+
     const query = params.toString()
     const url = query ? `/games?${query}` : '/games'
-    
+
     return get<PaginatedGamesResponse>(url)
   },
 
@@ -74,7 +74,7 @@ export const gameApi = {
   async joinByCode(inviteCode: string, password?: string): Promise<Game> {
     return post<Game>('/games/join', {
       inviteCode,
-      password
+      password,
     })
   },
 

@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\GameTokenRepository;
+use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
@@ -24,7 +25,7 @@ class GameToken
         name: 'map_id',
         referencedColumnName: 'map_id',
         nullable: false,
-        onDelete: 'CASCADE'
+        onDelete: 'CASCADE',
     )]
     #[Groups(['token:read'])]
     private ?GameMap $map = null;
@@ -35,7 +36,7 @@ class GameToken
         min: 1,
         max: 250,
         minMessage: 'Le nom doit faire au moins {{ limit }} caractère',
-        maxMessage: 'Le nom ne peut pas dépasser {{ limit }} caractères'
+        maxMessage: 'Le nom ne peut pas dépasser {{ limit }} caractères',
     )]
     #[Groups(['token:list', 'token:read', 'token:write', 'map:read'])]
     private ?string $name = null;
@@ -44,7 +45,7 @@ class GameToken
     #[Assert\NotBlank]
     #[Assert\Choice(
         choices: ['character', 'monster', 'npc', 'object'],
-        message: 'Le type doit être "character", "monster", "npc" ou "object"'
+        message: 'Le type doit être "character", "monster", "npc" ou "object"',
     )]
     #[Groups(['token:list', 'token:read', 'token:write', 'map:read'])]
     private ?string $type = null;
@@ -68,7 +69,7 @@ class GameToken
     #[Assert\Range(
         min: 0.1,
         max: 10.0,
-        notInRangeMessage: 'La taille doit être entre {{ min }} et {{ max }}'
+        notInRangeMessage: 'La taille doit être entre {{ min }} et {{ max }}',
     )]
     #[Groups(['token:read', 'token:write', 'map:read'])]
     private float $size = 1.0;
@@ -77,7 +78,7 @@ class GameToken
     #[Assert\Range(
         min: 0,
         max: 359,
-        notInRangeMessage: 'La rotation doit être entre {{ min }}° et {{ max }}°'
+        notInRangeMessage: 'La rotation doit être entre {{ min }}° et {{ max }}°',
     )]
     #[Groups(['token:read', 'token:write'])]
     private int $rotation = 0;
@@ -93,7 +94,7 @@ class GameToken
     #[ORM\Column(name: 'token_layer', type: Types::STRING, length: 20)]
     #[Assert\Choice(
         choices: ['background', 'objects', 'tokens', 'effects'],
-        message: 'Le calque doit être "background", "objects", "tokens" ou "effects"'
+        message: 'Le calque doit être "background", "objects", "tokens" ou "effects"',
     )]
     #[Groups(['token:read', 'token:write'])]
     private string $layer = 'tokens';
@@ -107,22 +108,22 @@ class GameToken
 
     #[ORM\Column(name: 'token_created_at', type: Types::DATETIME_IMMUTABLE)]
     #[Groups(['token:read'])]
-    private ?\DateTimeImmutable $createdAt = null;
+    private ?DateTimeImmutable $createdAt = null;
 
     #[ORM\Column(name: 'token_updated_at', type: Types::DATETIME_IMMUTABLE)]
-    private ?\DateTimeImmutable $updatedAt = null;
+    private ?DateTimeImmutable $updatedAt = null;
 
     #[ORM\PrePersist]
     public function onPrePersist(): void
     {
-        $this->createdAt = new \DateTimeImmutable();
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->createdAt = new DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable();
     }
 
     #[ORM\PreUpdate]
     public function onPreUpdate(): void
     {
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable();
     }
 
     // Méthodes métier
@@ -370,12 +371,12 @@ class GameToken
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeImmutable
+    public function getCreatedAt(): ?DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    public function getUpdatedAt(): ?\DateTimeImmutable
+    public function getUpdatedAt(): ?DateTimeImmutable
     {
         return $this->updatedAt;
     }

@@ -28,7 +28,7 @@ const quickDice = [
   { label: 'd10', value: '1d10', color: 'bg-accent-amber', emoji: '🔟' },
   { label: 'd8', value: '1d8', color: 'bg-accent-cyan', emoji: '🔷' },
   { label: 'd6', value: '1d6', color: 'bg-accent-emerald', emoji: '🎲' },
-  { label: 'd4', value: '1d4', color: 'bg-accent-purple', emoji: '🔺' }
+  { label: 'd4', value: '1d4', color: 'bg-accent-purple', emoji: '🔺' },
 ]
 
 const commonRolls = [
@@ -37,7 +37,7 @@ const commonRolls = [
   { label: 'Dégâts (épée)', formula: '1d8+3', icon: '🗡️' },
   { label: 'Dégâts (arc)', formula: '1d6+2', icon: '🏹' },
   { label: 'Jet de sauvegarde', formula: '1d20+2', icon: '🛡️' },
-  { label: 'Soin (potion)', formula: '2d4+2', icon: '💊' }
+  { label: 'Soin (potion)', formula: '2d4+2', icon: '💊' },
 ]
 
 // ============================================
@@ -45,9 +45,9 @@ const commonRolls = [
 // ============================================
 const fullFormula = computed(() => {
   if (!formula.value) return ''
-  
+
   if (modifier.value === 0) return formula.value
-  
+
   const sign = modifier.value > 0 ? '+' : ''
   return `${formula.value}${sign}${modifier.value}`
 })
@@ -61,27 +61,23 @@ const canRoll = computed(() => {
 // ============================================
 async function rollDice() {
   if (!canRoll.value) return
-  
+
   try {
     console.log('🎲 Lancer de dés:', fullFormula.value)
-    
-    const result = await chatStore.rollDice(
-      props.gameId,
-      fullFormula.value,
-      isInCharacter.value
-    )
-    
+
+    const result = await chatStore.rollDice(props.gameId, fullFormula.value, isInCharacter.value)
+
     // Sauvegarder le résultat pour l'affichage
     if (result.diceResult) {
       lastResult.value = {
         formula: fullFormula.value,
         total: result.diceResult.total,
         rolls: result.diceResult.results,
-        timestamp: result.createdAt
+        timestamp: result.createdAt,
       }
       console.log('✅ Résultat:', lastResult.value)
     }
-    
+
     // Réinitialiser le formulaire
     formula.value = ''
     modifier.value = 0
@@ -117,16 +113,12 @@ function addToFormula(text: string) {
         <span>🎲</span>
         Lanceur de dés
       </h3>
-      <p class="text-sm text-secondary-400">
-        Formule personnalisée ou raccourcis rapides
-      </p>
+      <p class="text-sm text-secondary-400">Formule personnalisée ou raccourcis rapides</p>
     </div>
 
     <!-- Dés rapides -->
     <div class="mb-6">
-      <label class="block text-sm font-medium text-secondary-300 mb-3">
-        Dés rapides
-      </label>
+      <label class="block text-sm font-medium text-secondary-300 mb-3"> Dés rapides </label>
       <div class="grid grid-cols-3 gap-2">
         <button
           v-for="dice in quickDice"
@@ -135,7 +127,7 @@ function addToFormula(text: string) {
           :class="[
             'px-4 py-3 rounded-lg font-bold text-white transition-all hover:scale-105 shadow-md',
             dice.color,
-            formula === dice.value ? 'ring-2 ring-white scale-105' : ''
+            formula === dice.value ? 'ring-2 ring-white scale-105' : '',
           ]"
         >
           <div class="text-xl mb-1">{{ dice.emoji }}</div>
@@ -165,7 +157,7 @@ function addToFormula(text: string) {
           ✕
         </button>
       </div>
-      
+
       <!-- Boutons pour construire la formule -->
       <div class="grid grid-cols-4 gap-2 mt-2">
         <button
@@ -205,9 +197,7 @@ function addToFormula(text: string) {
 
     <!-- Modificateur -->
     <div class="mb-6">
-      <label class="block text-sm font-medium text-secondary-300 mb-2">
-        Modificateur
-      </label>
+      <label class="block text-sm font-medium text-secondary-300 mb-2"> Modificateur </label>
       <div class="flex items-center gap-2">
         <button
           @click="modifier--"
@@ -242,9 +232,7 @@ function addToFormula(text: string) {
           type="checkbox"
           class="w-4 h-4 rounded bg-secondary-700 border-secondary-600 text-primary-500 focus:ring-primary-500"
         />
-        <span class="text-sm text-secondary-300">
-          Lancer en tant que personnage (IC)
-        </span>
+        <span class="text-sm text-secondary-300"> Lancer en tant que personnage (IC) </span>
       </label>
     </div>
 
@@ -260,9 +248,7 @@ function addToFormula(text: string) {
 
     <!-- Lancers communs -->
     <div class="mb-6">
-      <label class="block text-sm font-medium text-secondary-300 mb-3">
-        Lancers courants
-      </label>
+      <label class="block text-sm font-medium text-secondary-300 mb-3"> Lancers courants </label>
       <div class="space-y-2">
         <button
           v-for="roll in commonRolls"
@@ -291,9 +277,7 @@ function addToFormula(text: string) {
           <div class="text-6xl font-bold text-white mb-3">
             {{ lastResult.total }}
           </div>
-          <div class="text-sm text-primary-100">
-            Détails: {{ lastResult.rolls.join(' + ') }}
-          </div>
+          <div class="text-sm text-primary-100">Détails: {{ lastResult.rolls.join(' + ') }}</div>
           <div class="text-xs text-primary-200 mt-2">
             {{ new Date(lastResult.timestamp).toLocaleTimeString('fr-FR') }}
           </div>

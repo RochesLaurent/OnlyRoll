@@ -20,6 +20,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use ReflectionClass;
 
 class GameServiceTest extends TestCase
 {
@@ -50,7 +51,7 @@ class GameServiceTest extends TestCase
             $this->entityManager,
             $this->gameRepository,
             $this->gamePlayerRepository,
-            $this->logger
+            $this->logger,
         );
     }
 
@@ -94,7 +95,7 @@ class GameServiceTest extends TestCase
         $this->assertEquals($user->getId(), $game->getGameMaster()->getId());
         $this->assertEquals(GameStatus::PREPARATION, $game->getStatus());
         $this->assertNotNull($game->getInviteCode());
-        $this->assertEquals(8, strlen($game->getInviteCode()));
+        $this->assertEquals(8, \strlen($game->getInviteCode()));
 
         // Vérifier que les bonnes entités ont été persistées
         $this->assertCount(2, $persistedEntities);
@@ -242,7 +243,7 @@ class GameServiceTest extends TestCase
         $user = new User();
         $user->setPseudo('testuser_' . $id)
              ->setEmail($email)
-             ->setPassword(password_hash('password', PASSWORD_BCRYPT))
+             ->setPassword(password_hash('password', \PASSWORD_BCRYPT))
              ->setRoles(['ROLE_USER'])
              ->setIsVerified(true);
 
@@ -253,7 +254,7 @@ class GameServiceTest extends TestCase
 
     private function setEntityId(object $entity, int $id): void
     {
-        $reflection = new \ReflectionClass($entity);
+        $reflection = new ReflectionClass($entity);
         $property = $reflection->getProperty('id');
         $property->setAccessible(true);
         $property->setValue($entity, $id);

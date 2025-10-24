@@ -121,7 +121,7 @@ export const useMapStore = defineStore('map', () => {
       // En cas d'erreur, réinitialiser
       activeMap.value = null
       tokens.value = []
-      
+
       if (e && typeof e === 'object' && 'message' in e) {
         error.value =
           (e as { message: string }).message || 'Erreur lors du chargement de la carte active'
@@ -145,14 +145,14 @@ export const useMapStore = defineStore('map', () => {
 
     try {
       activeMap.value = await mapApi.getById(mapId)
-      
+
       if (activeMap.value && activeMap.value.id) {
         await loadMapTokens(activeMap.value.id)
       }
     } catch (e: unknown) {
       activeMap.value = null
       tokens.value = []
-      
+
       if (e && typeof e === 'object' && 'message' in e) {
         error.value = (e as { message: string }).message || 'Erreur lors du chargement de la carte'
       } else {
@@ -175,7 +175,7 @@ export const useMapStore = defineStore('map', () => {
 
     try {
       activeMap.value = await mapApi.activate(mapId)
-      
+
       if (activeMap.value && activeMap.value.id) {
         await loadMapTokens(activeMap.value.id)
       }
@@ -220,7 +220,7 @@ export const useMapStore = defineStore('map', () => {
     } catch (e: unknown) {
       // En cas d'erreur, vider les tokens plutôt que de crasher
       tokens.value = []
-      
+
       if (e && typeof e === 'object' && 'message' in e) {
         error.value = (e as { message: string }).message || 'Erreur lors du chargement des tokens'
       } else {
@@ -236,7 +236,7 @@ export const useMapStore = defineStore('map', () => {
    * S'assure que toutes les propriétés obligatoires sont présentes
    */
   function buildCreateTokenDTO(
-    data: Partial<CreateTokenDTO> & { name: string; type: TokenType; x: number; y: number },
+    data: Partial<CreateTokenDTO> & { name: string; type: TokenType; x: number; y: number }
   ): CreateTokenDTO {
     // Construction d'un objet avec toutes les propriétés nécessaires
     const dto: CreateTokenDTO = {
@@ -273,7 +273,7 @@ export const useMapStore = defineStore('map', () => {
    */
   async function createToken(
     mapId: number,
-    tokenData: Partial<CreateTokenDTO> & { name: string; type: TokenType; x: number; y: number },
+    tokenData: Partial<CreateTokenDTO> & { name: string; type: TokenType; x: number; y: number }
   ): Promise<GameToken> {
     if (!currentGameId.value) {
       throw new Error('GameId not set')
@@ -318,7 +318,7 @@ export const useMapStore = defineStore('map', () => {
     tokenId: number,
     x: number,
     y: number,
-    rotation?: number,
+    rotation?: number
   ): Promise<GameToken> {
     if (!currentGameId.value || !activeMap.value) {
       throw new Error('GameId or Map not set')
@@ -336,7 +336,7 @@ export const useMapStore = defineStore('map', () => {
         currentGameId.value,
         activeMap.value.id,
         tokenId,
-        moveData,
+        moveData
       )
       updateTokenInList(updatedToken)
       return updatedToken
@@ -366,7 +366,7 @@ export const useMapStore = defineStore('map', () => {
         currentGameId.value,
         activeMap.value.id,
         tokenId,
-        updates,
+        updates
       )
       updateTokenInList(updatedToken)
       return updatedToken

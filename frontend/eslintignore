@@ -1,0 +1,26 @@
+# Dependencies
+node_modules
+
+# Build outputs
+dist
+dist-ssr
+.output
+
+# Coverage
+coverage
+.nyc_output
+
+# IDE
+.vscode
+.idea
+
+# Generated files
+*.log
+
+# Config files
+*.config.js
+vite.config.ts
+vitest.config.ts
+playwright.config.ts
+tailwind.config.js
+postcss.config.js

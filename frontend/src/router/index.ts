@@ -140,7 +140,7 @@ router.beforeEach(async (to, from, next) => {
             resolve()
           }
         },
-        { immediate: true },
+        { immediate: true }
       )
     })
   }

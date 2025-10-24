@@ -16,7 +16,9 @@ use App\Exception\Game\GameNotFoundException;
 use App\Exception\Game\InvalidPasswordException;
 use App\Repository\GamePlayerRepository;
 use App\Repository\GameRepository;
+use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
+use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 
 class GameService
@@ -41,11 +43,11 @@ class GameService
 
         if (!$dto->isPublic) {
             if (empty($dto->password)) {
-                throw new \InvalidArgumentException('Le mot de passe est requis pour une partie privée');
+                throw new InvalidArgumentException('Le mot de passe est requis pour une partie privée');
             }
 
-            if (strlen($dto->password) < 4 || strlen($dto->password) > 50) {
-                throw new \InvalidArgumentException('Le mot de passe doit faire entre 4 et 50 caractères');
+            if (\strlen($dto->password) < 4 || \strlen($dto->password) > 50) {
+                throw new InvalidArgumentException('Le mot de passe doit faire entre 4 et 50 caractères');
             }
         }
 
@@ -58,7 +60,7 @@ class GameService
 
         // Hash du mot de passe si partie privée
         if ($dto->password && !$dto->isPublic) {
-            $game->setPassword(password_hash($dto->password, PASSWORD_ARGON2ID));
+            $game->setPassword(password_hash($dto->password, \PASSWORD_ARGON2ID));
         }
 
         $this->entityManager->persist($game);
@@ -160,7 +162,7 @@ class GameService
         }
 
         $gamePlayer->setStatus(PlayerStatus::LEFT)
-                   ->setLeftAt(new \DateTimeImmutable());
+                   ->setLeftAt(new DateTimeImmutable());
 
         $this->entityManager->flush();
 
@@ -210,7 +212,7 @@ class GameService
         }
 
         // La partie est-elle en préparation ou en cours ?
-        if (!in_array($game->getStatus(), [GameStatus::PREPARATION, GameStatus::IN_PROGRESS])) {
+        if (!\in_array($game->getStatus(), [GameStatus::PREPARATION, GameStatus::IN_PROGRESS])) {
             throw new AccessDeniedException('Cette partie n\'accepte plus de nouveaux joueurs');
         }
     }
@@ -224,11 +226,11 @@ class GameService
 
         // Logique de transition de statuts
         if (GameStatus::IN_PROGRESS === $newStatus && GameStatus::PREPARATION === $oldStatus) {
-            $game->setStartedAt(new \DateTimeImmutable());
+            $game->setStartedAt(new DateTimeImmutable());
         }
 
         if (GameStatus::COMPLETED === $newStatus) {
-            $game->setCompletedAt(new \DateTimeImmutable());
+            $game->setCompletedAt(new DateTimeImmutable());
         }
 
         $game->setStatus($newStatus);

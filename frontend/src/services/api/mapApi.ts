@@ -53,7 +53,12 @@ export const mapApi = {
       return await get<GameMap>(`/games/${gameId}/maps/active`)
     } catch (error: unknown) {
       // Si pas de carte active, retourner null
-      if (error && typeof error === 'object' && 'statusCode' in error && (error as ApiError).statusCode === 404) {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'statusCode' in error &&
+        (error as ApiError).statusCode === 404
+      ) {
         return null
       }
       throw error

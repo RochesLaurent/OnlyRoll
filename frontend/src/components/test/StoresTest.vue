@@ -25,7 +25,7 @@ const moveY = ref(0)
 
 // Mercure
 const { isConnected, connectionState, onTokenEvent, onMapChange, onChatMessage } = useMercure(
-  props.gameId,
+  props.gameId
 )
 
 // Computed

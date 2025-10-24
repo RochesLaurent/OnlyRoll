@@ -81,7 +81,7 @@ export const tokenApi = {
     gameId: number,
     mapId: number,
     tokenId: number,
-    dto: UpdateTokenDTO,
+    dto: UpdateTokenDTO
   ): Promise<GameToken> {
     return post<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}`, dto)
   },
@@ -99,7 +99,7 @@ export const tokenApi = {
     gameId: number,
     mapId: number,
     tokenId: number,
-    dto: Partial<UpdateTokenDTO>,
+    dto: Partial<UpdateTokenDTO>
   ): Promise<GameToken> {
     return patch<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}`, dto)
   },
@@ -117,12 +117,9 @@ export const tokenApi = {
     gameId: number,
     mapId: number,
     tokenId: number,
-    position: MoveTokenDTO,
+    position: MoveTokenDTO
   ): Promise<GameToken> {
-    return post<GameToken>(
-      `/games/${gameId}/maps/${mapId}/tokens/${tokenId}/move`,
-      position,
-    )
+    return post<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}/move`, position)
   },
 
   /**
@@ -137,7 +134,7 @@ export const tokenApi = {
     gameId: number,
     mapId: number,
     tokenId: number,
-    degrees: number,
+    degrees: number
   ): Promise<GameToken> {
     return patch<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}/rotate`, {
       degrees,
@@ -153,9 +150,7 @@ export const tokenApi = {
    * @returns Le token avec isVisible mis à jour
    */
   async show(gameId: number, mapId: number, tokenId: number): Promise<GameToken> {
-    return post<GameToken>(
-      `/games/${gameId}/maps/${mapId}/tokens/${tokenId}/toggle-visibility`,
-    )
+    return post<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}/toggle-visibility`)
   },
 
   /**
@@ -167,9 +162,7 @@ export const tokenApi = {
    * @returns Le token avec isVisible mis à jour
    */
   async hide(gameId: number, mapId: number, tokenId: number): Promise<GameToken> {
-    return post<GameToken>(
-      `/games/${gameId}/maps/${mapId}/tokens/${tokenId}/toggle-visibility`,
-    )
+    return post<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}/toggle-visibility`)
   },
 
   /**
@@ -220,7 +213,7 @@ export const tokenApi = {
     gameId: number,
     mapId: number,
     tokenId: number,
-    offset?: { x: number; y: number },
+    offset?: { x: number; y: number }
   ): Promise<GameToken> {
     return post<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}/duplicate`, {
       offset,
@@ -238,7 +231,7 @@ export const tokenApi = {
   async moveBulk(
     gameId: number,
     mapId: number,
-    movements: Array<{ tokenId: number; x: number; y: number }>,
+    movements: Array<{ tokenId: number; x: number; y: number }>
   ): Promise<GameToken[]> {
     return patch<GameToken[]>(`/games/${gameId}/maps/${mapId}/tokens/move-bulk`, {
       movements,
@@ -258,7 +251,7 @@ export const tokenApi = {
     gameId: number,
     mapId: number,
     tokenIds: number[],
-    isVisible: boolean,
+    isVisible: boolean
   ): Promise<GameToken[]> {
     return patch<GameToken[]>(`/games/${gameId}/maps/${mapId}/tokens/visibility-bulk`, {
       tokenIds,

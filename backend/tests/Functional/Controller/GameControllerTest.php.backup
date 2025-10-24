@@ -2,10 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Functional\Controller;
+namespace App\Tests\Controller;
 
 use App\Entity\User;
-use Exception;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
@@ -27,9 +26,6 @@ class GameControllerTest extends WebTestCase
         // Nettoyer après chaque test
         $this->cleanDatabase();
         self::ensureKernelShutdown();
-
-        // Reset du token
-        $this->token = null;
     }
 
     private function cleanDatabase(): void
@@ -39,44 +35,24 @@ class GameControllerTest extends WebTestCase
         $entityManager = $container->get('doctrine')->getManager();
         $connection = $entityManager->getConnection();
 
-        try {
-            // Désactiver les contraintes de clés étrangères
-            $connection->executeStatement('SET FOREIGN_KEY_CHECKS=0');
+        // Désactiver les contraintes de clés étrangères
+        $connection->executeStatement('SET FOREIGN_KEY_CHECKS=0');
 
-            // Vider les tables dans l'ordre correct (important pour les relations)
-            // CORRECTION: game_user n'existe pas, c'est game_player
-            $tables = [
-                'game_message',
-                'game_token',
-                'game_map',
-                'game_player',  // Correction: était 'game_user'
-                'game',
-                'user',
-            ];
-
-            foreach ($tables as $table) {
-                try {
-                    $connection->executeStatement("TRUNCATE TABLE $table");
-                } catch (Exception $e) {
-                    // Ignorer si la table n'existe pas
-                }
-            }
-
-            // Réactiver les contraintes
-            $connection->executeStatement('SET FOREIGN_KEY_CHECKS=1');
-
-            // Clear l'entity manager
-            $entityManager->clear();
-        } catch (Exception $e) {
-            // En cas d'erreur, au moins essayer de réactiver les contraintes
+        // Vider les tables (ajustez selon vos tables)
+        $tables = ['game_user', 'game', 'user'];
+        foreach ($tables as $table) {
             try {
-                $connection->executeStatement('SET FOREIGN_KEY_CHECKS=1');
-            } catch (Exception $ex) {
-                // Ignorer
+                $connection->executeStatement("TRUNCATE TABLE $table");
+            } catch (\Exception $e) {
+                // Ignorer si la table n'existe pas
             }
-
-            throw $e;
         }
+
+        // Réactiver les contraintes
+        $connection->executeStatement('SET FOREIGN_KEY_CHECKS=1');
+
+        // Clear l'entity manager
+        $entityManager->clear();
     }
 
     public function testCreateGame(): void
@@ -84,16 +60,14 @@ class GameControllerTest extends WebTestCase
         $client = static::createClient();
         $token = $this->getAuthToken($client);
 
-        $client->request(
-            'POST',
-            '/api/games',
+        $client->request('POST', '/api/games',
             server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $token],
             content: json_encode([
                 'name' => 'My Epic Campaign',
                 'description' => 'A great adventure awaits!',
                 'maxPlayers' => 6,
                 'isPublic' => true,
-            ]),
+            ])
         );
 
         $this->assertResponseStatusCodeSame(Response::HTTP_CREATED);
@@ -107,10 +81,8 @@ class GameControllerTest extends WebTestCase
         $client = static::createClient();
         $token = $this->getAuthToken($client);
 
-        $client->request(
-            'GET',
-            '/api/games',
-            server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $token],
+        $client->request('GET', '/api/games',
+            server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $token]
         );
 
         $this->assertResponseIsSuccessful();
@@ -123,15 +95,13 @@ class GameControllerTest extends WebTestCase
         $token = $this->getAuthToken($client);
 
         // Créer d'abord une partie
-        $client->request(
-            'POST',
-            '/api/games',
+        $client->request('POST', '/api/games',
             server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $token],
             content: json_encode([
                 'name' => 'Joinable Game',
                 'isPublic' => true,
                 'maxPlayers' => 6,
-            ]),
+            ])
         );
 
         $gameData = json_decode($client->getResponse()->getContent(), true);
@@ -140,11 +110,9 @@ class GameControllerTest extends WebTestCase
         // Créer un second user et le faire rejoindre
         $secondUserToken = $this->createSecondUser($client);
 
-        $client->request(
-            'POST',
-            "/api/games/{$gameId}/join",
+        $client->request('POST', "/api/games/{$gameId}/join",
             server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $secondUserToken],
-            content: json_encode([]),
+            content: json_encode([])
         );
 
         $this->assertResponseIsSuccessful();
@@ -163,7 +131,7 @@ class GameControllerTest extends WebTestCase
         $user = new User();
         $user->setPseudo('testuser')
              ->setEmail('test@example.com')
-             ->setPassword(password_hash('password', \PASSWORD_BCRYPT))
+             ->setPassword(password_hash('password', PASSWORD_BCRYPT))
              ->setRoles(['ROLE_USER'])
              ->setIsVerified(true);
 
@@ -185,7 +153,7 @@ class GameControllerTest extends WebTestCase
         $user = new User();
         $user->setPseudo('player2')
              ->setEmail('player2@example.com')
-             ->setPassword(password_hash('password', \PASSWORD_BCRYPT))
+             ->setPassword(password_hash('password', PASSWORD_BCRYPT))
              ->setRoles(['ROLE_USER'])
              ->setIsVerified(true);
 

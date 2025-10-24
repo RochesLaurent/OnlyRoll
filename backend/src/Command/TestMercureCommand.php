@@ -3,6 +3,8 @@
 namespace App\Command;
 
 use App\Service\MercurePublisher;
+use DateTimeImmutable;
+use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -34,13 +36,13 @@ class TestMercureCommand extends Command
                 'isIC' => false,
                 'recipientId' => null,
                 'recipientName' => null,
-                'createdAt' => (new \DateTimeImmutable())->format('c'),
+                'createdAt' => (new DateTimeImmutable())->format('c'),
             ]);
 
             $output->writeln('Événement publié avec succès !');
 
             return Command::SUCCESS;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $output->writeln('Erreur : ' . $e->getMessage());
 
             return Command::FAILURE;

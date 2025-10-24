@@ -29,7 +29,7 @@ class GameFilterDTO
      */
     #[Assert\Choice(
         choices: ['preparation', 'in_progress', 'paused', 'completed', 'archived'],
-        message: 'Le statut doit être: preparation, in_progress, paused, completed ou archived'
+        message: 'Le statut doit être: preparation, in_progress, paused, completed ou archived',
     )]
     public ?string $status = null;
 
@@ -40,7 +40,7 @@ class GameFilterDTO
     #[Assert\Range(
         min: 1,
         max: 10000,
-        notInRangeMessage: 'La page doit être entre {{ min }} et {{ max }}'
+        notInRangeMessage: 'La page doit être entre {{ min }} et {{ max }}',
     )]
     public int $page = 1;
 
@@ -51,7 +51,7 @@ class GameFilterDTO
     #[Assert\Range(
         min: 1,
         max: 100,
-        notInRangeMessage: 'La limite doit être entre {{ min }} et {{ max }}'
+        notInRangeMessage: 'La limite doit être entre {{ min }} et {{ max }}',
     )]
     public int $limit = 12;
 }

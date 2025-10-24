@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\GameMapRepository;
+use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -26,7 +27,7 @@ class GameMap
         name: 'game_id',
         referencedColumnName: 'game_id',
         nullable: false,
-        onDelete: 'CASCADE'
+        onDelete: 'CASCADE',
     )]
     #[Groups(['map:read'])]
     private ?Game $game = null;
@@ -37,7 +38,7 @@ class GameMap
         min: 3,
         max: 250,
         minMessage: 'Le nom doit faire au moins {{ limit }} caractères',
-        maxMessage: 'Le nom ne peut pas dépasser {{ limit }} caractères'
+        maxMessage: 'Le nom ne peut pas dépasser {{ limit }} caractères',
     )]
     #[Groups(['map:list', 'map:read', 'map:write', 'game:read'])]
     private ?string $name = null;
@@ -54,7 +55,7 @@ class GameMap
     #[Assert\Range(
         min: 10,
         max: 200,
-        notInRangeMessage: 'La taille de la grille doit être entre {{ min }} et {{ max }} pixels'
+        notInRangeMessage: 'La taille de la grille doit être entre {{ min }} et {{ max }} pixels',
     )]
     #[Groups(['map:read', 'map:write'])]
     private int $gridSize = 50;
@@ -62,7 +63,7 @@ class GameMap
     #[ORM\Column(name: 'map_grid_type', type: Types::STRING, length: 20)]
     #[Assert\Choice(
         choices: ['square', 'hex', 'none'],
-        message: 'Le type de grille doit être "square", "hex" ou "none"'
+        message: 'Le type de grille doit être "square", "hex" ou "none"',
     )]
     #[Groups(['map:read', 'map:write'])]
     private string $gridType = 'square';
@@ -71,7 +72,7 @@ class GameMap
     #[Assert\Range(
         min: 5,
         max: 200,
-        notInRangeMessage: 'La largeur doit être entre {{ min }} et {{ max }} cases'
+        notInRangeMessage: 'La largeur doit être entre {{ min }} et {{ max }} cases',
     )]
     #[Groups(['map:read', 'map:write'])]
     private int $width = 20;
@@ -80,7 +81,7 @@ class GameMap
     #[Assert\Range(
         min: 5,
         max: 200,
-        notInRangeMessage: 'La hauteur doit être entre {{ min }} et {{ max }} cases'
+        notInRangeMessage: 'La hauteur doit être entre {{ min }} et {{ max }} cases',
     )]
     #[Groups(['map:read', 'map:write'])]
     private int $height = 20;
@@ -96,7 +97,7 @@ class GameMap
         targetEntity: GameToken::class,
         mappedBy: 'map',
         cascade: ['persist', 'remove'],
-        orphanRemoval: true
+        orphanRemoval: true,
     )]
     #[Groups(['map:read'])]
     private Collection $tokens;
@@ -110,10 +111,10 @@ class GameMap
 
     #[ORM\Column(name: 'map_created_at', type: Types::DATETIME_IMMUTABLE)]
     #[Groups(['map:read'])]
-    private ?\DateTimeImmutable $createdAt = null;
+    private ?DateTimeImmutable $createdAt = null;
 
     #[ORM\Column(name: 'map_updated_at', type: Types::DATETIME_IMMUTABLE)]
-    private ?\DateTimeImmutable $updatedAt = null;
+    private ?DateTimeImmutable $updatedAt = null;
 
     public function __construct()
     {
@@ -123,14 +124,14 @@ class GameMap
     #[ORM\PrePersist]
     public function onPrePersist(): void
     {
-        $this->createdAt = new \DateTimeImmutable();
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->createdAt = new DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable();
     }
 
     #[ORM\PreUpdate]
     public function onPreUpdate(): void
     {
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable();
     }
 
     // Méthodes métier
@@ -157,7 +158,7 @@ class GameMap
     #[Groups(['map:read'])]
     public function getDimensions(): string
     {
-        return sprintf('%dx%d', $this->width, $this->height);
+        return \sprintf('%dx%d', $this->width, $this->height);
     }
 
     #[Groups(['map:read'])]
@@ -328,12 +329,12 @@ class GameMap
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeImmutable
+    public function getCreatedAt(): ?DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    public function getUpdatedAt(): ?\DateTimeImmutable
+    public function getUpdatedAt(): ?DateTimeImmutable
     {
         return $this->updatedAt;
     }

@@ -8,6 +8,7 @@ use App\Repository\GameMapRepository;
 use App\Repository\GameRepository;
 use App\Repository\GameTokenRepository;
 use App\Service\TokenService;
+use Exception;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -42,7 +43,7 @@ class TokenController extends AbstractController
         if (!$game) {
             return $this->json(
                 ['error' => 'Partie introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -53,7 +54,7 @@ class TokenController extends AbstractController
         if (!$map || !$mapGame || $mapGame->getId() !== $gameId) {
             return $this->json(
                 ['error' => 'Carte introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -63,7 +64,7 @@ class TokenController extends AbstractController
         if (!$game->canBeViewedBy($user)) {
             return $this->json(
                 ['error' => 'Accès refusé'],
-                Response::HTTP_FORBIDDEN
+                Response::HTTP_FORBIDDEN,
             );
         }
 
@@ -76,7 +77,7 @@ class TokenController extends AbstractController
             $tokens,
             Response::HTTP_OK,
             [],
-            ['groups' => 'token:list']
+            ['groups' => 'token:list'],
         );
     }
 
@@ -91,7 +92,7 @@ class TokenController extends AbstractController
         if (!$game) {
             return $this->json(
                 ['error' => 'Partie introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -102,7 +103,7 @@ class TokenController extends AbstractController
         if (!$token || !$tokenMap || $tokenMap->getId() !== $mapId) {
             return $this->json(
                 ['error' => 'Token introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -112,7 +113,7 @@ class TokenController extends AbstractController
         if (!$game->canBeViewedBy($user)) {
             return $this->json(
                 ['error' => 'Accès refusé'],
-                Response::HTTP_FORBIDDEN
+                Response::HTTP_FORBIDDEN,
             );
         }
 
@@ -120,7 +121,7 @@ class TokenController extends AbstractController
         if (!$game->isGameMaster($user) && !$token->isVisible()) {
             return $this->json(
                 ['error' => 'Token introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -128,7 +129,7 @@ class TokenController extends AbstractController
             $token,
             Response::HTTP_OK,
             [],
-            ['groups' => 'token:read']
+            ['groups' => 'token:read'],
         );
     }
 
@@ -143,7 +144,7 @@ class TokenController extends AbstractController
         if (!$game) {
             return $this->json(
                 ['error' => 'Partie introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -154,7 +155,7 @@ class TokenController extends AbstractController
         if (!$map || !$mapGame || $mapGame->getId() !== $gameId) {
             return $this->json(
                 ['error' => 'Carte introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -164,21 +165,21 @@ class TokenController extends AbstractController
         if (!$game->isGameMaster($user)) {
             return $this->json(
                 ['error' => 'Seul le maître du jeu peut créer des tokens'],
-                Response::HTTP_FORBIDDEN
+                Response::HTTP_FORBIDDEN,
             );
         }
 
         $dto = $this->serializer->deserialize(
             $request->getContent(),
             CreateTokenDTO::class,
-            'json'
+            'json',
         );
 
         $errors = $this->validator->validate($dto);
-        if (count($errors) > 0) {
+        if (\count($errors) > 0) {
             return $this->json(
                 ['errors' => (string) $errors],
-                Response::HTTP_BAD_REQUEST
+                Response::HTTP_BAD_REQUEST,
             );
         }
 
@@ -189,12 +190,12 @@ class TokenController extends AbstractController
                 $token,
                 Response::HTTP_CREATED,
                 [],
-                ['groups' => 'token:read']
+                ['groups' => 'token:read'],
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->json(
                 ['error' => $e->getMessage()],
-                Response::HTTP_BAD_REQUEST
+                Response::HTTP_BAD_REQUEST,
             );
         }
     }
@@ -210,7 +211,7 @@ class TokenController extends AbstractController
         if (!$game) {
             return $this->json(
                 ['error' => 'Partie introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -221,7 +222,7 @@ class TokenController extends AbstractController
         if (!$token || !$tokenMap || $tokenMap->getId() !== $mapId) {
             return $this->json(
                 ['error' => 'Token introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -231,21 +232,21 @@ class TokenController extends AbstractController
         if (!$game->canBeViewedBy($user)) {
             return $this->json(
                 ['error' => 'Accès refusé'],
-                Response::HTTP_FORBIDDEN
+                Response::HTTP_FORBIDDEN,
             );
         }
 
         $dto = $this->serializer->deserialize(
             $request->getContent(),
             MoveTokenDTO::class,
-            'json'
+            'json',
         );
 
         $errors = $this->validator->validate($dto);
-        if (count($errors) > 0) {
+        if (\count($errors) > 0) {
             return $this->json(
                 ['errors' => (string) $errors],
-                Response::HTTP_BAD_REQUEST
+                Response::HTTP_BAD_REQUEST,
             );
         }
 
@@ -256,12 +257,12 @@ class TokenController extends AbstractController
                 $token,
                 Response::HTTP_OK,
                 [],
-                ['groups' => 'token:read']
+                ['groups' => 'token:read'],
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->json(
                 ['error' => $e->getMessage()],
-                Response::HTTP_BAD_REQUEST
+                Response::HTTP_BAD_REQUEST,
             );
         }
     }
@@ -277,7 +278,7 @@ class TokenController extends AbstractController
         if (!$game) {
             return $this->json(
                 ['error' => 'Partie introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -288,7 +289,7 @@ class TokenController extends AbstractController
         if (!$token || !$tokenMap || $tokenMap->getId() !== $mapId) {
             return $this->json(
                 ['error' => 'Token introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -298,7 +299,7 @@ class TokenController extends AbstractController
         if (!$game->isGameMaster($user)) {
             return $this->json(
                 ['error' => 'Seul le maître du jeu peut modifier la visibilité'],
-                Response::HTTP_FORBIDDEN
+                Response::HTTP_FORBIDDEN,
             );
         }
 
@@ -309,12 +310,12 @@ class TokenController extends AbstractController
                 $token,
                 Response::HTTP_OK,
                 [],
-                ['groups' => 'token:read']
+                ['groups' => 'token:read'],
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->json(
                 ['error' => $e->getMessage()],
-                Response::HTTP_INTERNAL_SERVER_ERROR
+                Response::HTTP_INTERNAL_SERVER_ERROR,
             );
         }
     }
@@ -330,7 +331,7 @@ class TokenController extends AbstractController
         if (!$game) {
             return $this->json(
                 ['error' => 'Partie introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -341,7 +342,7 @@ class TokenController extends AbstractController
         if (!$token || !$tokenMap || $tokenMap->getId() !== $mapId) {
             return $this->json(
                 ['error' => 'Token introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -351,7 +352,7 @@ class TokenController extends AbstractController
         if (!$game->isGameMaster($user)) {
             return $this->json(
                 ['error' => 'Seul le maître du jeu peut verrouiller des tokens'],
-                Response::HTTP_FORBIDDEN
+                Response::HTTP_FORBIDDEN,
             );
         }
 
@@ -362,12 +363,12 @@ class TokenController extends AbstractController
                 $token,
                 Response::HTTP_OK,
                 [],
-                ['groups' => 'token:read']
+                ['groups' => 'token:read'],
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->json(
                 ['error' => $e->getMessage()],
-                Response::HTTP_INTERNAL_SERVER_ERROR
+                Response::HTTP_INTERNAL_SERVER_ERROR,
             );
         }
     }
@@ -383,7 +384,7 @@ class TokenController extends AbstractController
         if (!$game) {
             return $this->json(
                 ['error' => 'Partie introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -394,7 +395,7 @@ class TokenController extends AbstractController
         if (!$token || !$tokenMap || $tokenMap->getId() !== $mapId) {
             return $this->json(
                 ['error' => 'Token introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -404,7 +405,7 @@ class TokenController extends AbstractController
         if (!$game->isGameMaster($user)) {
             return $this->json(
                 ['error' => 'Seul le maître du jeu peut supprimer des tokens'],
-                Response::HTTP_FORBIDDEN
+                Response::HTTP_FORBIDDEN,
             );
         }
 
@@ -413,12 +414,12 @@ class TokenController extends AbstractController
 
             return $this->json(
                 ['message' => 'Token supprimé avec succès'],
-                Response::HTTP_OK
+                Response::HTTP_OK,
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->json(
                 ['error' => $e->getMessage()],
-                Response::HTTP_INTERNAL_SERVER_ERROR
+                Response::HTTP_INTERNAL_SERVER_ERROR,
             );
         }
     }

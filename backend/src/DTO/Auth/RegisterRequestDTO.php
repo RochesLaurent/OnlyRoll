@@ -16,7 +16,7 @@ class RegisterRequestDTO
         min: 3,
         max: 50,
         minMessage: 'Pseudo must be at least {{ limit }} characters',
-        maxMessage: 'Pseudo cannot be longer than {{ limit }} characters'
+        maxMessage: 'Pseudo cannot be longer than {{ limit }} characters',
     )]
     public string $pseudo;
 
@@ -24,7 +24,7 @@ class RegisterRequestDTO
     #[Assert\Length(min: 8, minMessage: 'Password must be at least {{ limit }} characters')]
     #[Assert\Regex(
         pattern: '/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/',
-        message: 'Password must contain at least one uppercase letter, one lowercase letter, and one number'
+        message: 'Password must contain at least one uppercase letter, one lowercase letter, and one number',
     )]
     public string $password;
 }

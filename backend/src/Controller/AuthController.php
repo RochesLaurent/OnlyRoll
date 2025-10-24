@@ -33,14 +33,14 @@ class AuthController extends AbstractController
         // Validation du DTO
         ['dto' => $dto, 'errors' => $errors] = $this->dtoValidator->validateDto(
             $request->getContent(),
-            RegisterRequestDTO::class
+            RegisterRequestDTO::class,
         );
 
         if ($errors) {
             return $errors;
         }
 
-        assert($dto instanceof RegisterRequestDTO, 'DTO should not be null after validation');
+        \assert($dto instanceof RegisterRequestDTO, 'DTO should not be null after validation');
 
         // Vérifier si l'email existe déjà
         $existingUser = $em->getRepository(User::class)->findOneBy(['email' => $dto->email]);
@@ -103,19 +103,19 @@ class AuthController extends AbstractController
     {
         // Créer la réponse
         $response = new JsonResponse(['message' => 'Déconnexion réussie']);
-        
+
         // On crée un cookie expiré pour le supprimer côté client
         $isProduction = ($_ENV['APP_ENV'] ?? 'dev') === 'prod';
-        
+
         $response->headers->clearCookie(
             'jwt_token',
             '/',
             null,
-            $isProduction, // secure
-            true, // httpOnly
-            Cookie::SAMESITE_STRICT
+            $isProduction,
+            true,
+            Cookie::SAMESITE_STRICT,
         );
-        
+
         return $response;
     }
 }

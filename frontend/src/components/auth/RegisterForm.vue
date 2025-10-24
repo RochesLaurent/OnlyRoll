@@ -338,7 +338,7 @@ watch(
   () => [form.value.pseudo, form.value.email, form.value.password, form.value.confirmPassword],
   () => {
     clearError()
-  },
+  }
 )
 
 // Validation du formulaire côté client

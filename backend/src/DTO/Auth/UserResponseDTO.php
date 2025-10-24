@@ -3,6 +3,8 @@
 namespace App\DTO\Auth;
 
 use App\Entity\User;
+use DateTimeImmutable;
+use RuntimeException;
 use Symfony\Component\Serializer\Annotation\Groups;
 
 class UserResponseDTO
@@ -35,10 +37,10 @@ class UserResponseDTO
     private bool $isVerified;
 
     #[Groups(['user:read'])]
-    private \DateTimeImmutable $createdAt;
+    private DateTimeImmutable $createdAt;
 
     #[Groups(['user:read'])]
-    private ?\DateTimeImmutable $lastLogin;
+    private ?DateTimeImmutable $lastLogin;
 
     public static function fromEntity(User $user): self
     {
@@ -47,7 +49,7 @@ class UserResponseDTO
         // Gestion du cas où l'ID serait null (ne devrait pas arriver en production)
         $userId = $user->getId();
         if (null === $userId) {
-            throw new \RuntimeException('User ID cannot be null');
+            throw new RuntimeException('User ID cannot be null');
         }
 
         $dto->id = $userId;
@@ -108,12 +110,12 @@ class UserResponseDTO
         return $this->isVerified;
     }
 
-    public function getCreatedAt(): \DateTimeImmutable
+    public function getCreatedAt(): DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    public function getLastLogin(): ?\DateTimeImmutable
+    public function getLastLogin(): ?DateTimeImmutable
     {
         return $this->lastLogin;
     }

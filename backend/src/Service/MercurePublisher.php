@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use DateTimeImmutable;
+use Exception;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
@@ -25,10 +27,10 @@ readonly class MercurePublisher
     /**
      * Publie un événement pour une partie spécifique.
      *
-     * @param int                  $gameId    ID de la partie concernée
-     * @param string               $eventType Type d'événement (chat, token, map, dice, player)
-     * @param array<string, mixed> $data      Données de l'événement
-     * @param bool                 $private   Si true, seuls les abonnés authentifiés verront l'événement
+     * @param int $gameId ID de la partie concernée
+     * @param string $eventType Type d'événement (chat, token, map, dice, player)
+     * @param array<string, mixed> $data Données de l'événement
+     * @param bool $private Si true, seuls les abonnés authentifiés verront l'événement
      *
      * @return bool Succès de la publication
      */
@@ -40,21 +42,21 @@ readonly class MercurePublisher
     ): bool {
         try {
             // Construction du topic au format: game/{gameId}/{eventType}
-            $topic = sprintf('game/%d/%s', $gameId, $eventType);
+            $topic = \sprintf('game/%d/%s', $gameId, $eventType);
 
             // Préparation du payload
             $payload = [
                 'type' => $eventType,
                 'gameId' => $gameId,
                 'data' => $data,
-                'timestamp' => (new \DateTimeImmutable())->format('c'),
+                'timestamp' => (new DateTimeImmutable())->format('c'),
             ];
 
             // Création de l'update Mercure
             $update = new Update(
                 topics: [$topic],
-                data: json_encode($payload, JSON_THROW_ON_ERROR),
-                private: $private
+                data: json_encode($payload, \JSON_THROW_ON_ERROR),
+                private: $private,
             );
 
             // Publication via le hub
@@ -67,7 +69,7 @@ readonly class MercurePublisher
             ]);
 
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error('Failed to publish Mercure event', [
                 'error' => $e->getMessage(),
                 'eventType' => $eventType,
@@ -81,7 +83,7 @@ readonly class MercurePublisher
     /**
      * Publie un message de chat.
      *
-     * @param int                  $gameId      ID de la partie
+     * @param int $gameId ID de la partie
      * @param array<string, mixed> $messageData Données du message (messageId, userId, userName, content, type, etc.)
      */
     public function publishChatMessage(int $gameId, array $messageData): bool
@@ -92,7 +94,7 @@ readonly class MercurePublisher
     /**
      * Publie un déplacement de token.
      *
-     * @param int                  $gameId    ID de la partie
+     * @param int $gameId ID de la partie
      * @param array<string, mixed> $tokenData Données du token (tokenId, mapId, x, y, userId)
      */
     public function publishTokenMove(int $gameId, array $tokenData): bool
@@ -103,7 +105,7 @@ readonly class MercurePublisher
     /**
      * Publie la création d'un token.
      *
-     * @param int                  $gameId    ID de la partie
+     * @param int $gameId ID de la partie
      * @param array<string, mixed> $tokenData Données complètes du token
      */
     public function publishTokenCreated(int $gameId, array $tokenData): bool
@@ -117,7 +119,7 @@ readonly class MercurePublisher
     /**
      * Publie la suppression d'un token.
      *
-     * @param int $gameId  ID de la partie
+     * @param int $gameId ID de la partie
      * @param int $tokenId ID du token supprimé
      */
     public function publishTokenDeleted(int $gameId, int $tokenId): bool
@@ -131,7 +133,7 @@ readonly class MercurePublisher
     /**
      * Publie un changement de carte active.
      *
-     * @param int                  $gameId  ID de la partie
+     * @param int $gameId ID de la partie
      * @param array<string, mixed> $mapData Données de la carte (mapId, name, backgroundUrl, etc.)
      */
     public function publishMapChange(int $gameId, array $mapData): bool
@@ -142,7 +144,7 @@ readonly class MercurePublisher
     /**
      * Publie un lancer de dés.
      *
-     * @param int                  $gameId   ID de la partie
+     * @param int $gameId ID de la partie
      * @param array<string, mixed> $diceData Données du lancer (userId, userName, expression, results, etc.)
      */
     public function publishDiceRoll(int $gameId, array $diceData): bool
@@ -153,7 +155,7 @@ readonly class MercurePublisher
     /**
      * Publie un événement de connexion/déconnexion de joueur.
      *
-     * @param int                  $gameId     ID de la partie
+     * @param int $gameId ID de la partie
      * @param array<string, mixed> $playerData Données du joueur (userId, userName, action: 'joined'|'left')
      */
     public function publishPlayerEvent(int $gameId, array $playerData): bool
@@ -164,7 +166,7 @@ readonly class MercurePublisher
     /**
      * Publie un événement système (changement de status de partie, etc.).
      *
-     * @param int                  $gameId     ID de la partie
+     * @param int $gameId ID de la partie
      * @param array<string, mixed> $systemData Données système
      */
     public function publishSystemEvent(int $gameId, array $systemData): bool

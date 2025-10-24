@@ -47,7 +47,7 @@ watch(
       filters.value.page = 1
       debouncedSearch()
     }
-  },
+  }
 )
 
 async function loadGames() {

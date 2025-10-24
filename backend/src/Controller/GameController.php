@@ -8,6 +8,8 @@ use App\DTO\Game\JoinGameDTO;
 use App\DTO\Game\UpdateGameDTO;
 use App\Repository\GameRepository;
 use App\Service\GameService;
+use Exception;
+use InvalidArgumentException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -46,7 +48,7 @@ class GameController extends AbstractController
 
         // Validation
         $errors = $this->validator->validate($filterDTO);
-        if (count($errors) > 0) {
+        if (\count($errors) > 0) {
             return $this->json(['errors' => (string) $errors], Response::HTTP_BAD_REQUEST);
         }
 
@@ -108,11 +110,11 @@ class GameController extends AbstractController
         $dto = $this->serializer->deserialize(
             $request->getContent(),
             CreateGameDTO::class,
-            'json'
+            'json',
         );
 
         $errors = $this->validator->validate($dto);
-        if (count($errors) > 0) {
+        if (\count($errors) > 0) {
             return $this->json(['errors' => (string) $errors], Response::HTTP_BAD_REQUEST);
         }
 
@@ -123,9 +125,9 @@ class GameController extends AbstractController
             $game = $this->gameService->createGame($dto, $user);
 
             return $this->json($game, Response::HTTP_CREATED, [], ['groups' => 'game:read']);
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->json(['error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
@@ -145,11 +147,11 @@ class GameController extends AbstractController
         $dto = $this->serializer->deserialize(
             $request->getContent(),
             UpdateGameDTO::class,
-            'json'
+            'json',
         );
 
         $errors = $this->validator->validate($dto);
-        if (count($errors) > 0) {
+        if (\count($errors) > 0) {
             return $this->json(['errors' => (string) $errors], Response::HTTP_BAD_REQUEST);
         }
 
@@ -160,27 +162,27 @@ class GameController extends AbstractController
             $game = $this->gameService->updateGame($game, $dto, $user);
 
             return $this->json($game, Response::HTTP_OK, [], ['groups' => 'game:read']);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->json(['error' => $e->getMessage()], Response::HTTP_FORBIDDEN);
         }
     }
 
     /**
-     * 🆕 Rejoindre une partie par code d'invitation
+     * Rejoindre une partie par code d'invitation
      * Endpoint dédié pour rejoindre avec un code plutôt qu'un ID
      */
     #[Route('/join', name: 'join_by_code', methods: ['POST'])]
     public function joinByCode(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
-        
+
         $inviteCode = $data['inviteCode'] ?? null;
         $password = $data['password'] ?? null;
 
         if (!$inviteCode) {
             return $this->json(
                 ['error' => 'Code d\'invitation requis'],
-                Response::HTTP_BAD_REQUEST
+                Response::HTTP_BAD_REQUEST,
             );
         }
 
@@ -190,7 +192,7 @@ class GameController extends AbstractController
         if (!$game) {
             return $this->json(
                 ['error' => 'Code d\'invitation invalide'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -198,15 +200,20 @@ class GameController extends AbstractController
         $user = $this->getUser();
 
         try {
-            $gamePlayer = $this->gameService->joinGame($game->getId(), $user, $password);
+            $gameId = $game->getId();
+            if (null === $gameId) {
+                return $this->json(['error' => 'ID de partie invalide'], Response::HTTP_INTERNAL_SERVER_ERROR);
+            }
+
+            $gamePlayer = $this->gameService->joinGame($gameId, $user, $password);
 
             return $this->json(
-                $game,
+                $gamePlayer,
                 Response::HTTP_OK,
                 [],
-                ['groups' => 'game:read']
+                ['groups' => 'game:read'],
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->json(['error' => $e->getMessage()], $e->getCode() ?: Response::HTTP_BAD_REQUEST);
         }
     }
@@ -220,11 +227,11 @@ class GameController extends AbstractController
         $dto = $this->serializer->deserialize(
             $request->getContent(),
             JoinGameDTO::class,
-            'json'
+            'json',
         );
 
         $errors = $this->validator->validate($dto);
-        if (count($errors) > 0) {
+        if (\count($errors) > 0) {
             return $this->json(['errors' => (string) $errors], Response::HTTP_BAD_REQUEST);
         }
 
@@ -235,7 +242,7 @@ class GameController extends AbstractController
             $gamePlayer = $this->gameService->joinGame($id, $user, $dto->password);
 
             return $this->json($gamePlayer, Response::HTTP_OK, [], ['groups' => 'game:read']);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->json(['error' => $e->getMessage()], $e->getCode());
         }
     }
@@ -259,7 +266,7 @@ class GameController extends AbstractController
             $this->gameService->leaveGame($game, $user);
 
             return $this->json(['message' => 'Vous avez quitté la partie'], Response::HTTP_OK);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->json(['error' => $e->getMessage()], $e->getCode());
         }
     }
@@ -283,7 +290,7 @@ class GameController extends AbstractController
             $this->gameService->deleteGame($game, $user);
 
             return $this->json(['message' => 'Partie archivée avec succès'], Response::HTTP_OK);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->json(['error' => $e->getMessage()], $e->getCode());
         }
     }

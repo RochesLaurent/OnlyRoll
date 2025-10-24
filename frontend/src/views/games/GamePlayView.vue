@@ -63,14 +63,14 @@ async function initializeGame() {
     await Promise.all([
       gameStore.fetchGameById(gameId.value),
       mapStore.loadActiveMap(gameId.value),
-      chatStore.loadRecentMessages(gameId.value, 50)
+      chatStore.loadRecentMessages(gameId.value, 50),
     ])
 
     console.log('✅ Partie chargée:', {
       game: gameStore.currentGame,
       map: mapStore.activeMap,
       tokens: mapStore.tokens.length,
-      messages: chatStore.messages.length
+      messages: chatStore.messages.length,
     })
   } catch (error) {
     console.error('❌ Erreur lors du chargement de la partie:', error)
@@ -92,7 +92,7 @@ function setupMercure() {
   const checkConnection = setInterval(() => {
     isConnected.value = mercureService.isConnected()
     connectionState.value = mercureService.getConnectionState()
-    
+
     if (isConnected.value) {
       console.log('✅ Mercure connecté')
       clearInterval(checkConnection)
@@ -173,7 +173,7 @@ function handleOpenSettings() {
 
 async function handleLeaveGame() {
   if (!confirm('Êtes-vous sûr de vouloir quitter cette partie ?')) return
-  
+
   try {
     await gameStore.leaveGame(gameId.value)
     router.push('/games')
@@ -187,7 +187,9 @@ async function handleLeaveGame() {
   <!-- Loading state -->
   <div v-if="isLoading" class="h-screen flex items-center justify-center bg-primary-900">
     <div class="text-center">
-      <div class="animate-spin w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+      <div
+        class="animate-spin w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full mx-auto mb-4"
+      ></div>
       <p class="text-secondary-50 text-lg">Chargement de la partie...</p>
     </div>
   </div>
@@ -195,33 +197,33 @@ async function handleLeaveGame() {
   <!-- Main game view -->
   <div v-else class="h-screen bg-gradient-dark flex flex-col overflow-hidden">
     <!-- Header -->
-    <GameHeader 
+    <GameHeader
       :game="currentGame"
       :is-connected="isConnected"
       :connection-state="connectionState"
       @open-settings="handleOpenSettings"
       @leave-game="handleLeaveGame"
     />
-    
+
     <div class="flex-1 flex overflow-hidden relative">
       <!-- Zone centrale - Carte -->
       <div class="flex-1 flex flex-col">
         <!-- Toolbar uniquement si une carte existe -->
-        <MapToolbar 
+        <MapToolbar
           v-if="hasActiveMap"
           :is-game-master="isGameMaster"
           @tool-changed="handleToolChanged"
         />
-        
+
         <div class="flex-1 relative overflow-hidden">
           <EmptyMapState
             v-if="!hasActiveMap"
             :is-game-master="isGameMaster"
             @create-map="handleCreateMap"
           />
-          
+
           <!-- Carte normale si elle existe -->
-          <GameMap 
+          <GameMap
             v-else
             :map="activeMap"
             :tokens="tokens"
@@ -233,21 +235,21 @@ async function handleLeaveGame() {
 
       <!-- Panel droit - Chat & Joueurs -->
       <Transition name="slide-left">
-        <div 
-          v-if="rightPanelOpen" 
+        <div
+          v-if="rightPanelOpen"
           class="w-96 bg-secondary-800 border-l border-secondary-700 flex flex-col"
         >
           <!-- Tabs -->
           <div class="flex border-b border-secondary-700">
             <button
-              v-for="tab in (['chat', 'players', 'dice'] as const)"
+              v-for="tab in ['chat', 'players', 'dice'] as const"
               :key="tab"
               @click="activeTab = tab"
               :class="[
                 'flex-1 px-4 py-3 font-medium transition-colors',
-                activeTab === tab 
-                  ? 'bg-primary-500 text-white' 
-                  : 'text-secondary-300 hover:bg-secondary-700'
+                activeTab === tab
+                  ? 'bg-primary-500 text-white'
+                  : 'text-secondary-300 hover:bg-secondary-700',
               ]"
             >
               <span v-if="tab === 'chat'">💬 Chat</span>
@@ -257,22 +259,15 @@ async function handleLeaveGame() {
           </div>
 
           <!-- Contenu -->
-          <ChatPanel 
-            v-if="activeTab === 'chat'"
-            :messages="messages"
-            :game-id="gameId"
-          />
-          
-          <PlayersList 
+          <ChatPanel v-if="activeTab === 'chat'" :messages="messages" :game-id="gameId" />
+
+          <PlayersList
             v-if="activeTab === 'players'"
             :players="currentGame?.gamePlayers || []"
             :game-master-id="currentGame?.gameMaster?.id"
           />
-          
-          <DiceRoller 
-            v-if="activeTab === 'dice'"
-            :game-id="gameId"
-          />
+
+          <DiceRoller v-if="activeTab === 'dice'" :game-id="gameId" />
         </div>
       </Transition>
 
@@ -282,20 +277,20 @@ async function handleLeaveGame() {
         class="absolute right-0 top-1/2 -translate-y-1/2 bg-secondary-800 border border-secondary-700 p-2 rounded-l-lg hover:bg-secondary-700 transition-colors z-10 shadow-lg"
         :title="rightPanelOpen ? 'Masquer le panel' : 'Afficher le panel'"
       >
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
           class="w-5 h-5 text-secondary-300 transition-transform"
           :class="{ 'rotate-180': !rightPanelOpen }"
-          viewBox="0 0 24 24" 
-          fill="none" 
-          stroke="currentColor" 
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
           stroke-width="2"
         >
           <polyline points="9 18 15 12 9 6"></polyline>
         </svg>
       </button>
     </div>
-    
+
     <UploadMapModal
       :show="showUploadModal"
       :game-id="gameId"

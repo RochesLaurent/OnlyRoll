@@ -6,6 +6,8 @@ use App\DTO\Chat\SendMessageDTO;
 use App\Entity\GameMessage;
 use App\Repository\GameRepository;
 use App\Service\ChatService;
+use DateTimeImmutable;
+use Exception;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -38,7 +40,7 @@ class ChatController extends AbstractController
         if (!$game) {
             return $this->json(
                 ['error' => 'Partie introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -48,7 +50,7 @@ class ChatController extends AbstractController
         if (!$game->canBeViewedBy($user)) {
             return $this->json(
                 ['error' => 'Accès refusé'],
-                Response::HTTP_FORBIDDEN
+                Response::HTTP_FORBIDDEN,
             );
         }
 
@@ -62,7 +64,7 @@ class ChatController extends AbstractController
             $messages,
             Response::HTTP_OK,
             [],
-            ['groups' => 'message:list']
+            ['groups' => 'message:list'],
         );
     }
 
@@ -77,7 +79,7 @@ class ChatController extends AbstractController
         if (!$game) {
             return $this->json(
                 ['error' => 'Partie introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -87,21 +89,21 @@ class ChatController extends AbstractController
         if (!$game->canBeViewedBy($user)) {
             return $this->json(
                 ['error' => 'Accès refusé'],
-                Response::HTTP_FORBIDDEN
+                Response::HTTP_FORBIDDEN,
             );
         }
 
         $dto = $this->serializer->deserialize(
             $request->getContent(),
             SendMessageDTO::class,
-            'json'
+            'json',
         );
 
         $errors = $this->validator->validate($dto);
-        if (count($errors) > 0) {
+        if (\count($errors) > 0) {
             return $this->json(
                 ['errors' => (string) $errors],
-                Response::HTTP_BAD_REQUEST
+                Response::HTTP_BAD_REQUEST,
             );
         }
 
@@ -112,12 +114,12 @@ class ChatController extends AbstractController
                 $message,
                 Response::HTTP_CREATED,
                 [],
-                ['groups' => 'message:read']
+                ['groups' => 'message:read'],
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->json(
                 ['error' => $e->getMessage()],
-                Response::HTTP_BAD_REQUEST
+                Response::HTTP_BAD_REQUEST,
             );
         }
     }
@@ -133,7 +135,7 @@ class ChatController extends AbstractController
         if (!$game) {
             return $this->json(
                 ['error' => 'Partie introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -143,7 +145,7 @@ class ChatController extends AbstractController
         if (!$game->canBeViewedBy($user)) {
             return $this->json(
                 ['error' => 'Accès refusé'],
-                Response::HTTP_FORBIDDEN
+                Response::HTTP_FORBIDDEN,
             );
         }
 
@@ -157,12 +159,12 @@ class ChatController extends AbstractController
                 $messages,
                 Response::HTTP_OK,
                 [],
-                ['groups' => 'message:list']
+                ['groups' => 'message:list'],
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->json(
                 ['error' => $e->getMessage()],
-                Response::HTTP_BAD_REQUEST
+                Response::HTTP_BAD_REQUEST,
             );
         }
     }
@@ -178,7 +180,7 @@ class ChatController extends AbstractController
         if (!$game) {
             return $this->json(
                 ['error' => 'Partie introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -188,7 +190,7 @@ class ChatController extends AbstractController
         if (!$game->canBeViewedBy($user)) {
             return $this->json(
                 ['error' => 'Accès refusé'],
-                Response::HTTP_FORBIDDEN
+                Response::HTTP_FORBIDDEN,
             );
         }
 
@@ -201,7 +203,7 @@ class ChatController extends AbstractController
             $messages,
             Response::HTTP_OK,
             [],
-            ['groups' => 'message:list']
+            ['groups' => 'message:list'],
         );
     }
 
@@ -216,7 +218,7 @@ class ChatController extends AbstractController
         if (!$game) {
             return $this->json(
                 ['error' => 'Partie introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -226,7 +228,7 @@ class ChatController extends AbstractController
         if (!$game->canBeViewedBy($user)) {
             return $this->json(
                 ['error' => 'Accès refusé'],
-                Response::HTTP_FORBIDDEN
+                Response::HTTP_FORBIDDEN,
             );
         }
 
@@ -235,7 +237,7 @@ class ChatController extends AbstractController
         if (!isset($data['formula'])) {
             return $this->json(
                 ['error' => 'La formule de dés est obligatoire'],
-                Response::HTTP_BAD_REQUEST
+                Response::HTTP_BAD_REQUEST,
             );
         }
 
@@ -247,7 +249,7 @@ class ChatController extends AbstractController
             if (!preg_match('/^(\d+)d(\d+)([+-]\d+)?$/i', $formula, $matches)) {
                 return $this->json(
                     ['error' => 'Format de dés invalide. Utilisez le format XdY ou XdY+Z'],
-                    Response::HTTP_BAD_REQUEST
+                    Response::HTTP_BAD_REQUEST,
                 );
             }
 
@@ -258,14 +260,14 @@ class ChatController extends AbstractController
             if ($numberOfDice < 1 || $numberOfDice > 100) {
                 return $this->json(
                     ['error' => 'Le nombre de dés doit être entre 1 et 100'],
-                    Response::HTTP_BAD_REQUEST
+                    Response::HTTP_BAD_REQUEST,
                 );
             }
 
             if ($sidesPerDie < 2 || $sidesPerDie > 1000) {
                 return $this->json(
                     ['error' => 'Le nombre de faces doit être entre 2 et 1000'],
-                    Response::HTTP_BAD_REQUEST
+                    Response::HTTP_BAD_REQUEST,
                 );
             }
 
@@ -289,14 +291,14 @@ class ChatController extends AbstractController
                     'total' => $total,
                     'modifier' => $modifier,
                     'formula' => $formula,
-                ]
+                ],
             );
 
             return $this->json($message, Response::HTTP_CREATED, [], ['groups' => 'message:read']);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->json(
                 ['error' => $e->getMessage()],
-                Response::HTTP_INTERNAL_SERVER_ERROR
+                Response::HTTP_INTERNAL_SERVER_ERROR,
             );
         }
     }
@@ -312,7 +314,7 @@ class ChatController extends AbstractController
         if (!$game) {
             return $this->json(
                 ['error' => 'Partie introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -322,7 +324,7 @@ class ChatController extends AbstractController
         if (!$game->isGameMaster($user)) {
             return $this->json(
                 ['error' => 'Seul le maître du jeu peut voir les statistiques'],
-                Response::HTTP_FORBIDDEN
+                Response::HTTP_FORBIDDEN,
             );
         }
 
@@ -345,7 +347,7 @@ class ChatController extends AbstractController
         if (!$game) {
             return $this->json(
                 ['error' => 'Partie introuvable'],
-                Response::HTTP_NOT_FOUND
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -355,28 +357,28 @@ class ChatController extends AbstractController
         if (!$game->canBeViewedBy($user)) {
             return $this->json(
                 ['error' => 'Accès refusé'],
-                Response::HTTP_FORBIDDEN
+                Response::HTTP_FORBIDDEN,
             );
         }
 
         $since = $request->query->get('since');
 
-        if (!$since || !is_string($since)) {
+        if (!$since || !\is_string($since)) {
             return $this->json(
                 ['error' => 'Le paramètre "since" est obligatoire'],
-                Response::HTTP_BAD_REQUEST
+                Response::HTTP_BAD_REQUEST,
             );
         }
 
         try {
-            $sinceDate = new \DateTimeImmutable($since);
+            $sinceDate = new DateTimeImmutable($since);
             $messages = $this->chatService->getMessagesSince($game, $sinceDate, $user);
 
             return $this->json($messages, Response::HTTP_OK, [], ['groups' => 'message:list']);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->json(
                 ['error' => 'Format de date invalide'],
-                Response::HTTP_BAD_REQUEST
+                Response::HTTP_BAD_REQUEST,
             );
         }
     }

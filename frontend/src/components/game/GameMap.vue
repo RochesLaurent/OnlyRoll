@@ -36,28 +36,30 @@ function selectToken(tokenId: number) {
 
 function handleTokenMouseDown(event: MouseEvent, token: GameToken) {
   if (!props.editable || token.isLocked || props.selectedTool !== 'select') return
-  
+
   draggingToken.value = token.id
   dragStartPos.value = { x: token.x, y: token.y }
-  
+
   event.preventDefault()
 }
 
 function handleMouseMove(event: MouseEvent) {
   if (!draggingToken.value || !props.editable) return
-  
+
   const container = event.currentTarget as HTMLElement
   const rect = container.getBoundingClientRect()
-  
+
   const x = Math.floor((event.clientX - rect.left) / gridSize.value)
   const y = Math.floor((event.clientY - rect.top) / gridSize.value)
-  
+
   // Contraindre aux limites de la carte
   const constrainedX = Math.max(0, Math.min(x, (props.map?.width || 20) - 1))
   const constrainedY = Math.max(0, Math.min(y, (props.map?.height || 20) - 1))
-  
+
   // Mettre à jour la position visuellement
-  const tokenElement = document.querySelector(`[data-token-id="${draggingToken.value}"]`) as HTMLElement
+  const tokenElement = document.querySelector(
+    `[data-token-id="${draggingToken.value}"]`
+  ) as HTMLElement
   if (tokenElement) {
     tokenElement.style.left = `${constrainedX * gridSize.value}px`
     tokenElement.style.top = `${constrainedY * gridSize.value}px`
@@ -66,12 +68,14 @@ function handleMouseMove(event: MouseEvent) {
 
 async function handleMouseUp() {
   if (!draggingToken.value) return
-  
-  const tokenElement = document.querySelector(`[data-token-id="${draggingToken.value}"]`) as HTMLElement
+
+  const tokenElement = document.querySelector(
+    `[data-token-id="${draggingToken.value}"]`
+  ) as HTMLElement
   if (tokenElement) {
     const x = Math.floor(parseInt(tokenElement.style.left) / gridSize.value)
     const y = Math.floor(parseInt(tokenElement.style.top) / gridSize.value)
-    
+
     // Vérifier si la position a changé
     if (x !== dragStartPos.value.x || y !== dragStartPos.value.y) {
       try {
@@ -86,7 +90,7 @@ async function handleMouseUp() {
       }
     }
   }
-  
+
   draggingToken.value = null
 }
 
@@ -113,7 +117,7 @@ async function toggleTokenLock(tokenId: number) {
 
 async function deleteToken(tokenId: number) {
   if (!confirm('Supprimer ce token ?')) return
-  
+
   try {
     await mapStore.deleteToken(tokenId)
     selectedTokenId.value = null
@@ -131,7 +135,7 @@ function getTokenColor(type: TokenType): string {
     [TokenType.CHARACTER]: '#6366f1',
     [TokenType.MONSTER]: '#ef4444',
     [TokenType.NPC]: '#10b981',
-    [TokenType.OBJECT]: '#f59e0b'
+    [TokenType.OBJECT]: '#f59e0b',
   }
   return colors[type] || '#6366f1'
 }
@@ -142,27 +146,29 @@ function getTokenSize(token: GameToken): number {
 </script>
 
 <template>
-  <div 
+  <div
     class="w-full h-full relative overflow-auto bg-cover bg-center select-none"
     :style="{
-      backgroundImage: map?.imageUrl ? `url(${map.imageUrl})` : 'linear-gradient(135deg, #1a0b2e 0%, #0f172a 100%)',
+      backgroundImage: map?.imageUrl
+        ? `url(${map.imageUrl})`
+        : 'linear-gradient(135deg, #1a0b2e 0%, #0f172a 100%)',
     }"
     @mousemove="handleMouseMove"
     @mouseup="handleMouseUp"
     @mouseleave="handleMouseUp"
   >
     <!-- Container de la carte avec dimensions -->
-    <div 
+    <div
       class="relative"
       :style="{
         width: mapWidth + 'px',
         height: mapHeight + 'px',
         minWidth: '100%',
-        minHeight: '100%'
+        minHeight: '100%',
       }"
     >
       <!-- Grille -->
-      <div 
+      <div
         v-if="map?.gridType === 'square'"
         class="absolute inset-0 pointer-events-none"
         :style="{
@@ -170,7 +176,7 @@ function getTokenSize(token: GameToken): number {
             linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px),
             linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)
           `,
-          backgroundSize: `${gridSize}px ${gridSize}px`
+          backgroundSize: `${gridSize}px ${gridSize}px`,
         }"
       />
 
@@ -182,12 +188,12 @@ function getTokenSize(token: GameToken): number {
         @mousedown="(e) => handleTokenMouseDown(e, token)"
         @click.stop="selectToken(token.id)"
         class="absolute transition-all hover:scale-110"
-        :class="{ 
+        :class="{
           'ring-4 ring-primary-500 scale-110 z-20': selectedTokenId === token.id,
           'cursor-move': editable && selectedTool === 'select' && !token.isLocked,
           'cursor-pointer': selectedTool === 'select',
           'opacity-50': !token.isVisible,
-          'z-10': selectedTokenId !== token.id
+          'z-10': selectedTokenId !== token.id,
         }"
         :style="{
           left: `${token.x * gridSize}px`,
@@ -201,9 +207,9 @@ function getTokenSize(token: GameToken): number {
           class="w-full h-full rounded-full flex items-center justify-center font-bold text-white shadow-lg border-2 border-white overflow-hidden"
           :style="{ backgroundColor: getTokenColor(token.type) }"
         >
-          <img 
-            v-if="token.imageUrl" 
-            :src="token.imageUrl" 
+          <img
+            v-if="token.imageUrl"
+            :src="token.imageUrl"
             :alt="token.name"
             class="w-full h-full object-cover"
           />
@@ -211,15 +217,15 @@ function getTokenSize(token: GameToken): number {
             {{ token.name.slice(0, 2).toUpperCase() }}
           </span>
         </div>
-        
+
         <!-- Indicateurs -->
         <div class="absolute -top-1 -right-1 flex gap-1">
           <span v-if="token.isLocked" class="text-xs">🔒</span>
           <span v-if="!token.isVisible" class="text-xs">👁️</span>
         </div>
-        
+
         <!-- Nom du token -->
-        <div 
+        <div
           class="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs font-medium px-2 py-1 rounded shadow-lg"
           :class="token.isVisible ? 'bg-black/80 text-white' : 'bg-gray-500/80 text-gray-300'"
         >
@@ -239,7 +245,7 @@ function getTokenSize(token: GameToken): number {
               class="btn-secondary text-sm"
               title="Toggle visibilité"
             >
-              <span v-if="tokens.find(t => t.id === selectedTokenId)?.isVisible">👁️</span>
+              <span v-if="tokens.find((t) => t.id === selectedTokenId)?.isVisible">👁️</span>
               <span v-else>🚫</span>
               Visibilité
             </button>
@@ -248,7 +254,7 @@ function getTokenSize(token: GameToken): number {
               class="btn-secondary text-sm"
               title="Verrouiller/Déverrouiller"
             >
-              <span v-if="tokens.find(t => t.id === selectedTokenId)?.isLocked">🔓</span>
+              <span v-if="tokens.find((t) => t.id === selectedTokenId)?.isLocked">🔓</span>
               <span v-else>🔒</span>
               Verrouiller
             </button>

@@ -24,7 +24,7 @@ class GameFixtures extends Fixture
             $user = new User();
             $user->setPseudo("player{$i}")
                 ->setEmail("player{$i}@onlyroll.com")
-                ->setPassword(password_hash('password', PASSWORD_BCRYPT))
+                ->setPassword(password_hash('password', \PASSWORD_BCRYPT))
                 ->setRoles(['ROLE_USER'])
                 ->setIsVerified(true);
             $manager->persist($user);
@@ -53,7 +53,7 @@ class GameFixtures extends Fixture
             $manager->persist($gmPlayer);
 
             // Ajouter quelques joueurs
-            for ($j = 1; $j <= min(3, count($users) - 1); ++$j) {
+            for ($j = 1; $j <= min(3, \count($users) - 1); ++$j) {
                 $player = new GamePlayer();
                 $player->setGame($game)
                     ->setUser($users[$j])

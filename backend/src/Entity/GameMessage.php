@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\GameMessageRepository;
+use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
@@ -38,7 +39,7 @@ class GameMessage
         name: 'game_id',
         referencedColumnName: 'game_id',
         nullable: false,
-        onDelete: 'CASCADE'
+        onDelete: 'CASCADE',
     )]
     #[Groups(['message:read'])]
     private ?Game $game = null;
@@ -48,7 +49,7 @@ class GameMessage
         name: 'user_id',
         referencedColumnName: 'user_id',
         nullable: false,
-        onDelete: 'CASCADE'
+        onDelete: 'CASCADE',
     )]
     #[Groups(['message:list', 'message:read', 'game:read'])]
     private ?User $user = null;
@@ -57,7 +58,7 @@ class GameMessage
     #[Assert\NotBlank]
     #[Assert\Choice(
         choices: self::TYPES,
-        message: 'Le type doit être "chat", "emote", "whisper", "system" ou "dice_roll"'
+        message: 'Le type doit être "chat", "emote", "whisper", "system" ou "dice_roll"',
     )]
     #[Groups(['message:list', 'message:read', 'message:write', 'game:read'])]
     private ?string $type = null;
@@ -68,13 +69,14 @@ class GameMessage
         min: 1,
         max: 5000,
         minMessage: 'Le message doit faire au moins {{ limit }} caractère',
-        maxMessage: 'Le message ne peut pas dépasser {{ limit }} caractères'
+        maxMessage: 'Le message ne peut pas dépasser {{ limit }} caractères',
     )]
     #[Groups(['message:list', 'message:read', 'message:write', 'game:read'])]
     private ?string $content = null;
 
     /**
      * Résultat d'un lancer de dés.
+     *
      * @var array<string, mixed>|null
      */
     #[ORM\Column(name: 'message_dice_result', type: Types::JSON, nullable: true)]
@@ -90,19 +92,19 @@ class GameMessage
         name: 'message_recipient_id',
         referencedColumnName: 'user_id',
         nullable: true,
-        onDelete: 'SET NULL'
+        onDelete: 'SET NULL',
     )]
     #[Groups(['message:read'])]
     private ?User $recipient = null;
 
     #[ORM\Column(name: 'message_created_at', type: Types::DATETIME_IMMUTABLE)]
     #[Groups(['message:list', 'message:read', 'game:read'])]
-    private ?\DateTimeImmutable $createdAt = null;
+    private ?DateTimeImmutable $createdAt = null;
 
     #[ORM\PrePersist]
     public function onPrePersist(): void
     {
-        $this->createdAt = new \DateTimeImmutable();
+        $this->createdAt = new DateTimeImmutable();
     }
 
     // Méthodes métier
@@ -174,9 +176,9 @@ class GameMessage
         }
 
         return match ($this->type) {
-            self::TYPE_EMOTE => sprintf('*%s*', $this->content),
-            self::TYPE_WHISPER => sprintf('[Chuchotement] %s', $this->content),
-            self::TYPE_SYSTEM => sprintf('[Système] %s', $this->content),
+            self::TYPE_EMOTE => \sprintf('*%s*', $this->content),
+            self::TYPE_WHISPER => \sprintf('[Chuchotement] %s', $this->content),
+            self::TYPE_SYSTEM => \sprintf('[Système] %s', $this->content),
             default => $this->content,
         };
     }
@@ -278,7 +280,7 @@ class GameMessage
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeImmutable
+    public function getCreatedAt(): ?DateTimeImmutable
     {
         return $this->createdAt;
     }

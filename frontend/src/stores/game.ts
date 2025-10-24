@@ -65,7 +65,7 @@ export const useGameStore = defineStore('game', () => {
     try {
       const response = await gameApi.listPublic(filters)
       games.value = response.data
-      
+
       pagination.value = {
         total: response.meta?.total ?? 0,
         page: response.meta?.page ?? 1,
@@ -80,7 +80,7 @@ export const useGameStore = defineStore('game', () => {
         limit: 12,
         totalPages: 0,
       }
-      
+
       if (e && typeof e === 'object' && 'response' in e) {
         error.value =
           (e as ApiError).response?.data?.error || 'Erreur lors du chargement des parties'
@@ -101,7 +101,7 @@ export const useGameStore = defineStore('game', () => {
       myGames.value = await gameApi.myGames()
     } catch (e: unknown) {
       myGames.value = []
-      
+
       if (e && typeof e === 'object' && 'response' in e) {
         error.value =
           (e as ApiError).response?.data?.error || 'Erreur lors du chargement de vos parties'
@@ -162,21 +162,21 @@ export const useGameStore = defineStore('game', () => {
 
     try {
       const updatedGame = await gameApi.update(id, dto)
-      
+
       const index = games.value.findIndex((g) => g.id === id)
       if (index !== -1) {
         games.value[index] = updatedGame
       }
-      
+
       const myGameIndex = myGames.value.findIndex((g) => g.id === id)
       if (myGameIndex !== -1) {
         myGames.value[myGameIndex] = updatedGame
       }
-      
+
       if (currentGame.value?.id === id) {
         currentGame.value = updatedGame
       }
-      
+
       return updatedGame
     } catch (e: unknown) {
       if (e && typeof e === 'object' && 'response' in e) {
@@ -198,10 +198,10 @@ export const useGameStore = defineStore('game', () => {
 
     try {
       await gameApi.delete(id)
-      
+
       games.value = games.value.filter((g) => g.id !== id)
       myGames.value = myGames.value.filter((g) => g.id !== id)
-      
+
       if (currentGame.value?.id === id) {
         currentGame.value = null
       }
@@ -269,17 +269,17 @@ export const useGameStore = defineStore('game', () => {
 
     try {
       const updatedGame = await gameApi.start(id)
-      
+
       // Mise à jour
       if (currentGame.value?.id === id) {
         currentGame.value = updatedGame
       }
-      
+
       const myGameIndex = myGames.value.findIndex((g) => g.id === id)
       if (myGameIndex !== -1) {
         myGames.value[myGameIndex] = updatedGame
       }
-      
+
       return updatedGame
     } catch (e: unknown) {
       if (e && typeof e === 'object' && 'response' in e) {
@@ -306,14 +306,14 @@ export const useGameStore = defineStore('game', () => {
     isLoading,
     error,
     pagination,
-    
+
     // Getters
     publicGames,
     isGameMaster,
     isPlayerInGame,
     canStartGame,
     canModifyGame,
-    
+
     // Actions
     fetchPublicGames,
     fetchMyGames,

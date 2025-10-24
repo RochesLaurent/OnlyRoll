@@ -12,7 +12,7 @@ class JoinGameDTO
         min: 4,
         max: 50,
         minMessage: 'Le mot de passe doit faire au moins {{ limit }} caractères.',
-        maxMessage: 'Le mot de passe ne peut pas dépasser {{ limit }} caractères.'
+        maxMessage: 'Le mot de passe ne peut pas dépasser {{ limit }} caractères.',
     )]
     public ?string $password = null;
 }

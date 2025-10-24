@@ -82,7 +82,7 @@ export const chatApi = {
    */
   async listSince(gameId: number, since: string): Promise<GameMessage[]> {
     return get<GameMessage[]>(
-      `/games/${gameId}/chat/messages/since?since=${encodeURIComponent(since)}`,
+      `/games/${gameId}/chat/messages/since?since=${encodeURIComponent(since)}`
     )
   },
 
@@ -108,7 +108,7 @@ export const chatApi = {
   async sendChat(
     gameId: number,
     content: string,
-    isInCharacter: boolean = false,
+    isInCharacter: boolean = false
   ): Promise<GameMessage> {
     return this.send(gameId, {
       type: MessageType.CHAT,
@@ -204,9 +204,7 @@ export const chatApi = {
       params.append('userId', userId.toString())
     }
 
-    return get<GameMessage[]>(
-      `/games/${gameId}/chat/messages/type/whisper?${params.toString()}`,
-    )
+    return get<GameMessage[]>(`/games/${gameId}/chat/messages/type/whisper?${params.toString()}`)
   },
 
   /**

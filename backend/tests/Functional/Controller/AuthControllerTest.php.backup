@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Controller;
 
-use Exception;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -22,72 +21,7 @@ class AuthControllerTest extends WebTestCase
 
     protected function setUp(): void
     {
-        parent::setUp();
         $this->client = static::createClient();
-
-        // Nettoyer la base de données avant chaque test
-        $this->cleanDatabase();
-    }
-
-    protected function tearDown(): void
-    {
-        parent::tearDown();
-
-        // Nettoyer la base de données après chaque test
-        $this->cleanDatabase();
-
-        // S'assurer que le kernel est arrêté
-        self::ensureKernelShutdown();
-
-        $this->client = null;
-    }
-
-    /**
-     * Nettoie la base de données pour éviter les conflits entre tests
-     */
-    private function cleanDatabase(): void
-    {
-        $container = self::getContainer();
-        $entityManager = $container->get('doctrine')->getManager();
-        $connection = $entityManager->getConnection();
-
-        try {
-            // Désactiver les contraintes de clés étrangères
-            $connection->executeStatement('SET FOREIGN_KEY_CHECKS=0');
-
-            // Liste des tables à vider (ordre important pour les relations)
-            $tables = [
-                'game_message',
-                'game_token',
-                'game_map',
-                'game_player',
-                'game',
-                'user',
-            ];
-
-            foreach ($tables as $table) {
-                try {
-                    $connection->executeStatement("TRUNCATE TABLE $table");
-                } catch (Exception $e) {
-                    // Ignorer si la table n'existe pas encore
-                }
-            }
-
-            // Réactiver les contraintes
-            $connection->executeStatement('SET FOREIGN_KEY_CHECKS=1');
-
-            // Clear l'entity manager pour éviter les caches
-            $entityManager->clear();
-        } catch (Exception $e) {
-            // En cas d'erreur, au moins essayer de réactiver les contraintes
-            try {
-                $connection->executeStatement('SET FOREIGN_KEY_CHECKS=1');
-            } catch (Exception $ex) {
-                // Ignorer
-            }
-
-            throw $e;
-        }
     }
 
     /**
@@ -277,9 +211,9 @@ class AuthControllerTest extends WebTestCase
         $this->client->request('POST', '/api/register', [], [], [
             'CONTENT_TYPE' => 'application/json',
         ], json_encode([
-            'email' => 'first@onlyroll.com',
+            'email' => 'user1@onlyroll.com',
             'password' => 'Password123!',
-            'pseudo' => 'ExistingPseudo',
+            'pseudo' => 'SamePseudo',
         ]));
 
         $this->assertResponseStatusCodeSame(Response::HTTP_CREATED);
@@ -288,12 +222,12 @@ class AuthControllerTest extends WebTestCase
         $this->client->request('POST', '/api/register', [], [], [
             'CONTENT_TYPE' => 'application/json',
         ], json_encode([
-            'email' => 'second@onlyroll.com',
+            'email' => 'user2@onlyroll.com',
             'password' => 'AnotherPass123!',
-            'pseudo' => 'ExistingPseudo',  // Même pseudo
+            'pseudo' => 'SamePseudo',  // Même pseudo
         ]));
 
-        // Devrait retourner 409 Conflict
+        // Devrait retourner 409 Conflict avec le nouveau contrôleur
         $this->assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
 
         $responseData = json_decode($this->client->getResponse()->getContent(), true);
@@ -302,11 +236,11 @@ class AuthControllerTest extends WebTestCase
     }
 
     /**
-     * POST /api/login - Connexion réussie.
+     * POST /api/login - Connexion réussie avec JWT.
      */
-    public function testItLogsInSuccessfully(): void
+    public function testItLogsInSuccessfullyAndReturnsJwtToken(): void
     {
-        // Créer un utilisateur d'abord
+        // D'abord créer un utilisateur
         $this->client->request('POST', '/api/register', [], [], [
             'CONTENT_TYPE' => 'application/json',
         ], json_encode([

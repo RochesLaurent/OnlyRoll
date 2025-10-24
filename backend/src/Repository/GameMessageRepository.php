@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\Game;
 use App\Entity\GameMessage;
 use App\Entity\User;
+use DateTimeInterface;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -116,7 +117,7 @@ class GameMessageRepository extends ServiceEntityRepository
             ->addSelect('r')
             ->where('m.game = :game')
             ->andWhere(
-                'm.type != :whisper OR m.user = :user OR m.recipient = :user'
+                'm.type != :whisper OR m.user = :user OR m.recipient = :user',
             )
             ->setParameter('game', $game)
             ->setParameter('whisper', GameMessage::TYPE_WHISPER)
@@ -162,7 +163,7 @@ class GameMessageRepository extends ServiceEntityRepository
      *
      * @return GameMessage[]
      */
-    public function findMessagesSince(Game $game, \DateTimeInterface $since): array
+    public function findMessagesSince(Game $game, DateTimeInterface $since): array
     {
         return $this->createQueryBuilder('m')
             ->leftJoin('m.user', 'u')
@@ -233,7 +234,7 @@ class GameMessageRepository extends ServiceEntityRepository
     /**
      * Supprime les vieux messages (nettoyage).
      */
-    public function deleteOldMessages(Game $game, \DateTimeInterface $before): int
+    public function deleteOldMessages(Game $game, DateTimeInterface $before): int
     {
         return $this->createQueryBuilder('m')
             ->delete()
@@ -248,7 +249,7 @@ class GameMessageRepository extends ServiceEntityRepository
     /**
      * Alias pour deleteOldMessages (requis par ChatService).
      */
-    public function deleteOlderThan(Game $game, \DateTimeInterface $before): int
+    public function deleteOlderThan(Game $game, DateTimeInterface $before): int
     {
         return $this->deleteOldMessages($game, $before);
     }
@@ -278,7 +279,7 @@ class GameMessageRepository extends ServiceEntityRepository
      *
      * @return GameMessage[]
      */
-    public function findSince(Game $game, \DateTimeInterface $since): array
+    public function findSince(Game $game, DateTimeInterface $since): array
     {
         return $this->createQueryBuilder('m')
             ->where('m.game = :game')
@@ -295,7 +296,7 @@ class GameMessageRepository extends ServiceEntityRepository
      *
      * @return GameMessage[]
      */
-    public function findVisibleSince(Game $game, \DateTimeInterface $since, User $user): array
+    public function findVisibleSince(Game $game, DateTimeInterface $since, User $user): array
     {
         return $this->createQueryBuilder('m')
             ->where('m.game = :game')

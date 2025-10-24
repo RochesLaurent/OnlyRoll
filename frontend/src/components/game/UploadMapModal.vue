@@ -52,7 +52,7 @@ function handleFileSelect(event: Event) {
   // Vérifier la taille (10 Mo max)
   const maxSize = 10 * 1024 * 1024
   if (file.size > maxSize) {
-    uploadError.value = 'L\'image est trop volumineuse (max 10 Mo)'
+    uploadError.value = "L'image est trop volumineuse (max 10 Mo)"
     return
   }
 
@@ -104,7 +104,7 @@ async function handleUpload() {
 
     if (!response.ok) {
       const error = await response.json()
-      throw new Error(error.error || 'Erreur lors de l\'upload')
+      throw new Error(error.error || "Erreur lors de l'upload")
     }
 
     const newMap = await response.json()
@@ -120,7 +120,7 @@ async function handleUpload() {
   } catch (error: unknown) {
     console.error('Erreur upload:', error)
     uploadError.value =
-      error instanceof Error ? error.message : 'Erreur lors de l\'upload de la carte'
+      error instanceof Error ? error.message : "Erreur lors de l'upload de la carte"
   } finally {
     isUploading.value = false
   }
@@ -162,19 +162,12 @@ function close() {
           class="bg-secondary-800 rounded-xl shadow-2xl border border-secondary-700 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
         >
           <!-- Header -->
-          <div
-            class="flex items-center justify-between p-6 border-b border-secondary-700"
-          >
+          <div class="flex items-center justify-between p-6 border-b border-secondary-700">
             <div>
               <h2 class="text-2xl font-bold text-white">📍 Créer une carte</h2>
-              <p class="text-secondary-400 text-sm mt-1">
-                Uploadez l'image de fond de votre carte
-              </p>
+              <p class="text-secondary-400 text-sm mt-1">Uploadez l'image de fond de votre carte</p>
             </div>
-            <button
-              @click="close"
-              class="text-secondary-400 hover:text-white transition-colors"
-            >
+            <button @click="close" class="text-secondary-400 hover:text-white transition-colors">
               <XMarkIcon class="w-6 h-6" />
             </button>
           </div>
@@ -199,15 +192,11 @@ function close() {
                   @change="handleFileSelect"
                 />
                 <label for="map-file-input" class="cursor-pointer">
-                  <ArrowUpTrayIcon
-                    class="w-12 h-12 mx-auto text-secondary-400 mb-3"
-                  />
+                  <ArrowUpTrayIcon class="w-12 h-12 mx-auto text-secondary-400 mb-3" />
                   <p class="text-secondary-300 font-medium mb-1">
                     Cliquez pour sélectionner une image
                   </p>
-                  <p class="text-secondary-500 text-sm">
-                    JPEG, PNG, WebP ou GIF (max 10 Mo)
-                  </p>
+                  <p class="text-secondary-500 text-sm">JPEG, PNG, WebP ou GIF (max 10 Mo)</p>
                 </label>
               </div>
 
@@ -233,10 +222,7 @@ function close() {
 
             <!-- Nom de la carte -->
             <div class="space-y-2">
-              <label
-                for="map-name"
-                class="block text-sm font-medium text-secondary-300"
-              >
+              <label for="map-name" class="block text-sm font-medium text-secondary-300">
                 Nom de la carte *
               </label>
               <input
@@ -253,10 +239,7 @@ function close() {
 
             <!-- Description -->
             <div class="space-y-2">
-              <label
-                for="map-description"
-                class="block text-sm font-medium text-secondary-300"
-              >
+              <label for="map-description" class="block text-sm font-medium text-secondary-300">
                 Description
               </label>
               <textarea
@@ -271,10 +254,7 @@ function close() {
             <!-- Configuration de la grille -->
             <div class="grid grid-cols-2 gap-4">
               <div class="space-y-2">
-                <label
-                  for="grid-type"
-                  class="block text-sm font-medium text-secondary-300"
-                >
+                <label for="grid-type" class="block text-sm font-medium text-secondary-300">
                   Type de grille
                 </label>
                 <select
@@ -289,10 +269,7 @@ function close() {
               </div>
 
               <div class="space-y-2">
-                <label
-                  for="grid-size"
-                  class="block text-sm font-medium text-secondary-300"
-                >
+                <label for="grid-size" class="block text-sm font-medium text-secondary-300">
                   Taille de case (px)
                 </label>
                 <input
@@ -306,10 +283,7 @@ function close() {
               </div>
 
               <div class="space-y-2">
-                <label
-                  for="grid-width"
-                  class="block text-sm font-medium text-secondary-300"
-                >
+                <label for="grid-width" class="block text-sm font-medium text-secondary-300">
                   Largeur (cases)
                 </label>
                 <input
@@ -323,10 +297,7 @@ function close() {
               </div>
 
               <div class="space-y-2">
-                <label
-                  for="grid-height"
-                  class="block text-sm font-medium text-secondary-300"
-                >
+                <label for="grid-height" class="block text-sm font-medium text-secondary-300">
                   Hauteur (cases)
                 </label>
                 <input

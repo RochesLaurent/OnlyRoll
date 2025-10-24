@@ -94,7 +94,7 @@ export class MercureService {
       if (this.reconnectAttempts < this.maxReconnectAttempts) {
         this.reconnectAttempts++
         console.log(
-          `Tentative de reconnexion ${this.reconnectAttempts}/${this.maxReconnectAttempts}`,
+          `Tentative de reconnexion ${this.reconnectAttempts}/${this.maxReconnectAttempts}`
         )
       } else {
         console.error('Nombre maximum de tentatives de reconnexion atteint')

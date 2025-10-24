@@ -10,6 +10,7 @@ use App\Entity\GameMessage;
 use App\Entity\User;
 use App\Repository\GameMessageRepository;
 use App\Repository\UserRepository;
+use DateTimeInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
@@ -67,10 +68,10 @@ readonly class ChatService
 
         // Vérifications pour PHPStan
         $gameId = $game->getId();
-        assert(null !== $gameId, 'Game ID cannot be null after flush');
+        \assert(null !== $gameId, 'Game ID cannot be null after flush');
 
         $createdAt = $message->getCreatedAt();
-        assert(null !== $createdAt, 'CreatedAt cannot be null after flush');
+        \assert(null !== $createdAt, 'CreatedAt cannot be null after flush');
 
         // Publication via Mercure
         $this->mercurePublisher->publishChatMessage($gameId, [
@@ -122,7 +123,7 @@ readonly class ChatService
      */
     public function getMessagesByType(Game $game, string $type, ?int $limit = null): array
     {
-        if (!in_array($type, GameMessage::TYPES, true)) {
+        if (!\in_array($type, GameMessage::TYPES, true)) {
             throw new BadRequestHttpException("Type de message invalide: {$type}");
         }
 
@@ -147,10 +148,10 @@ readonly class ChatService
 
         // Vérifications pour PHPStan
         $gameId = $game->getId();
-        assert(null !== $gameId, 'Game ID cannot be null after flush');
+        \assert(null !== $gameId, 'Game ID cannot be null after flush');
 
         $createdAt = $message->getCreatedAt();
-        assert(null !== $createdAt, 'CreatedAt cannot be null after flush');
+        \assert(null !== $createdAt, 'CreatedAt cannot be null after flush');
 
         // Publication Mercure
         $this->mercurePublisher->publishChatMessage($gameId, [
@@ -171,9 +172,9 @@ readonly class ChatService
     /**
      * Crée un message de lancer de dés.
      *
-     * @param string               $diceExpression Expression du lancer (ex: "1d20+5")
-     * @param array<string, mixed> $results        Résultats du lancer
-     * @param bool                 $isPrivate      Si le lancer est privé
+     * @param string $diceExpression Expression du lancer (ex: "1d20+5")
+     * @param array<string, mixed> $results Résultats du lancer
+     * @param bool $isPrivate Si le lancer est privé
      */
     public function createDiceRollMessage(
         Game $game,
@@ -182,11 +183,11 @@ readonly class ChatService
         array $results,
         bool $isPrivate = false,
     ): GameMessage {
-        $content = sprintf(
+        $content = \sprintf(
             '%s a lancé %s et obtenu %d',
             $user->getPseudo(),
             $diceExpression,
-            $results['total'] ?? 0
+            $results['total'] ?? 0,
         );
 
         $message = new GameMessage();
@@ -202,10 +203,10 @@ readonly class ChatService
 
         // Vérifications pour PHPStan
         $gameId = $game->getId();
-        assert(null !== $gameId, 'Game ID cannot be null after flush');
+        \assert(null !== $gameId, 'Game ID cannot be null after flush');
 
         $createdAt = $message->getCreatedAt();
-        assert(null !== $createdAt, 'CreatedAt cannot be null after flush');
+        \assert(null !== $createdAt, 'CreatedAt cannot be null after flush');
 
         // Publication via Mercure
         $this->mercurePublisher->publishDiceRoll($gameId, [
@@ -233,11 +234,11 @@ readonly class ChatService
     /**
      * Supprime les messages anciens d'une partie.
      *
-     * @param \DateTimeInterface $before Supprimer les messages avant cette date
+     * @param DateTimeInterface $before Supprimer les messages avant cette date
      *
      * @return int Nombre de messages supprimés
      */
-    public function deleteOldMessages(Game $game, \DateTimeInterface $before): int
+    public function deleteOldMessages(Game $game, DateTimeInterface $before): int
     {
         return $this->messageRepository->deleteOlderThan($game, $before);
     }
@@ -248,7 +249,7 @@ readonly class ChatService
      *
      * @return GameMessage[]
      */
-    public function getMessagesSince(Game $game, \DateTimeInterface $since, ?User $user = null): array
+    public function getMessagesSince(Game $game, DateTimeInterface $since, ?User $user = null): array
     {
         if ($user) {
             // Si un utilisateur est fourni, on filtre les messages visibles pour lui

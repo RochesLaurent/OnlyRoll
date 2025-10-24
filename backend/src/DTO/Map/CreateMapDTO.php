@@ -13,7 +13,7 @@ class CreateMapDTO
         min: 3,
         max: 250,
         minMessage: 'Le nom de la carte doit faire au moins {{ limit }} caractères.',
-        maxMessage: 'Le nom de la carte ne peut pas dépasser {{ limit }} caractères.'
+        maxMessage: 'Le nom de la carte ne peut pas dépasser {{ limit }} caractères.',
     )]
     public string $name;
 
@@ -24,27 +24,27 @@ class CreateMapDTO
     #[Assert\Range(
         min: 10,
         max: 200,
-        notInRangeMessage: 'La taille de la grille doit être entre {{ min }} et {{ max }} pixels.'
+        notInRangeMessage: 'La taille de la grille doit être entre {{ min }} et {{ max }} pixels.',
     )]
     public int $gridSize = 50;
 
     #[Assert\Choice(
         choices: ['square', 'hex', 'none'],
-        message: 'Le type de grille doit être "square", "hex" ou "none".'
+        message: 'Le type de grille doit être "square", "hex" ou "none".',
     )]
     public string $gridType = 'square';
 
     #[Assert\Range(
         min: 5,
         max: 200,
-        notInRangeMessage: 'La largeur doit être entre {{ min }} et {{ max }} cases.'
+        notInRangeMessage: 'La largeur doit être entre {{ min }} et {{ max }} cases.',
     )]
     public int $width = 20;
 
     #[Assert\Range(
         min: 5,
         max: 200,
-        notInRangeMessage: 'La hauteur doit être entre {{ min }} et {{ max }} cases.'
+        notInRangeMessage: 'La hauteur doit être entre {{ min }} et {{ max }} cases.',
     )]
     public int $height = 20;
 

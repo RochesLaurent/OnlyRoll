@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Enum\GameStatus;
 use App\Repository\GameRepository;
+use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -28,7 +29,7 @@ class Game
         min: 3,
         max: 250,
         minMessage: 'Le nom doit faire au moins {{ limit }} caractères',
-        maxMessage: 'Le nom ne peut pas dépasser {{ limit }} caractères'
+        maxMessage: 'Le nom ne peut pas dépasser {{ limit }} caractères',
     )]
     #[Groups(['game:list', 'game:read', 'game:write'])]
     private ?string $name = null;
@@ -42,7 +43,7 @@ class Game
         name: 'game_master_id',
         referencedColumnName: 'user_id',
         nullable: false,
-        onDelete: 'RESTRICT'
+        onDelete: 'RESTRICT',
     )]
     #[Groups(['game:list', 'game:read'])]
     private ?User $gameMaster = null;
@@ -81,25 +82,25 @@ class Game
         targetEntity: GamePlayer::class,
         mappedBy: 'game',
         cascade: ['persist', 'remove'],
-        orphanRemoval: true
+        orphanRemoval: true,
     )]
     #[Groups(['game:read'])]
     private Collection $gamePlayers;
 
     #[ORM\Column(name: 'game_created_at', type: Types::DATETIME_IMMUTABLE)]
     #[Groups(['game:list', 'game:read'])]
-    private ?\DateTimeImmutable $createdAt = null;
+    private ?DateTimeImmutable $createdAt = null;
 
     #[ORM\Column(name: 'game_updated_at', type: Types::DATETIME_IMMUTABLE)]
-    private ?\DateTimeImmutable $updatedAt = null;
+    private ?DateTimeImmutable $updatedAt = null;
 
     #[ORM\Column(name: 'game_started_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     #[Groups(['game:read'])]
-    private ?\DateTimeImmutable $startedAt = null;
+    private ?DateTimeImmutable $startedAt = null;
 
     #[ORM\Column(name: 'game_completed_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     #[Groups(['game:read'])]
-    private ?\DateTimeImmutable $completedAt = null;
+    private ?DateTimeImmutable $completedAt = null;
 
     public function __construct()
     {
@@ -110,14 +111,14 @@ class Game
     #[ORM\PrePersist]
     public function onPrePersist(): void
     {
-        $this->createdAt = new \DateTimeImmutable();
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->createdAt = new DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable();
     }
 
     #[ORM\PreUpdate]
     public function onPreUpdate(): void
     {
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable();
     }
 
     private function generateInviteCode(): string
@@ -125,7 +126,7 @@ class Game
         $characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
         $code = '';
         for ($i = 0; $i < 8; ++$i) {
-            $code .= $characters[random_int(0, strlen($characters) - 1)];
+            $code .= $characters[random_int(0, \strlen($characters) - 1)];
         }
 
         return $code;
@@ -145,7 +146,7 @@ class Game
         }
 
         return $this->gamePlayers->exists(
-            fn ($key, GamePlayer $player) => $player->getUser()?->getId() === $userId
+            fn ($key, GamePlayer $player) => $player->getUser()?->getId() === $userId,
         );
     }
 
@@ -192,7 +193,7 @@ class Game
     public function getActivePlayersCount(): int
     {
         return $this->gamePlayers->filter(
-            fn (GamePlayer $player) => $player->getStatus()->isParticipating()
+            fn (GamePlayer $player) => $player->getStatus()->isParticipating(),
         )->count();
     }
 
@@ -350,34 +351,34 @@ class Game
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeImmutable
+    public function getCreatedAt(): ?DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    public function getUpdatedAt(): ?\DateTimeImmutable
+    public function getUpdatedAt(): ?DateTimeImmutable
     {
         return $this->updatedAt;
     }
 
-    public function getStartedAt(): ?\DateTimeImmutable
+    public function getStartedAt(): ?DateTimeImmutable
     {
         return $this->startedAt;
     }
 
-    public function setStartedAt(?\DateTimeImmutable $startedAt): static
+    public function setStartedAt(?DateTimeImmutable $startedAt): static
     {
         $this->startedAt = $startedAt;
 
         return $this;
     }
 
-    public function getCompletedAt(): ?\DateTimeImmutable
+    public function getCompletedAt(): ?DateTimeImmutable
     {
         return $this->completedAt;
     }
 
-    public function setCompletedAt(?\DateTimeImmutable $completedAt): static
+    public function setCompletedAt(?DateTimeImmutable $completedAt): static
     {
         $this->completedAt = $completedAt;
 

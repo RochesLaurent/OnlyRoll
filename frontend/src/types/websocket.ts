@@ -74,7 +74,7 @@ export interface MercureChatMessageData {
     total: number
     rolls?: number[]
     formula?: string
-    [key: string]: unknown
+    modifier?: number
   }
 }
 
@@ -358,7 +358,7 @@ export interface MercureConnectionStatus {
  * Type pour les handlers d'événements Mercure
  */
 export type MercureEventHandler<T = MercureEventPayload> = (
-  event: MercureEvent<T>,
+  event: MercureEvent<T>
 ) => void | Promise<void>
 
 /**
@@ -472,7 +472,7 @@ export function isMercureEvent<T = MercureEventPayload>(data: unknown): data is 
  */
 export function isEventOfType<T extends MercureEventPayload = MercureEventPayload>(
   event: MercureEvent,
-  type: MercureEventType,
+  type: MercureEventType
 ): event is MercureEvent<T> {
   return event.type === type
 }

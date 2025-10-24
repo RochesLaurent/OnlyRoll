@@ -10,6 +10,7 @@ use App\Entity\GameMap;
 use App\Entity\GameToken;
 use App\Entity\User;
 use App\Repository\GameTokenRepository;
+use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
@@ -57,9 +58,9 @@ readonly class TokenService
 
         // Vérifications pour PHPStan
         $game = $map->getGame();
-        assert(null !== $game, 'Map must have a game');
+        \assert(null !== $game, 'Map must have a game');
         $gameId = $game->getId();
-        assert(null !== $gameId, 'Game ID cannot be null after flush');
+        \assert(null !== $gameId, 'Game ID cannot be null after flush');
 
         // Publication via Mercure
         $this->mercurePublisher->publishTokenCreated($gameId, [
@@ -91,7 +92,7 @@ readonly class TokenService
         }
 
         $map = $token->getMap();
-        assert(null !== $map, 'Token must have a map');
+        \assert(null !== $map, 'Token must have a map');
 
         // Validation des nouvelles coordonnées
         if (
@@ -110,11 +111,11 @@ readonly class TokenService
 
         // Vérifications pour PHPStan
         $game = $map->getGame();
-        assert(null !== $game, 'Map must have a game');
+        \assert(null !== $game, 'Map must have a game');
         $gameId = $game->getId();
-        assert(null !== $gameId, 'Game ID cannot be null');
+        \assert(null !== $gameId, 'Game ID cannot be null');
         $mapId = $map->getId();
-        assert(null !== $mapId, 'Map ID cannot be null');
+        \assert(null !== $mapId, 'Map ID cannot be null');
 
         // Publication via Mercure
         $this->mercurePublisher->publishTokenMove($gameId, [
@@ -122,7 +123,7 @@ readonly class TokenService
             'mapId' => $mapId,
             'x' => $token->getX(),
             'y' => $token->getY(),
-            'movedAt' => (new \DateTimeImmutable())->format('c'),
+            'movedAt' => (new DateTimeImmutable())->format('c'),
         ]);
 
         return $token;
@@ -160,11 +161,11 @@ readonly class TokenService
 
         // Vérifications pour PHPStan
         $map = $token->getMap();
-        assert(null !== $map, 'Token must have a map');
+        \assert(null !== $map, 'Token must have a map');
         $game = $map->getGame();
-        assert(null !== $game, 'Map must have a game');
+        \assert(null !== $game, 'Map must have a game');
         $gameId = $game->getId();
-        assert(null !== $gameId, 'Game ID cannot be null');
+        \assert(null !== $gameId, 'Game ID cannot be null');
 
         // Publication Mercure
         $this->mercurePublisher->publishGameEvent(
@@ -174,7 +175,7 @@ readonly class TokenService
                 'action' => 'visibility_changed',
                 'tokenId' => $token->getId(),
                 'isVisible' => $token->isVisible(),
-            ]
+            ],
         );
 
         return $token;
@@ -190,11 +191,11 @@ readonly class TokenService
 
         // Vérifications pour PHPStan
         $map = $token->getMap();
-        assert(null !== $map, 'Token must have a map');
+        \assert(null !== $map, 'Token must have a map');
         $game = $map->getGame();
-        assert(null !== $game, 'Map must have a game');
+        \assert(null !== $game, 'Map must have a game');
         $gameId = $game->getId();
-        assert(null !== $gameId, 'Game ID cannot be null');
+        \assert(null !== $gameId, 'Game ID cannot be null');
 
         // Publication Mercure
         $this->mercurePublisher->publishGameEvent(
@@ -204,7 +205,7 @@ readonly class TokenService
                 'action' => 'lock_changed',
                 'tokenId' => $token->getId(),
                 'isLocked' => $token->isLocked(),
-            ]
+            ],
         );
 
         return $token;
@@ -217,13 +218,13 @@ readonly class TokenService
     {
         // Vérifications pour PHPStan
         $map = $token->getMap();
-        assert(null !== $map, 'Token must have a map');
+        \assert(null !== $map, 'Token must have a map');
         $game = $map->getGame();
-        assert(null !== $game, 'Map must have a game');
+        \assert(null !== $game, 'Map must have a game');
         $gameId = $game->getId();
-        assert(null !== $gameId, 'Game ID cannot be null');
+        \assert(null !== $gameId, 'Game ID cannot be null');
         $tokenId = $token->getId();
-        assert(null !== $tokenId, 'Token ID cannot be null');
+        \assert(null !== $tokenId, 'Token ID cannot be null');
 
         $this->em->remove($token);
         $this->em->flush();
