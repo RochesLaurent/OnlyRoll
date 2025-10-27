@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, nextTick, watch, onMounted } from 'vue'
 import { useChatStore } from '@/stores/chatStore'
-import type { GameMessage, MessageType, DiceResult } from '@/types/game'
+import type { GameMessage, MessageType, DiceResult, LegacyDiceResult } from '@/types/game'
 
 const props = defineProps<{
   messages: GameMessage[]
@@ -121,28 +121,43 @@ function getMessageIcon(type: MessageType) {
  *
  * Gère la compatibilité entre l'ancienne structure (fixtures) et la nouvelle :
  * - Ancienne : { config, results, total, timestamp }
- * - Nouvelle : { formula, rolls, total, modifier }
+ * - Nouvelle : { formula, results, total, modifier }
  *
  * Cette fonction assure que le composant fonctionne même avec d'anciennes données.
  */
-function normalizeDiceResult(result: any): DiceResult | null {
-  if (!result) return null
+function normalizeDiceResult(result: unknown): DiceResult | null {
+  if (!result || typeof result !== 'object') return null
 
-  if (result.rolls && result.formula !== undefined) {
+  // Type guard pour la nouvelle structure
+  if (
+    'rolls' in result &&
+    'formula' in result &&
+    Array.isArray((result as { rolls: unknown }).rolls)
+  ) {
+    const newResult = result as {
+      formula?: string
+      rolls?: number[]
+      total?: number
+      modifier?: number
+    }
+
     return {
-      formula: result.formula || '',
-      rolls: result.rolls || [],
-      total: result.total || 0,
-      modifier: result.modifier || 0,
+      formula: newResult.formula || '',
+      results: newResult.rolls || [],
+      total: newResult.total || 0,
+      modifier: newResult.modifier || 0,
     }
   }
 
-  if (result.results) {
+  // Type guard pour l'ancienne structure
+  if ('results' in result && Array.isArray((result as LegacyDiceResult).results)) {
+    const oldResult = result as LegacyDiceResult
+
     console.warn('Ancienne structure diceResult détectée, conversion en cours...')
     return {
-      formula: result.config?.dice || 'N/A',
-      rolls: result.results || [],
-      total: result.total || 0,
+      formula: oldResult.config?.dice || 'N/A',
+      results: oldResult.results || [],
+      total: oldResult.total || 0,
       modifier: 0,
     }
   }
@@ -185,7 +200,7 @@ function normalizeDiceResult(result: any): DiceResult | null {
         <!-- Contenu -->
         <p class="text-secondary-100 text-sm">{{ msg.content }}</p>
 
-        <!-- Résultat de dés - ✅ Avec sécurité -->
+        <!-- Résultat de dés - Avec sécurité -->
         <div v-if="normalizeDiceResult(msg.diceResult)" class="mt-2 p-3 bg-black/30 rounded-lg">
           <div class="flex items-center justify-between">
             <div>
@@ -193,7 +208,7 @@ function normalizeDiceResult(result: any): DiceResult | null {
                 🎲 {{ normalizeDiceResult(msg.diceResult)!.formula }}
               </div>
               <div class="text-xs text-secondary-500">
-                Lancés: {{ normalizeDiceResult(msg.diceResult)!.rolls.join(' + ') }}
+                Lancés: {{ normalizeDiceResult(msg.diceResult)!.results.join(' + ') }}
                 <span v-if="normalizeDiceResult(msg.diceResult)!.modifier !== 0">
                   {{ normalizeDiceResult(msg.diceResult)!.modifier > 0 ? '+' : ''
                   }}{{ normalizeDiceResult(msg.diceResult)!.modifier }}

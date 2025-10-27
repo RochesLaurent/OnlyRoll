@@ -210,6 +210,16 @@ export interface DiceResult {
   modifier: number
 }
 
+/**
+ * Structure temporaire pour migration des anciennes données de dés
+ * @deprecated Sera supprimé après migration complète
+ */
+export interface LegacyDiceResult {
+  config?: { dice?: string }
+  results?: number[]
+  total?: number
+}
+
 export interface GameMessage {
   id: number
   type: MessageType

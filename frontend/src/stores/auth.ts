@@ -177,9 +177,10 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       // Si un cookie JWT valide existe, cette requête réussira
       await fetchMe()
-    } catch (err) {
+    } catch (err: unknown) {
       // Si ça échoue, c'est qu'il n'y a pas de session valide
       console.log('No valid session, user not authenticated')
+      console.error(err)
       clearError()
     }
   }

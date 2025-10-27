@@ -5,6 +5,11 @@ import { useGameStore } from '@/stores/game'
 import { useMapStore } from '@/stores/mapStore'
 import { useChatStore } from '@/stores/chatStore'
 import { mercureService } from '@/services/mercure'
+import type {
+  MercureTokenEventData,
+  MercureMapEventData,
+  MercureChatMessageData,
+} from '@/types/websocket'
 
 // Composants
 import GameHeader from '@/components/game/GameHeader.vue'
@@ -102,19 +107,19 @@ function setupMercure() {
   // Écouter les événements de tokens
   mercureService.on('token', (data) => {
     console.log('🎭 Token event:', data)
-    mapStore.handleTokenEvent(data as any)
+    mapStore.handleTokenEvent(data as MercureTokenEventData)
   })
 
   // Écouter les événements de carte
   mercureService.on('map', (data) => {
     console.log('🗺️ Map event:', data)
-    mapStore.handleMapEvent(data as any)
+    mapStore.handleMapEvent(data as MercureMapEventData)
   })
 
   // Écouter les messages du chat
   mercureService.on('chat', (data) => {
     console.log('💬 Chat message:', data)
-    chatStore.handleChatMessage(data as any)
+    chatStore.handleChatMessage(data as MercureChatMessageData)
   })
 
   // Écouter les événements de joueurs

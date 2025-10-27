@@ -46,7 +46,7 @@ return $config
         'line_ending' => true,
         
         'class_attributes_separation' => ['elements' => ['method' => 'one', 'property' => 'one']],
-        'visibility_required' => ['elements' => ['property', 'method', 'const']],
+        'modifier_keywords' => ['elements' => ['property', 'method', 'const']],
         
         'modernize_types_casting' => true,
         'ternary_to_elvis_operator' => true,

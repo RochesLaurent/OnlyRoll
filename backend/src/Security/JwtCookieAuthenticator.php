@@ -44,8 +44,7 @@ class JwtCookieAuthenticator extends AbstractAuthenticator
 
         if ($request->cookies->has('jwt_token')) {
             $token = $request->cookies->get('jwt_token');
-        }
-        elseif ($request->headers->has('Authorization')) {
+        } elseif ($request->headers->has('Authorization')) {
             $authHeader = $request->headers->get('Authorization');
             if (\is_string($authHeader) && preg_match('/Bearer\s+(.+)/', $authHeader, $matches)) {
                 $token = $matches[1];
@@ -65,8 +64,7 @@ class JwtCookieAuthenticator extends AbstractAuthenticator
             return new SelfValidatingPassport(
                 new UserBadge($payload['username']),
             );
-        }
-        catch (Exception $e) {
+        } catch (Exception $e) {
             throw new CustomUserMessageAuthenticationException('Invalid JWT token: ' . $e->getMessage());
         }
     }

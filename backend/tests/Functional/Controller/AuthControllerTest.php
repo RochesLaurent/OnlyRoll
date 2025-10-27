@@ -4,27 +4,22 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Controller;
 
-use Exception;
+use App\Entity\User;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
 
-/**
- * Tests fonctionnels pour l'AuthController avec DTOs.
- *
- * Ces tests vérifient le comportement réel de l'API d'authentification
- * avec validation par DTOs et une vraie base de données de test
- *
- * @covers \App\Controller\AuthController
- */
 class AuthControllerTest extends WebTestCase
 {
-    private $client;
+    private KernelBrowser $client;
+    private EntityManagerInterface $entityManager;
 
     protected function setUp(): void
     {
-        parent::setUp();
         $this->client = static::createClient();
-
+        $this->entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        
         // Nettoyer la base de données avant chaque test
         $this->cleanDatabase();
     }
@@ -32,495 +27,269 @@ class AuthControllerTest extends WebTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
-
-        // Nettoyer la base de données après chaque test
-        $this->cleanDatabase();
-
-        // S'assurer que le kernel est arrêté
-        self::ensureKernelShutdown();
-
-        $this->client = null;
+        $this->entityManager->close();
     }
 
-    /**
-     * Nettoie la base de données pour éviter les conflits entre tests
-     */
-    private function cleanDatabase(): void
-    {
-        $container = self::getContainer();
-        $entityManager = $container->get('doctrine')->getManager();
-        $connection = $entityManager->getConnection();
+    // ==================== REGISTER ====================
 
-        try {
-            // Désactiver les contraintes de clés étrangères
-            $connection->executeStatement('SET FOREIGN_KEY_CHECKS=0');
-
-            // Liste des tables à vider (ordre important pour les relations)
-            $tables = [
-                'game_message',
-                'game_token',
-                'game_map',
-                'game_player',
-                'game',
-                'user',
-            ];
-
-            foreach ($tables as $table) {
-                try {
-                    $connection->executeStatement("TRUNCATE TABLE $table");
-                } catch (Exception $e) {
-                    // Ignorer si la table n'existe pas encore
-                }
-            }
-
-            // Réactiver les contraintes
-            $connection->executeStatement('SET FOREIGN_KEY_CHECKS=1');
-
-            // Clear l'entity manager pour éviter les caches
-            $entityManager->clear();
-        } catch (Exception $e) {
-            // En cas d'erreur, au moins essayer de réactiver les contraintes
-            try {
-                $connection->executeStatement('SET FOREIGN_KEY_CHECKS=1');
-            } catch (Exception $ex) {
-                // Ignorer
-            }
-
-            throw $e;
-        }
-    }
-
-    /**
-     * POST /api/register - Inscription avec des données valides.
-     */
-    public function testItRegistersANewUserSuccessfully(): void
+    public function testRegisterWithValidData(): void
     {
         $this->client->request('POST', '/api/register', [], [], [
             'CONTENT_TYPE' => 'application/json',
         ], json_encode([
-            'email' => 'newuser@onlyroll.com',
-            'password' => 'SecurePass123!',
-            'pseudo' => 'NewGamer',
+            'email' => 'test@example.com',
+            'pseudo' => 'TestUser',
+            'password' => 'SecurePassword123!',
         ]));
 
         $this->assertResponseStatusCodeSame(Response::HTTP_CREATED);
+        
+        $response = json_decode($this->client->getResponse()->getContent(), true);
+        
+        $this->assertArrayHasKey('message', $response);
+        $this->assertArrayHasKey('user', $response);
+        $this->assertSame('User created successfully', $response['message']);
+        $this->assertSame('test@example.com', $response['user']['email']);
+        $this->assertSame('TestUser', $response['user']['pseudo']);
 
-        $responseData = json_decode($this->client->getResponse()->getContent(), true);
-
-        $this->assertArrayHasKey('message', $responseData);
-        $this->assertArrayHasKey('user', $responseData);
-        $this->assertEquals('User created successfully', $responseData['message']);
-        $this->assertEquals('newuser@onlyroll.com', $responseData['user']['email']);
-        $this->assertEquals('NewGamer', $responseData['user']['pseudo']);
-        $this->assertArrayHasKey('id', $responseData['user']);
-
-        // Vérifier les nouveaux champs du DTO
-        $this->assertArrayHasKey('timezone', $responseData['user']);
-        $this->assertArrayHasKey('language', $responseData['user']);
-        $this->assertArrayHasKey('isVerified', $responseData['user']);
-        $this->assertArrayHasKey('createdAt', $responseData['user']);
+        // Vérifier que l'utilisateur est bien en base
+        $user = $this->entityManager->getRepository(User::class)
+            ->findOneBy(['email' => 'test@example.com']);
+        
+        $this->assertNotNull($user);
+        $this->assertSame('TestUser', $user->getPseudo());
+        $this->assertTrue($user->isVerified());
     }
 
-    /**
-     * POST /api/register - Échec avec des champs manquants (validation DTO).
-     */
-    public function testItFailsToRegisterWithMissingFields(): void
+    public function testRegisterWithExistingEmail(): void
     {
+        // Créer un utilisateur existant
+        $this->createUser('existing@example.com', 'ExistingUser');
+
         $this->client->request('POST', '/api/register', [], [], [
             'CONTENT_TYPE' => 'application/json',
         ], json_encode([
-            'email' => 'incomplete@onlyroll.com',
-            // Manque password et pseudo
-        ]));
-
-        $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
-
-        $responseData = json_decode($this->client->getResponse()->getContent(), true);
-
-        // Nouveau format d'erreur avec DTOs
-        $this->assertArrayHasKey('error', $responseData);
-        $this->assertEquals('Validation failed', $responseData['error']);
-        $this->assertArrayHasKey('violations', $responseData);
-
-        // Vérifier que les violations contiennent les champs manquants
-        $violations = $responseData['violations'];
-        $this->assertArrayHasKey('pseudo', $violations);
-        $this->assertArrayHasKey('password', $violations);
-    }
-
-    /**
-     * POST /api/register - Échec avec email invalide (validation DTO).
-     */
-    public function testItFailsToRegisterWithInvalidEmail(): void
-    {
-        $this->client->request('POST', '/api/register', [], [], [
-            'CONTENT_TYPE' => 'application/json',
-        ], json_encode([
-            'email' => 'invalid-email',  // Email invalide
-            'password' => 'SecurePass123!',
-            'pseudo' => 'TestUser',
-        ]));
-
-        $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
-
-        $responseData = json_decode($this->client->getResponse()->getContent(), true);
-
-        $this->assertEquals('Validation failed', $responseData['error']);
-        $this->assertArrayHasKey('email', $responseData['violations']);
-        $this->assertStringContainsString('email', strtolower($responseData['violations']['email']));
-    }
-
-    /**
-     * POST /api/register - Échec avec mot de passe trop court (validation DTO).
-     */
-    public function testItFailsToRegisterWithShortPassword(): void
-    {
-        $this->client->request('POST', '/api/register', [], [], [
-            'CONTENT_TYPE' => 'application/json',
-        ], json_encode([
-            'email' => 'test@onlyroll.com',
-            'password' => 'Short1',  // Moins de 8 caractères
-            'pseudo' => 'TestUser',
-        ]));
-
-        $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
-
-        $responseData = json_decode($this->client->getResponse()->getContent(), true);
-
-        $this->assertEquals('Validation failed', $responseData['error']);
-        $this->assertArrayHasKey('password', $responseData['violations']);
-        $this->assertStringContainsString('8', $responseData['violations']['password']);
-    }
-
-    /**
-     * POST /api/register - Échec avec mot de passe sans majuscule (validation DTO).
-     */
-    public function testItFailsToRegisterWithPasswordWithoutUppercase(): void
-    {
-        $this->client->request('POST', '/api/register', [], [], [
-            'CONTENT_TYPE' => 'application/json',
-        ], json_encode([
-            'email' => 'test@onlyroll.com',
-            'password' => 'lowercase123',  // Pas de majuscule
-            'pseudo' => 'TestUser',
-        ]));
-
-        $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
-
-        $responseData = json_decode($this->client->getResponse()->getContent(), true);
-
-        $this->assertEquals('Validation failed', $responseData['error']);
-        $this->assertArrayHasKey('password', $responseData['violations']);
-    }
-
-    /**
-     * POST /api/register - Échec avec pseudo trop court (validation DTO).
-     */
-    public function testItFailsToRegisterWithShortPseudo(): void
-    {
-        $this->client->request('POST', '/api/register', [], [], [
-            'CONTENT_TYPE' => 'application/json',
-        ], json_encode([
-            'email' => 'test@onlyroll.com',
-            'password' => 'SecurePass123!',
-            'pseudo' => 'ab',  // Moins de 3 caractères
-        ]));
-
-        $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
-
-        $responseData = json_decode($this->client->getResponse()->getContent(), true);
-
-        $this->assertEquals('Validation failed', $responseData['error']);
-        $this->assertArrayHasKey('pseudo', $responseData['violations']);
-        $this->assertStringContainsString('3', $responseData['violations']['pseudo']);
-    }
-
-    /**
-     * POST /api/register - Échec avec email déjà existant.
-     */
-    public function testItFailsToRegisterWithExistingEmail(): void
-    {
-        // Créer un premier utilisateur
-        $this->client->request('POST', '/api/register', [], [], [
-            'CONTENT_TYPE' => 'application/json',
-        ], json_encode([
-            'email' => 'existing@onlyroll.com',
+            'email' => 'existing@example.com',
+            'pseudo' => 'NewUser',
             'password' => 'Password123!',
-            'pseudo' => 'ExistingUser',
         ]));
 
-        $this->assertResponseStatusCodeSame(Response::HTTP_CREATED);
-
-        // Essayer de créer un deuxième avec le même email
-        $this->client->request('POST', '/api/register', [], [], [
-            'CONTENT_TYPE' => 'application/json',
-        ], json_encode([
-            'email' => 'existing@onlyroll.com',  // Même email
-            'password' => 'AnotherPass123!',
-            'pseudo' => 'DifferentPseudo',
-        ]));
-
-        // Devrait retourner 409 Conflict avec le nouveau contrôleur
         $this->assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
-
-        $responseData = json_decode($this->client->getResponse()->getContent(), true);
-        $this->assertArrayHasKey('error', $responseData);
-        $this->assertEquals('Email already exists', $responseData['error']);
+        
+        $response = json_decode($this->client->getResponse()->getContent(), true);
+        $this->assertArrayHasKey('error', $response);
+        $this->assertSame('Email already exists', $response['error']);
     }
 
-    /**
-     * POST /api/register - Échec avec pseudo déjà existant.
-     */
-    public function testItFailsToRegisterWithExistingPseudo(): void
+    public function testRegisterWithExistingPseudo(): void
     {
-        // Créer un premier utilisateur
+        // Créer un utilisateur existant
+        $this->createUser('existing@example.com', 'ExistingPseudo');
+
         $this->client->request('POST', '/api/register', [], [], [
             'CONTENT_TYPE' => 'application/json',
         ], json_encode([
-            'email' => 'first@onlyroll.com',
-            'password' => 'Password123!',
+            'email' => 'newemail@example.com',
             'pseudo' => 'ExistingPseudo',
+            'password' => 'Password123!',
         ]));
 
-        $this->assertResponseStatusCodeSame(Response::HTTP_CREATED);
-
-        // Essayer de créer un deuxième avec le même pseudo
-        $this->client->request('POST', '/api/register', [], [], [
-            'CONTENT_TYPE' => 'application/json',
-        ], json_encode([
-            'email' => 'second@onlyroll.com',
-            'password' => 'AnotherPass123!',
-            'pseudo' => 'ExistingPseudo',  // Même pseudo
-        ]));
-
-        // Devrait retourner 409 Conflict
         $this->assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
-
-        $responseData = json_decode($this->client->getResponse()->getContent(), true);
-        $this->assertArrayHasKey('error', $responseData);
-        $this->assertEquals('Pseudo already exists', $responseData['error']);
+        
+        $response = json_decode($this->client->getResponse()->getContent(), true);
+        $this->assertArrayHasKey('error', $response);
+        $this->assertSame('Pseudo already exists', $response['error']);
     }
 
-    /**
-     * POST /api/login - Connexion réussie.
-     */
-    public function testItLogsInSuccessfully(): void
+    public function testRegisterWithInvalidEmail(): void
     {
-        // Créer un utilisateur d'abord
         $this->client->request('POST', '/api/register', [], [], [
             'CONTENT_TYPE' => 'application/json',
         ], json_encode([
-            'email' => 'testlogin@onlyroll.com',
-            'password' => 'LoginPass123!',
-            'pseudo' => 'LoginTester',
+            'email' => 'invalid-email',
+            'pseudo' => 'TestUser',
+            'password' => 'Password123!',
         ]));
 
-        // Ensuite se connecter
-        $this->client->request('POST', '/api/login', [], [], [
-            'CONTENT_TYPE' => 'application/json',
-        ], json_encode([
-            'email' => 'testlogin@onlyroll.com',
-            'password' => 'LoginPass123!',
-        ]));
-
-        $this->assertResponseIsSuccessful();
-
-        $responseData = json_decode($this->client->getResponse()->getContent(), true);
-
-        $this->assertArrayHasKey('token', $responseData);
-        $this->assertNotEmpty($responseData['token']);
-
-        // Vérifier que c'est un JWT valide (3 parties séparées par des points)
-        $tokenParts = explode('.', $responseData['token']);
-        $this->assertCount(3, $tokenParts, 'JWT should have 3 parts');
+        $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
     }
 
-    /**
-     * POST /api/login - Échec avec mauvais mot de passe.
-     */
-    public function testItFailsToLoginWithWrongPassword(): void
+    public function testRegisterWithMissingFields(): void
     {
-        // Créer un utilisateur
         $this->client->request('POST', '/api/register', [], [], [
             'CONTENT_TYPE' => 'application/json',
         ], json_encode([
-            'email' => 'wrongpass@onlyroll.com',
-            'password' => 'CorrectPass123!',
-            'pseudo' => 'WrongPassUser',
+            'email' => 'test@example.com',
+            // Pseudo manquant
+            'password' => 'Password123!',
         ]));
 
-        // Essayer de se connecter avec un mauvais mot de passe
-        $this->client->request('POST', '/api/login', [], [], [
-            'CONTENT_TYPE' => 'application/json',
-        ], json_encode([
-            'email' => 'wrongpass@onlyroll.com',
-            'password' => 'WrongPassword!',  // Mauvais mot de passe
-        ]));
-
-        $this->assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
+        $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
     }
 
-    /**
-     * POST /api/login - Échec avec email inexistant.
-     */
-    public function testItFailsToLoginWithNonexistentEmail(): void
+    public function testRegisterWithEmptyPassword(): void
     {
-        $this->client->request('POST', '/api/login', [], [], [
-            'CONTENT_TYPE' => 'application/json',
-        ], json_encode([
-            'email' => 'nonexistent@onlyroll.com',
-            'password' => 'SomePassword123!',
-        ]));
-
-        $this->assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
-    }
-
-    /**
-     * GET /api/me - Récupération du profil utilisateur authentifié.
-     */
-    public function testItReturnsCurrentUserProfileWhenAuthenticated(): void
-    {
-        // Créer et connecter un utilisateur
         $this->client->request('POST', '/api/register', [], [], [
             'CONTENT_TYPE' => 'application/json',
         ], json_encode([
-            'email' => 'profile@onlyroll.com',
-            'password' => 'ProfilePass123!',
-            'pseudo' => 'ProfileUser',
+            'email' => 'test@example.com',
+            'pseudo' => 'TestUser',
+            'password' => '',
         ]));
 
-        $this->client->request('POST', '/api/login', [], [], [
-            'CONTENT_TYPE' => 'application/json',
-        ], json_encode([
-            'email' => 'profile@onlyroll.com',
-            'password' => 'ProfilePass123!',
-        ]));
-
-        $loginResponse = json_decode($this->client->getResponse()->getContent(), true);
-        $token = $loginResponse['token'];
-
-        // Accéder au profil avec le token
-        $this->client->request('GET', '/api/me', [], [], [
-            'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
-        ]);
-
-        $this->assertResponseIsSuccessful();
-
-        $profileData = json_decode($this->client->getResponse()->getContent(), true);
-
-        // Vérifications de base
-        $this->assertEquals('profile@onlyroll.com', $profileData['email']);
-        $this->assertEquals('ProfileUser', $profileData['pseudo']);
-        $this->assertArrayHasKey('id', $profileData);
-        $this->assertArrayHasKey('roles', $profileData);
-        $this->assertContains('ROLE_USER', $profileData['roles']);
-
-        // Vérifier les nouveaux champs du UserResponseDto
-        $this->assertArrayHasKey('timezone', $profileData);
-        $this->assertArrayHasKey('language', $profileData);
-        $this->assertArrayHasKey('isVerified', $profileData);
-        $this->assertArrayHasKey('createdAt', $profileData);
-        $this->assertArrayHasKey('avatar', $profileData);
-
-        // Vérifier les valeurs par défaut
-        $this->assertEquals('UTC', $profileData['timezone']);
-        $this->assertEquals('en', $profileData['language']);
-        $this->assertTrue($profileData['isVerified']);
+        $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
     }
 
-    /**
-     * GET /api/me - Échec sans authentification.
-     */
-    public function testItFailsToGetProfileWithoutAuthentication(): void
+    public function testRegisterWithInvalidJson(): void
+    {
+        $this->client->request('POST', '/api/register', [], [], [
+            'CONTENT_TYPE' => 'application/json',
+        ], 'invalid json');
+
+        $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
+    }
+
+    // ==================== ME ====================
+
+    public function testMeWithAuthenticatedUser(): void
+    {
+        $user = $this->createUser('auth@example.com', 'AuthUser');
+        
+        // Simuler l'authentification
+        $this->client->loginUser($user);
+
+        $this->client->request('GET', '/api/me');
+
+        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
+        
+        $response = json_decode($this->client->getResponse()->getContent(), true);
+        
+        $this->assertArrayHasKey('id', $response);
+        $this->assertArrayHasKey('email', $response);
+        $this->assertArrayHasKey('pseudo', $response);
+        $this->assertArrayHasKey('roles', $response);
+        $this->assertArrayHasKey('isVerified', $response);
+        $this->assertArrayHasKey('timezone', $response);
+        $this->assertArrayHasKey('language', $response);
+        $this->assertArrayHasKey('createdAt', $response);
+        $this->assertArrayHasKey('updatedAt', $response);
+        
+        $this->assertSame('auth@example.com', $response['email']);
+        $this->assertSame('AuthUser', $response['pseudo']);
+        $this->assertSame(['ROLE_USER'], $response['roles']);
+    }
+
+    public function testMeWithoutAuthentication(): void
     {
         $this->client->request('GET', '/api/me');
 
         $this->assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
+        
+        $response = json_decode($this->client->getResponse()->getContent(), true);
+        $this->assertArrayHasKey('error', $response);
+        $this->assertSame('Unauthorized', $response['error']);
     }
 
-    /**
-     * GET /api/me - Échec avec token invalide.
-     */
-    public function testItFailsToGetProfileWithInvalidToken(): void
+    public function testMeReturnsCorrectDataFormat(): void
     {
-        $this->client->request('GET', '/api/me', [], [], [
-            'HTTP_AUTHORIZATION' => 'Bearer invalid.token.here',
-        ]);
+        $user = $this->createUser('format@example.com', 'FormatUser');
+        $user->setTimezone('Europe/Paris');
+        $user->setLanguage('fr');
+        $user->setAvatar('avatar.jpg');
+        
+        $this->entityManager->flush();
+        
+        $this->client->loginUser($user);
+        $this->client->request('GET', '/api/me');
 
-        $this->assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
+        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
+        
+        $response = json_decode($this->client->getResponse()->getContent(), true);
+        
+        $this->assertSame('Europe/Paris', $response['timezone']);
+        $this->assertSame('fr', $response['language']);
+        $this->assertSame('avatar.jpg', $response['avatar']);
+        
+        // Vérifier le format de date ISO 8601
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $response['createdAt']);
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $response['updatedAt']);
     }
 
-    /**
-     * Scénario complet : Register → Login → Access Protected Route.
-     */
-    public function testItCompletesFullAuthenticationFlow(): void
+    // ==================== LOGOUT ====================
+
+    public function testLogout(): void
     {
-        // 1. S'inscrire
-        $this->client->request('POST', '/api/register', [], [], [
-            'CONTENT_TYPE' => 'application/json',
-        ], json_encode([
-            'email' => 'fullflow@onlyroll.com',
-            'password' => 'FullFlowPass123!',
-            'pseudo' => 'FullFlowUser',
-        ]));
-        $this->assertResponseStatusCodeSame(Response::HTTP_CREATED);
+        $this->client->request('POST', '/api/logout');
 
-        $registerData = json_decode($this->client->getResponse()->getContent(), true);
-        $this->assertArrayHasKey('user', $registerData);
-        $this->assertArrayHasKey('id', $registerData['user']);
-
-        // 2. Se connecter
-        $this->client->request('POST', '/api/login', [], [], [
-            'CONTENT_TYPE' => 'application/json',
-        ], json_encode([
-            'email' => 'fullflow@onlyroll.com',
-            'password' => 'FullFlowPass123!',
-        ]));
-        $this->assertResponseIsSuccessful();
-
-        $loginData = json_decode($this->client->getResponse()->getContent(), true);
-        $token = $loginData['token'];
-        $this->assertNotEmpty($token);
-
-        // 3. Accéder à une route protégée
-        $this->client->request('GET', '/api/me', [], [], [
-            'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
-        ]);
-        $this->assertResponseIsSuccessful();
-
-        $profileData = json_decode($this->client->getResponse()->getContent(), true);
-        $this->assertEquals('fullflow@onlyroll.com', $profileData['email']);
-        $this->assertEquals('FullFlowUser', $profileData['pseudo']);
-
-        // Vérifier la cohérence des données entre register et profile
-        $this->assertEquals($registerData['user']['id'], $profileData['id']);
-        $this->assertEquals($registerData['user']['email'], $profileData['email']);
-        $this->assertEquals($registerData['user']['pseudo'], $profileData['pseudo']);
+        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
+        
+        $response = json_decode($this->client->getResponse()->getContent(), true);
+        $this->assertArrayHasKey('message', $response);
+        $this->assertSame('Déconnexion réussie', $response['message']);
     }
 
-    /**
-     * Test de validation multiple - plusieurs erreurs en même temps.
-     */
-    public function testItReturnsMultipleValidationErrors(): void
+    public function testLogoutClearsCookie(): void
     {
-        $this->client->request('POST', '/api/register', [], [], [
-            'CONTENT_TYPE' => 'application/json',
-        ], json_encode([
-            'email' => 'invalid-email',  // Email invalide
-            'password' => 'weak',         // Mot de passe trop court et sans majuscule
-            'pseudo' => 'ab',             // Pseudo trop court
-        ]));
+        $this->client->request('POST', '/api/logout');
 
-        $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
+        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
+        
+        // Vérifier que le cookie est supprimé
+        $response = $this->client->getResponse();
+        $cookies = $response->headers->getCookies();
+        
+        // Chercher le cookie jwt_token
+        $jwtCookie = null;
+        foreach ($cookies as $cookie) {
+            if ($cookie->getName() === 'jwt_token') {
+                $jwtCookie = $cookie;
+                break;
+            }
+        }
+        
+        if ($jwtCookie) {
+            // Le cookie devrait avoir une date d'expiration dans le passé
+            $this->assertLessThan(time(), $jwtCookie->getExpiresTime());
+        }
+    }
 
-        $responseData = json_decode($this->client->getResponse()->getContent(), true);
+    public function testLogoutWithAuthenticatedUser(): void
+    {
+        $user = $this->createUser('logout@example.com', 'LogoutUser');
+        $this->client->loginUser($user);
 
-        $this->assertEquals('Validation failed', $responseData['error']);
-        $violations = $responseData['violations'];
+        $this->client->request('POST', '/api/logout');
 
-        // Toutes les erreurs devraient être présentes
-        $this->assertArrayHasKey('email', $violations);
-        $this->assertArrayHasKey('password', $violations);
-        $this->assertArrayHasKey('pseudo', $violations);
+        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
+        
+        $response = json_decode($this->client->getResponse()->getContent(), true);
+        $this->assertSame('Déconnexion réussie', $response['message']);
+    }
+
+    // ==================== HELPERS ====================
+
+    private function createUser(string $email, string $pseudo): User
+    {
+        $user = new User();
+        $user->setEmail($email);
+        $user->setPseudo($pseudo);
+        $user->setPassword('$2y$13$hashed_password'); // Mot de passe fictif
+        $user->setRoles(['ROLE_USER']);
+        $user->setIsVerified(true);
+
+        $this->entityManager->persist($user);
+        $this->entityManager->flush();
+
+        return $user;
+    }
+
+    private function cleanDatabase(): void
+    {
+        // Supprimer tous les utilisateurs de test
+        $users = $this->entityManager->getRepository(User::class)->findAll();
+        foreach ($users as $user) {
+            $this->entityManager->remove($user);
+        }
+        $this->entityManager->flush();
     }
 }

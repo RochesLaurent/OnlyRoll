@@ -6,262 +6,199 @@ namespace App\Tests\Unit\Entity;
 
 use App\Entity\User;
 use DateTimeImmutable;
+use LogicException;
 use PHPUnit\Framework\TestCase;
 
-/**
- * Tests unitaires pour l'entité User.
- *
- * Ces tests vérifient la logique métier de l'entité User
- * sans interaction avec la base de données
- *
- * @covers \App\Entity\User
- */
 class UserTest extends TestCase
 {
-    /**
-     * Un utilisateur nouvellement créé a des valeurs par défaut correctes.
-     */
-    public function testItHasCorrectDefaultValuesOnCreation(): void
-    {
-        $user = new User();
+    private User $user;
 
-        $this->assertEquals(['ROLE_USER'], $user->getRoles());
-        $this->assertFalse($user->isVerified());
-        $this->assertEquals('UTC', $user->getTimezone());
-        $this->assertEquals('en', $user->getLanguage());
-        $this->assertInstanceOf(DateTimeImmutable::class, $user->getCreatedAt());
-        $this->assertInstanceOf(DateTimeImmutable::class, $user->getUpdatedAt());
-        $this->assertNull($user->getLastLogin());
+    protected function setUp(): void
+    {
+        $this->user = new User();
     }
 
-    /**
-     * On peut définir et récupérer l'email.
-     */
-    public function testItCanSetAndGetEmail(): void
+    public function testConstructorSetsDefaultValues(): void
     {
-        $user = new User();
-        $email = 'test@onlyroll.com';
-
-        $user->setEmail($email);
-
-        $this->assertEquals($email, $user->getEmail());
+        $this->assertNull($this->user->getId());
+        $this->assertSame(['ROLE_USER'], $this->user->getRoles());
+        $this->assertInstanceOf(DateTimeImmutable::class, $this->user->getCreatedAt());
+        $this->assertInstanceOf(DateTimeImmutable::class, $this->user->getUpdatedAt());
+        $this->assertSame('UTC', $this->user->getTimezone());
+        $this->assertSame('en', $this->user->getLanguage());
+        $this->assertFalse($this->user->isVerified());
+        $this->assertNull($this->user->getLastLogin());
+        $this->assertNull($this->user->getAvatar());
     }
 
-    /**
-     * On peut définir et récupérer le pseudo.
-     */
-    public function testItCanSetAndGetPseudo(): void
+    public function testEmailGetterAndSetter(): void
     {
-        $user = new User();
-        $pseudo = 'TestGamer';
+        $email = 'test@example.com';
+        $result = $this->user->setEmail($email);
 
-        $user->setPseudo($pseudo);
-
-        $this->assertEquals($pseudo, $user->getPseudo());
+        $this->assertSame($this->user, $result);
+        $this->assertSame($email, $this->user->getEmail());
     }
 
-    /**
-     * On peut définir et récupérer le mot de passe.
-     */
-    public function testItCanSetAndGetPassword(): void
+    public function testGetUserIdentifier(): void
     {
-        $user = new User();
-        $hashedPassword = '$2y$13$hashedpassword';
+        $email = 'user@example.com';
+        $this->user->setEmail($email);
 
-        $user->setPassword($hashedPassword);
-
-        $this->assertEquals($hashedPassword, $user->getPassword());
+        $this->assertSame($email, $this->user->getUserIdentifier());
     }
 
-    /**
-     * getUserIdentifier retourne l'email.
-     */
-    public function testItReturnsEmailAsUserIdentifier(): void
+    public function testGetUserIdentifierThrowsExceptionWhenEmailIsEmpty(): void
     {
-        $user = new User();
-        $email = 'identifier@onlyroll.com';
-        $user->setEmail($email);
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('User email cannot be empty');
 
-        $this->assertEquals($email, $user->getUserIdentifier());
+        $this->user->getUserIdentifier();
     }
 
-    /**
-     * On peut définir et récupérer les rôles.
-     */
-    public function testItCanSetAndGetRoles(): void
+    public function testPseudoGetterAndSetter(): void
     {
-        $user = new User();
-        $roles = ['ROLE_USER', 'ROLE_ADMIN'];
+        $pseudo = 'TestUser';
+        $result = $this->user->setPseudo($pseudo);
 
-        $user->setRoles($roles);
-
-        $this->assertEquals($roles, $user->getRoles());
+        $this->assertSame($this->user, $result);
+        $this->assertSame($pseudo, $this->user->getPseudo());
     }
 
-    /**
-     * getRoles garantit toujours ROLE_USER même si pas défini.
-     */
-    public function testItAlwaysHasRoleUser(): void
+    public function testRolesGetterAndSetter(): void
     {
-        $user = new User();
-        $user->setRoles([]); // Définir un tableau vide
+        $roles = ['ROLE_ADMIN', 'ROLE_MODERATOR'];
+        $result = $this->user->setRoles($roles);
 
-        $roles = $user->getRoles();
+        $this->assertSame($this->user, $result);
+        
+        $expectedRoles = ['ROLE_ADMIN', 'ROLE_MODERATOR', 'ROLE_USER'];
+        $this->assertEquals($expectedRoles, $this->user->getRoles());
+    }
 
+    public function testRolesAlwaysIncludeRoleUser(): void
+    {
+        $this->user->setRoles(['ROLE_ADMIN']);
+        
+        $roles = $this->user->getRoles();
         $this->assertContains('ROLE_USER', $roles);
     }
 
-    /**
-     * getRoles évite les doublons.
-     */
-    public function testItRemovesDuplicateRoles(): void
+    public function testRolesAreUnique(): void
     {
-        $user = new User();
-        $user->setRoles(['ROLE_USER', 'ROLE_ADMIN', 'ROLE_USER']); // Doublon
-
-        $roles = $user->getRoles();
-
-        $this->assertCount(2, $roles); // Devrait avoir 2 rôles uniques
+        $this->user->setRoles(['ROLE_USER', 'ROLE_ADMIN', 'ROLE_USER']);
+        
+        $roles = $this->user->getRoles();
+        $this->assertCount(2, $roles);
+        $this->assertContains('ROLE_USER', $roles);
+        $this->assertContains('ROLE_ADMIN', $roles);
     }
 
-    /**
-     * On peut définir et récupérer isVerified.
-     */
-    public function testItCanSetAndGetIsVerified(): void
+    public function testPasswordGetterAndSetter(): void
     {
-        $user = new User();
+        $password = 'hashed_password';
+        $result = $this->user->setPassword($password);
 
-        $user->setIsVerified(true);
-        $this->assertTrue($user->isVerified());
-
-        $user->setIsVerified(false);
-        $this->assertFalse($user->isVerified());
+        $this->assertSame($this->user, $result);
+        $this->assertSame($password, $this->user->getPassword());
     }
 
-    /**
-     * On peut définir et récupérer le timezone.
-     */
-    public function testItCanSetAndGetTimezone(): void
+    public function testEraseCredentials(): void
     {
-        $user = new User();
+        // Méthode vide, mais on teste qu'elle ne génère pas d'erreur
+        $this->user->eraseCredentials();
+        $this->assertTrue(true);
+    }
+
+    public function testTimezoneGetterAndSetter(): void
+    {
         $timezone = 'Europe/Paris';
+        $result = $this->user->setTimezone($timezone);
 
-        $user->setTimezone($timezone);
-
-        $this->assertEquals($timezone, $user->getTimezone());
+        $this->assertSame($this->user, $result);
+        $this->assertSame($timezone, $this->user->getTimezone());
     }
 
-    /**
-     * On peut définir et récupérer la langue.
-     */
-    public function testItCanSetAndGetLanguage(): void
+    public function testLanguageGetterAndSetter(): void
     {
-        $user = new User();
         $language = 'fr';
+        $result = $this->user->setLanguage($language);
 
-        $user->setLanguage($language);
-
-        $this->assertEquals($language, $user->getLanguage());
+        $this->assertSame($this->user, $result);
+        $this->assertSame($language, $this->user->getLanguage());
     }
 
-    /**
-     * On peut définir et récupérer l'avatar.
-     */
-    public function testItCanSetAndGetAvatar(): void
+    public function testAvatarGetterAndSetter(): void
     {
-        $user = new User();
-        $avatarUrl = 'https://example.com/avatar.png';
+        $avatar = 'avatar.jpg';
+        $result = $this->user->setAvatar($avatar);
 
-        $user->setAvatar($avatarUrl);
-
-        $this->assertEquals($avatarUrl, $user->getAvatar());
+        $this->assertSame($this->user, $result);
+        $this->assertSame($avatar, $this->user->getAvatar());
     }
 
-    /**
-     * On peut définir et récupérer la date de dernière connexion.
-     */
-    public function testItCanSetAndGetLastLogin(): void
+    public function testAvatarCanBeSetToNull(): void
     {
-        $user = new User();
-        $lastLogin = new DateTimeImmutable('2025-01-15 10:30:00');
+        $this->user->setAvatar('avatar.jpg');
+        $this->user->setAvatar(null);
 
-        $user->setLastLogin($lastLogin);
-
-        $this->assertEquals($lastLogin, $user->getLastLogin());
+        $this->assertNull($this->user->getAvatar());
     }
 
-    /**
-     * eraseCredentials ne fait rien (optionnel mais recommandé de tester).
-     */
-    public function testItCanEraseCredentialsSafely(): void
+    public function testCreatedAtGetterAndSetter(): void
     {
-        $user = new User();
-        $user->setPassword('hashedpassword');
+        $createdAt = new DateTimeImmutable('2024-01-01 10:00:00');
+        $result = $this->user->setCreatedAt($createdAt);
 
-        $user->eraseCredentials();
-
-        // Le mot de passe doit toujours être présent car cette méthode ne fait rien
-        $this->assertEquals('hashedpassword', $user->getPassword());
+        $this->assertSame($this->user, $result);
+        $this->assertSame($createdAt, $this->user->getCreatedAt());
     }
 
-    /**
-     * Les timestamps sont automatiquement définis.
-     */
-    public function testItSetsTimestampsAutomatically(): void
+    public function testUpdatedAtGetterAndSetter(): void
     {
-        $beforeCreation = new DateTimeImmutable();
-        $user = new User();
-        $afterCreation = new DateTimeImmutable();
+        $updatedAt = new DateTimeImmutable('2024-01-02 10:00:00');
+        $result = $this->user->setUpdatedAt($updatedAt);
 
-        $this->assertGreaterThanOrEqual($beforeCreation, $user->getCreatedAt());
-        $this->assertLessThanOrEqual($afterCreation, $user->getCreatedAt());
-
-        $this->assertGreaterThanOrEqual($beforeCreation, $user->getUpdatedAt());
-        $this->assertLessThanOrEqual($afterCreation, $user->getUpdatedAt());
+        $this->assertSame($this->user, $result);
+        $this->assertSame($updatedAt, $this->user->getUpdatedAt());
     }
 
-    /**
-     * Test de la méthode setUpdatedAtValue (lifecycle callback).
-     */
-    public function testItUpdatesUpdatedAtOnPersistAndUpdate(): void
+    public function testLastLoginGetterAndSetter(): void
     {
-        $user = new User();
-        $originalUpdatedAt = $user->getUpdatedAt();
+        $lastLogin = new DateTimeImmutable('2024-01-03 10:00:00');
+        $result = $this->user->setLastLogin($lastLogin);
 
-        sleep(1); // Attendre 1 seconde pour voir la différence
-
-        $user->setUpdatedAtValue();
-
-        $this->assertGreaterThan($originalUpdatedAt, $user->getUpdatedAt());
+        $this->assertSame($this->user, $result);
+        $this->assertSame($lastLogin, $this->user->getLastLogin());
     }
 
-    /**
-     * Validation d'un profil utilisateur complet.
-     */
-    public function testItRepresentsACompleteUserProfile(): void
+    public function testLastLoginCanBeSetToNull(): void
     {
-        $user = new User();
+        $this->user->setLastLogin(new DateTimeImmutable());
+        $this->user->setLastLogin(null);
 
-        $user->setEmail('complete@onlyroll.com');
-        $user->setPseudo('CompleteUser');
-        $user->setPassword('$2y$13$hashedpassword');
-        $user->setRoles(['ROLE_USER', 'ROLE_GM']);
-        $user->setIsVerified(true);
-        $user->setTimezone('Europe/Paris');
-        $user->setLanguage('fr');
-        $user->setAvatar('https://example.com/avatar.png');
-        $user->setLastLogin(new DateTimeImmutable('2025-01-15 10:30:00'));
+        $this->assertNull($this->user->getLastLogin());
+    }
 
-        $this->assertEquals('complete@onlyroll.com', $user->getEmail());
-        $this->assertEquals('CompleteUser', $user->getPseudo());
-        $this->assertEquals('$2y$13$hashedpassword', $user->getPassword());
-        $this->assertEquals(['ROLE_USER', 'ROLE_GM'], $user->getRoles());
-        $this->assertTrue($user->isVerified());
-        $this->assertEquals('Europe/Paris', $user->getTimezone());
-        $this->assertEquals('fr', $user->getLanguage());
-        $this->assertEquals('https://example.com/avatar.png', $user->getAvatar());
-        $this->assertInstanceOf(DateTimeImmutable::class, $user->getLastLogin());
-        $this->assertInstanceOf(DateTimeImmutable::class, $user->getCreatedAt());
-        $this->assertInstanceOf(DateTimeImmutable::class, $user->getUpdatedAt());
+    public function testIsVerified(): void
+    {
+        $this->assertFalse($this->user->isVerified());
+
+        $result = $this->user->setIsVerified(true);
+
+        $this->assertSame($this->user, $result);
+        $this->assertTrue($this->user->isVerified());
+    }
+
+    public function testSetUpdatedAtValue(): void
+    {
+        $originalUpdatedAt = $this->user->getUpdatedAt();
+        
+        // Attendre un peu pour s'assurer que le temps change
+        sleep(1);
+        
+        $this->user->setUpdatedAtValue();
+        
+        $this->assertGreaterThan($originalUpdatedAt, $this->user->getUpdatedAt());
     }
 }
