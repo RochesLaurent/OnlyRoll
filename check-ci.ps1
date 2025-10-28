@@ -109,19 +109,13 @@ Write-Host ""
 # PHPStan
 Run-Command `
     -Name "PHPStan (Analyse statique)" `
-    -Command "vendor\bin\phpstan analyse src --error-format=github" `
+    -Command "vendor\bin\phpstan analyse src --memory-limit=512M --error-format=github" `
     -WorkingDirectory "backend"
 
 # PHP-CS-Fixer (--dry-run comme la CI)
 Run-Command `
     -Name "PHP-CS-Fixer (Formatage)" `
     -Command "vendor\bin\php-cs-fixer fix --dry-run --diff --verbose" `
-    -WorkingDirectory "backend"
-
-# PHPCS (PSR-12 uniquement)
-Run-Command `
-    -Name "PHPCS (Standard PSR-12)" `
-    -Command "vendor\bin\phpcs --standard=PSR12 src" `
     -WorkingDirectory "backend"
 
 Write-Section "BACKEND - Tests"

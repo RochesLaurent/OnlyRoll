@@ -125,9 +125,11 @@ class GameController extends AbstractController
             $game = $this->gameService->createGame($dto, $user);
 
             return $this->json($game, Response::HTTP_CREATED, [], ['groups' => 'game:read']);
-        } catch (InvalidArgumentException $e) {
+        }
+        catch (InvalidArgumentException $e) {
             return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             return $this->json(['error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
@@ -162,7 +164,8 @@ class GameController extends AbstractController
             $game = $this->gameService->updateGame($game, $dto, $user);
 
             return $this->json($game, Response::HTTP_OK, [], ['groups' => 'game:read']);
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             return $this->json(['error' => $e->getMessage()], Response::HTTP_FORBIDDEN);
         }
     }
@@ -213,7 +216,8 @@ class GameController extends AbstractController
                 [],
                 ['groups' => 'game:read'],
             );
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             return $this->json(['error' => $e->getMessage()], $e->getCode() ?: Response::HTTP_BAD_REQUEST);
         }
     }
@@ -242,7 +246,8 @@ class GameController extends AbstractController
             $gamePlayer = $this->gameService->joinGame($id, $user, $dto->password);
 
             return $this->json($gamePlayer, Response::HTTP_OK, [], ['groups' => 'game:read']);
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             return $this->json(['error' => $e->getMessage()], $e->getCode());
         }
     }
@@ -266,7 +271,8 @@ class GameController extends AbstractController
             $this->gameService->leaveGame($game, $user);
 
             return $this->json(['message' => 'Vous avez quitté la partie'], Response::HTTP_OK);
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             return $this->json(['error' => $e->getMessage()], $e->getCode());
         }
     }
@@ -290,7 +296,8 @@ class GameController extends AbstractController
             $this->gameService->deleteGame($game, $user);
 
             return $this->json(['message' => 'Partie archivée avec succès'], Response::HTTP_OK);
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             return $this->json(['error' => $e->getMessage()], $e->getCode());
         }
     }

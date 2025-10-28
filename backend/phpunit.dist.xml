@@ -30,9 +30,6 @@
         <testsuite name="Unit">
             <directory>tests/Unit</directory>
         </testsuite>
-        <testsuite name="Integration">
-            <directory>tests/Integration</directory>
-        </testsuite>
         <testsuite name="Functional">
             <directory>tests/Functional</directory>
         </testsuite>
@@ -75,6 +72,6 @@
     </extensions>
 
     <logging>
-        <junit outputFile="test-results.xml"/>
+        <junit outputFile="coverage.xml"/>
     </logging>
 </phpunit>

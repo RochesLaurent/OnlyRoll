@@ -208,7 +208,8 @@ class MapController extends AbstractController
                 $dto->height = (int) $request->request->get('height', 20);
 
                 $dto->imageUrl = $imageUrl;
-            } else {
+            }
+            else {
                 $dto = $this->serializer->deserialize(
                     $request->getContent(),
                     CreateMapDTO::class,
@@ -236,12 +237,14 @@ class MapController extends AbstractController
                 [],
                 ['groups' => 'map:read'],
             );
-        } catch (InvalidArgumentException $e) {
+        }
+        catch (InvalidArgumentException $e) {
             return $this->json(
                 ['error' => $e->getMessage()],
                 Response::HTTP_BAD_REQUEST,
             );
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             return $this->json(
                 ['error' => $e->getMessage()],
                 Response::HTTP_INTERNAL_SERVER_ERROR,
@@ -322,7 +325,8 @@ class MapController extends AbstractController
                 [],
                 ['groups' => 'map:read'],
             );
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             return $this->json(
                 ['error' => $e->getMessage()],
                 Response::HTTP_INTERNAL_SERVER_ERROR,
@@ -374,7 +378,8 @@ class MapController extends AbstractController
                 [],
                 ['groups' => 'map:read'],
             );
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             return $this->json(
                 ['error' => $e->getMessage()],
                 Response::HTTP_INTERNAL_SERVER_ERROR,
@@ -428,7 +433,8 @@ class MapController extends AbstractController
                 ['message' => 'Carte supprimée avec succès'],
                 Response::HTTP_OK,
             );
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             return $this->json(
                 ['error' => $e->getMessage()],
                 Response::HTTP_INTERNAL_SERVER_ERROR,

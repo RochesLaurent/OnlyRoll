@@ -13,13 +13,14 @@ use Symfony\Component\HttpFoundation\Response;
 class AuthControllerTest extends WebTestCase
 {
     private KernelBrowser $client;
+
     private EntityManagerInterface $entityManager;
 
     protected function setUp(): void
     {
         $this->client = static::createClient();
         $this->entityManager = static::getContainer()->get(EntityManagerInterface::class);
-        
+
         // Nettoyer la base de données avant chaque test
         $this->cleanDatabase();
     }
@@ -43,9 +44,9 @@ class AuthControllerTest extends WebTestCase
         ]));
 
         $this->assertResponseStatusCodeSame(Response::HTTP_CREATED);
-        
+
         $response = json_decode($this->client->getResponse()->getContent(), true);
-        
+
         $this->assertArrayHasKey('message', $response);
         $this->assertArrayHasKey('user', $response);
         $this->assertSame('User created successfully', $response['message']);
@@ -55,7 +56,7 @@ class AuthControllerTest extends WebTestCase
         // Vérifier que l'utilisateur est bien en base
         $user = $this->entityManager->getRepository(User::class)
             ->findOneBy(['email' => 'test@example.com']);
-        
+
         $this->assertNotNull($user);
         $this->assertSame('TestUser', $user->getPseudo());
         $this->assertTrue($user->isVerified());
@@ -75,7 +76,7 @@ class AuthControllerTest extends WebTestCase
         ]));
 
         $this->assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
-        
+
         $response = json_decode($this->client->getResponse()->getContent(), true);
         $this->assertArrayHasKey('error', $response);
         $this->assertSame('Email already exists', $response['error']);
@@ -95,7 +96,7 @@ class AuthControllerTest extends WebTestCase
         ]));
 
         $this->assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
-        
+
         $response = json_decode($this->client->getResponse()->getContent(), true);
         $this->assertArrayHasKey('error', $response);
         $this->assertSame('Pseudo already exists', $response['error']);
@@ -154,16 +155,16 @@ class AuthControllerTest extends WebTestCase
     public function testMeWithAuthenticatedUser(): void
     {
         $user = $this->createUser('auth@example.com', 'AuthUser');
-        
+
         // Simuler l'authentification
         $this->client->loginUser($user);
 
         $this->client->request('GET', '/api/me');
 
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
-        
+
         $response = json_decode($this->client->getResponse()->getContent(), true);
-        
+
         $this->assertArrayHasKey('id', $response);
         $this->assertArrayHasKey('email', $response);
         $this->assertArrayHasKey('pseudo', $response);
@@ -173,7 +174,7 @@ class AuthControllerTest extends WebTestCase
         $this->assertArrayHasKey('language', $response);
         $this->assertArrayHasKey('createdAt', $response);
         $this->assertArrayHasKey('updatedAt', $response);
-        
+
         $this->assertSame('auth@example.com', $response['email']);
         $this->assertSame('AuthUser', $response['pseudo']);
         $this->assertSame(['ROLE_USER'], $response['roles']);
@@ -184,7 +185,7 @@ class AuthControllerTest extends WebTestCase
         $this->client->request('GET', '/api/me');
 
         $this->assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
-        
+
         $response = json_decode($this->client->getResponse()->getContent(), true);
         $this->assertArrayHasKey('error', $response);
         $this->assertSame('Unauthorized', $response['error']);
@@ -196,20 +197,20 @@ class AuthControllerTest extends WebTestCase
         $user->setTimezone('Europe/Paris');
         $user->setLanguage('fr');
         $user->setAvatar('avatar.jpg');
-        
+
         $this->entityManager->flush();
-        
+
         $this->client->loginUser($user);
         $this->client->request('GET', '/api/me');
 
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
-        
+
         $response = json_decode($this->client->getResponse()->getContent(), true);
-        
+
         $this->assertSame('Europe/Paris', $response['timezone']);
         $this->assertSame('fr', $response['language']);
         $this->assertSame('avatar.jpg', $response['avatar']);
-        
+
         // Vérifier le format de date ISO 8601
         $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $response['createdAt']);
         $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $response['updatedAt']);
@@ -222,7 +223,7 @@ class AuthControllerTest extends WebTestCase
         $this->client->request('POST', '/api/logout');
 
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
-        
+
         $response = json_decode($this->client->getResponse()->getContent(), true);
         $this->assertArrayHasKey('message', $response);
         $this->assertSame('Déconnexion réussie', $response['message']);
@@ -233,11 +234,11 @@ class AuthControllerTest extends WebTestCase
         $this->client->request('POST', '/api/logout');
 
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
-        
+
         // Vérifier que le cookie est supprimé
         $response = $this->client->getResponse();
         $cookies = $response->headers->getCookies();
-        
+
         // Chercher le cookie jwt_token
         $jwtCookie = null;
         foreach ($cookies as $cookie) {
@@ -246,7 +247,7 @@ class AuthControllerTest extends WebTestCase
                 break;
             }
         }
-        
+
         if ($jwtCookie) {
             // Le cookie devrait avoir une date d'expiration dans le passé
             $this->assertLessThan(time(), $jwtCookie->getExpiresTime());
@@ -261,7 +262,7 @@ class AuthControllerTest extends WebTestCase
         $this->client->request('POST', '/api/logout');
 
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
-        
+
         $response = json_decode($this->client->getResponse()->getContent(), true);
         $this->assertSame('Déconnexion réussie', $response['message']);
     }

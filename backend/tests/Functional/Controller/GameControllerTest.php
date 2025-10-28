@@ -18,17 +18,20 @@ use Symfony\Component\HttpFoundation\Response;
 class GameControllerTest extends WebTestCase
 {
     private KernelBrowser $client;
+
     private EntityManagerInterface $entityManager;
+
     private User $testUser;
+
     private User $otherUser;
 
     protected function setUp(): void
     {
         $this->client = static::createClient();
         $this->entityManager = static::getContainer()->get(EntityManagerInterface::class);
-        
+
         $this->cleanDatabase();
-        
+
         $this->testUser = $this->createUser('test@example.com', 'TestUser');
         $this->otherUser = $this->createUser('other@example.com', 'OtherUser');
     }
@@ -51,17 +54,17 @@ class GameControllerTest extends WebTestCase
         $this->client->request('GET', '/api/games');
 
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
-        
+
         $response = json_decode($this->client->getResponse()->getContent(), true);
-        
+
         $this->assertArrayHasKey('data', $response);
         $this->assertArrayHasKey('meta', $response);
-        $this->assertGreaterThanOrEqual(2, count($response['data']));
+        $this->assertGreaterThanOrEqual(2, \count($response['data']));
     }
 
     public function testListGamesWithPagination(): void
     {
-        for ($i = 1; $i <= 15; $i++) {
+        for ($i = 1; $i <= 15; ++$i) {
             $this->createPublicGame("Game $i", $this->testUser);
         }
 
@@ -69,9 +72,9 @@ class GameControllerTest extends WebTestCase
         $this->client->request('GET', '/api/games?page=1&limit=10');
 
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
-        
+
         $response = json_decode($this->client->getResponse()->getContent(), true);
-        
+
         $this->assertCount(10, $response['data']);
         $this->assertSame(15, $response['meta']['total']);
         $this->assertSame(1, $response['meta']['page']);
@@ -89,10 +92,10 @@ class GameControllerTest extends WebTestCase
         $this->client->request('GET', '/api/games?search=Dragon');
 
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
-        
+
         $response = json_decode($this->client->getResponse()->getContent(), true);
-        
-        $this->assertGreaterThanOrEqual(1, count($response['data']));
+
+        $this->assertGreaterThanOrEqual(1, \count($response['data']));
     }
 
     public function testListGamesRequiresAuthentication(): void
@@ -108,7 +111,7 @@ class GameControllerTest extends WebTestCase
     {
         $game1 = $this->createPublicGame('My Game 1', $this->testUser);
         $game2 = $this->createPublicGame('Other Game', $this->otherUser);
-        
+
         // Rejoindre une autre partie
         $this->addPlayerToGame($game2, $this->testUser, PlayerRole::PLAYER);
 
@@ -116,11 +119,11 @@ class GameControllerTest extends WebTestCase
         $this->client->request('GET', '/api/games/my-games');
 
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
-        
+
         $response = json_decode($this->client->getResponse()->getContent(), true);
-        
+
         $this->assertIsArray($response);
-        $this->assertGreaterThanOrEqual(2, count($response));
+        $this->assertGreaterThanOrEqual(2, \count($response));
     }
 
     public function testMyGamesRequiresAuthentication(): void
@@ -140,9 +143,9 @@ class GameControllerTest extends WebTestCase
         $this->client->request('GET', '/api/games/' . $game->getId());
 
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
-        
+
         $response = json_decode($this->client->getResponse()->getContent(), true);
-        
+
         $this->assertArrayHasKey('id', $response);
         $this->assertSame('Test Game', $response['name']);
     }
@@ -153,7 +156,7 @@ class GameControllerTest extends WebTestCase
         $this->client->request('GET', '/api/games/99999');
 
         $this->assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
-        
+
         $response = json_decode($this->client->getResponse()->getContent(), true);
         $this->assertArrayHasKey('error', $response);
         $this->assertSame('Partie introuvable', $response['error']);
@@ -184,9 +187,9 @@ class GameControllerTest extends WebTestCase
         ]));
 
         $this->assertResponseStatusCodeSame(Response::HTTP_CREATED);
-        
+
         $response = json_decode($this->client->getResponse()->getContent(), true);
-        
+
         $this->assertArrayHasKey('id', $response);
         $this->assertSame('New Game', $response['name']);
         $this->assertSame('A new test game', $response['description']);
@@ -206,9 +209,9 @@ class GameControllerTest extends WebTestCase
         ]));
 
         $this->assertResponseStatusCodeSame(Response::HTTP_CREATED);
-        
+
         $response = json_decode($this->client->getResponse()->getContent(), true);
-        
+
         $this->assertFalse($response['isPublic']);
     }
 
@@ -240,9 +243,9 @@ class GameControllerTest extends WebTestCase
         ]));
 
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
-        
+
         $response = json_decode($this->client->getResponse()->getContent(), true);
-        
+
         $this->assertSame('Updated Name', $response['name']);
     }
 
@@ -299,7 +302,7 @@ class GameControllerTest extends WebTestCase
         ]));
 
         $this->assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
-        
+
         $response = json_decode($this->client->getResponse()->getContent(), true);
         $this->assertSame('Code d\'invitation invalide', $response['error']);
     }
@@ -312,7 +315,7 @@ class GameControllerTest extends WebTestCase
         ], json_encode([]));
 
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
-        
+
         $response = json_decode($this->client->getResponse()->getContent(), true);
         $this->assertSame('Code d\'invitation requis', $response['error']);
     }
@@ -370,7 +373,7 @@ class GameControllerTest extends WebTestCase
         $this->client->request('POST', '/api/games/' . $game->getId() . '/leave');
 
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
-        
+
         $response = json_decode($this->client->getResponse()->getContent(), true);
         $this->assertSame('Vous avez quitté la partie', $response['message']);
     }
@@ -393,7 +396,7 @@ class GameControllerTest extends WebTestCase
         $this->client->request('DELETE', '/api/games/' . $game->getId());
 
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
-        
+
         $response = json_decode($this->client->getResponse()->getContent(), true);
         $this->assertSame('Partie archivée avec succès', $response['message']);
     }
@@ -465,7 +468,7 @@ class GameControllerTest extends WebTestCase
         $game->setGameMaster($gameMaster);
         $game->setMaxPlayers(6);
         $game->setIsPublic(false);
-        $game->setPassword(password_hash($password, PASSWORD_ARGON2ID));
+        $game->setPassword(password_hash($password, \PASSWORD_ARGON2ID));
         $game->setStatus(GameStatus::PREPARATION);
 
         $this->entityManager->persist($game);

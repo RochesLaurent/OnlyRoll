@@ -69,7 +69,8 @@ readonly class MercurePublisher
             ]);
 
             return true;
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             $this->logger->error('Failed to publish Mercure event', [
                 'error' => $e->getMessage(),
                 'eventType' => $eventType,

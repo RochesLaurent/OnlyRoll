@@ -71,7 +71,7 @@ class UserTest extends TestCase
         $result = $this->user->setRoles($roles);
 
         $this->assertSame($this->user, $result);
-        
+
         $expectedRoles = ['ROLE_ADMIN', 'ROLE_MODERATOR', 'ROLE_USER'];
         $this->assertEquals($expectedRoles, $this->user->getRoles());
     }
@@ -79,7 +79,7 @@ class UserTest extends TestCase
     public function testRolesAlwaysIncludeRoleUser(): void
     {
         $this->user->setRoles(['ROLE_ADMIN']);
-        
+
         $roles = $this->user->getRoles();
         $this->assertContains('ROLE_USER', $roles);
     }
@@ -87,7 +87,7 @@ class UserTest extends TestCase
     public function testRolesAreUnique(): void
     {
         $this->user->setRoles(['ROLE_USER', 'ROLE_ADMIN', 'ROLE_USER']);
-        
+
         $roles = $this->user->getRoles();
         $this->assertCount(2, $roles);
         $this->assertContains('ROLE_USER', $roles);
@@ -193,12 +193,12 @@ class UserTest extends TestCase
     public function testSetUpdatedAtValue(): void
     {
         $originalUpdatedAt = $this->user->getUpdatedAt();
-        
+
         // Attendre un peu pour s'assurer que le temps change
         sleep(1);
-        
+
         $this->user->setUpdatedAtValue();
-        
+
         $this->assertGreaterThan($originalUpdatedAt, $this->user->getUpdatedAt());
     }
 }

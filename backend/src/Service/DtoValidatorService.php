@@ -54,7 +54,8 @@ class DtoValidatorService
             }
 
             return ['dto' => $dto, 'errors' => null];
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             return [
                 'dto' => null,
                 'errors' => new JsonResponse([

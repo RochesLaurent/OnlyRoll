@@ -26,9 +26,13 @@ use Psr\Log\LoggerInterface;
 class GameServiceTest extends TestCase
 {
     private EntityManagerInterface&MockObject $entityManager;
+
     private GameRepository&MockObject $gameRepository;
+
     private GamePlayerRepository&MockObject $gamePlayerRepository;
+
     private LoggerInterface&MockObject $logger;
+
     private GameService $gameService;
 
     protected function setUp(): void
@@ -42,7 +46,7 @@ class GameServiceTest extends TestCase
             $this->entityManager,
             $this->gameRepository,
             $this->gamePlayerRepository,
-            $this->logger
+            $this->logger,
         );
     }
 
@@ -154,7 +158,7 @@ class GameServiceTest extends TestCase
     {
         $game = $this->createGame(1, 'Old Name');
         $user = $this->createUser(1);
-        
+
         $game->method('isGameMaster')->willReturn(true);
 
         $dto = new UpdateGameDTO();
@@ -176,7 +180,7 @@ class GameServiceTest extends TestCase
     {
         $game = $this->createGame(1, 'Test Game');
         $user = $this->createUser(2);
-        
+
         $game->method('isGameMaster')->willReturn(false);
 
         $dto = new UpdateGameDTO();
@@ -192,7 +196,7 @@ class GameServiceTest extends TestCase
     {
         $game = $this->createGame(1, 'Test Game');
         $user = $this->createUser(1);
-        
+
         $game->method('isGameMaster')->willReturn(true);
 
         $dto = new UpdateGameDTO();
@@ -295,8 +299,8 @@ class GameServiceTest extends TestCase
         $game = $this->createGame(1, 'Private Game');
         $user = $this->createUser(2);
 
-        $hashedPassword = password_hash('secret123', PASSWORD_ARGON2ID);
-        
+        $hashedPassword = password_hash('secret123', \PASSWORD_ARGON2ID);
+
         $game->method('isPublic')->willReturn(false);
         $game->method('isFull')->willReturn(false);
         $game->method('getPassword')->willReturn($hashedPassword);
@@ -326,8 +330,8 @@ class GameServiceTest extends TestCase
         $game = $this->createGame(1, 'Private Game');
         $user = $this->createUser(2);
 
-        $hashedPassword = password_hash('secret123', PASSWORD_ARGON2ID);
-        
+        $hashedPassword = password_hash('secret123', \PASSWORD_ARGON2ID);
+
         $game->method('isPublic')->willReturn(false);
         $game->method('isFull')->willReturn(false);
         $game->method('getPassword')->willReturn($hashedPassword);
@@ -455,6 +459,7 @@ class GameServiceTest extends TestCase
     {
         $user = $this->createMock(User::class);
         $user->method('getId')->willReturn($id);
+
         return $user;
     }
 
@@ -463,6 +468,7 @@ class GameServiceTest extends TestCase
         $game = $this->createMock(Game::class);
         $game->method('getId')->willReturn($id);
         $game->method('getName')->willReturn($name);
+
         return $game;
     }
 

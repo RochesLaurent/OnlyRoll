@@ -104,7 +104,8 @@ readonly class FileUploader
             try {
                 unlink($fullPath);
                 $this->logger->info('File deleted', ['path' => $fullPath]);
-            } catch (Exception $e) {
+            }
+            catch (Exception $e) {
                 $this->logger->error('Failed to delete file', [
                     'path' => $fullPath,
                     'error' => $e->getMessage(),
@@ -181,7 +182,8 @@ readonly class FileUploader
             ]);
 
             return $publicUrl;
-        } catch (FileException $e) {
+        }
+        catch (FileException $e) {
             $this->logger->error('File upload failed', [
                 'filename' => $filename,
                 'error' => $e->getMessage(),

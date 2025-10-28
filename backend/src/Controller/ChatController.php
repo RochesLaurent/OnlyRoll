@@ -116,7 +116,8 @@ class ChatController extends AbstractController
                 [],
                 ['groups' => 'message:read'],
             );
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             return $this->json(
                 ['error' => $e->getMessage()],
                 Response::HTTP_BAD_REQUEST,
@@ -161,7 +162,8 @@ class ChatController extends AbstractController
                 [],
                 ['groups' => 'message:list'],
             );
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             return $this->json(
                 ['error' => $e->getMessage()],
                 Response::HTTP_BAD_REQUEST,
@@ -295,7 +297,8 @@ class ChatController extends AbstractController
             );
 
             return $this->json($message, Response::HTTP_CREATED, [], ['groups' => 'message:read']);
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             return $this->json(
                 ['error' => $e->getMessage()],
                 Response::HTTP_INTERNAL_SERVER_ERROR,
@@ -375,7 +378,8 @@ class ChatController extends AbstractController
             $messages = $this->chatService->getMessagesSince($game, $sinceDate, $user);
 
             return $this->json($messages, Response::HTTP_OK, [], ['groups' => 'message:list']);
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             return $this->json(
                 ['error' => 'Format de date invalide'],
                 Response::HTTP_BAD_REQUEST,

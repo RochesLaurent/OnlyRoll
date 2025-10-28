@@ -42,7 +42,8 @@ class TestMercureCommand extends Command
             $output->writeln('Événement publié avec succès !');
 
             return Command::SUCCESS;
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             $output->writeln('Erreur : ' . $e->getMessage());
 
             return Command::FAILURE;

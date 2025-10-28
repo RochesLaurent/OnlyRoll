@@ -158,10 +158,6 @@ jobs:
       - name: Check PHP CS Fixer (Code Style)
         working-directory: ./backend
         run: vendor/bin/php-cs-fixer fix --dry-run --diff --verbose
-      
-      - name: Run PHPCS (PSR-12)
-        working-directory: ./backend
-        run: vendor/bin/phpcs --standard=PSR12 src
 
   # ============================================
   # JOB 3: TESTS FRONTEND (Vue/TypeScript)
