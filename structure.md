@@ -13,6 +13,7 @@ OnlyRoll/
 ├── .claude/                        # Configuration Claude Code
 │
 ├── docs/                           # Documentation du projet
+│   └── KONAMI_CODE.md              # Documentation easter egg Konami Code
 │
 ├── .github/
 │   └── workflows/
@@ -174,6 +175,7 @@ OnlyRoll/
     │   │   │
     │   │   ├── common/
     │   │   │   ├── FeatureCard.vue
+    │   │   │   ├── KonamiVictory.vue
     │   │   │   └── UserProfileBadge.vue
     │   │   │
     │   │   ├── game/
@@ -193,8 +195,9 @@ OnlyRoll/
     │   │
     │   ├── composables/
     │   │   ├── useAuth.ts
-    │   │   ├── useMercure.ts
     │   │   ├── useFormValidation.ts
+    │   │   ├── useKonamiCode.ts
+    │   │   ├── useMercure.ts
     │   │   └── usePagination.ts
     │   │
     │   ├── layouts/
@@ -252,6 +255,9 @@ OnlyRoll/
     │   └── main.ts
     │
     ├── public/
+    │   └── sounds/                    # Fichiers audio
+    │       ├── konami.mp3             # Son easter egg Konami Code (à ajouter)
+    │       └── README.md              # Instructions pour les sons
     │
     ├── e2e/
     │   ├── tsconfig.json
