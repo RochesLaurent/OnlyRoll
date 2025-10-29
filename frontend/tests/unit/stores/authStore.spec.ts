@@ -166,7 +166,7 @@ describe('authStore', () => {
     const store = useAuthStore()
 
     vi.mocked(authApi.me).mockRejectedValueOnce({
-      error: 'Session expired',
+      error: 'Session expirée',
     })
 
     vi.mocked(authApi.logout).mockResolvedValueOnce({

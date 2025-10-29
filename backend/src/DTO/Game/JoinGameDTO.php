@@ -6,7 +6,10 @@ namespace App\DTO\Game;
 
 use Symfony\Component\Validator\Constraints as Assert;
 
-class JoinGameDTO
+/**
+ * DTO pour rejoindre une partie.
+ */
+final class JoinGameDTO
 {
     #[Assert\Length(
         min: 4,

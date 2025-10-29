@@ -313,10 +313,13 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useAuth } from '@/composables/useAuth'
+import { useFormValidation, validators } from '@/composables/useFormValidation'
 import type { RegisterCredentials } from '@/types/auth'
+import { logger } from '@/utils/logger'
 
-// Composable d'authentification
+// Composables
 const { register, isLoading, error, clearError } = useAuth()
+const { validationErrors, validateFields, clearErrors } = useFormValidation()
 
 // État du formulaire
 const form = ref<RegisterCredentials & { acceptTerms: boolean }>({
@@ -330,7 +333,6 @@ const form = ref<RegisterCredentials & { acceptTerms: boolean }>({
 // État de l'interface
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
-const validationErrors = ref<Array<{ field: string; message: string }>>([])
 const touchedFields = ref<Set<string>>(new Set())
 
 // Watcher pour effacer les erreurs globales lors de la saisie
@@ -341,13 +343,7 @@ watch(
   }
 )
 
-// Validation du formulaire côté client
-const isValidEmail = (email: string): boolean => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return emailRegex.test(email)
-}
-
-// Règles de mot de passe (noms corrigés pour les tests)
+// Règles de mot de passe pour l'indicateur de force
 const passwordRules = computed(() => ({
   minlength: form.value.password.length >= 8,
   lowercase: /[a-z]/.test(form.value.password),
@@ -367,7 +363,7 @@ const passwordStrength = computed(() => {
   if (passwordRules.value.lowercase) score++
   if (passwordRules.value.uppercase) score++
   if (passwordRules.value.number) score++
-  if (/[^A-Za-z0-9]/.test(form.value.password)) score++
+  if (/[^A-Za-z0-9]/.test(form.value.password)) score++ // Caractère spécial
 
   return score
 })
@@ -392,7 +388,7 @@ const isFormValid = computed(() => {
   return (
     form.value.pseudo.length >= 3 &&
     form.value.email.length > 0 &&
-    isValidEmail(form.value.email) &&
+    validators.isEmail(form.value.email) &&
     passwordRules.value.minlength &&
     passwordRules.value.lowercase &&
     passwordRules.value.uppercase &&
@@ -419,7 +415,7 @@ const fieldErrors = computed(() => {
   if (touchedFields.value.has('email')) {
     if (!form.value.email) {
       errors.email = "L'email est requis"
-    } else if (!isValidEmail(form.value.email)) {
+    } else if (!validators.isEmail(form.value.email)) {
       errors.email = "L'email n'est pas valide"
     }
   }
@@ -440,89 +436,59 @@ const markFieldAsTouched = (fieldName: string) => {
   touchedFields.value.add(fieldName)
 }
 
-// Validation côté client complète
+// Validation côté client complète avec useFormValidation
 const validateForm = (): boolean => {
-  validationErrors.value = []
-
-  // Validation pseudo
-  if (!form.value.pseudo) {
-    validationErrors.value.push({ field: 'pseudo', message: 'Le pseudo est requis' })
-  } else if (form.value.pseudo.length < 3) {
-    validationErrors.value.push({
+  return validateFields([
+    {
       field: 'pseudo',
-      message: 'Le pseudo doit faire au moins 3 caractères',
-    })
-  } else if (form.value.pseudo.length > 50) {
-    validationErrors.value.push({
-      field: 'pseudo',
-      message: 'Le pseudo ne peut pas dépasser 50 caractères',
-    })
-  }
-
-  // Validation email
-  if (!form.value.email) {
-    validationErrors.value.push({ field: 'email', message: "L'email est requis" })
-  } else if (!isValidEmail(form.value.email)) {
-    validationErrors.value.push({ field: 'email', message: "L'email n'est pas valide" })
-  }
-
-  // Validation mot de passe
-  if (!form.value.password) {
-    validationErrors.value.push({ field: 'password', message: 'Le mot de passe est requis' })
-  } else {
-    if (!passwordRules.value.minlength) {
-      validationErrors.value.push({
-        field: 'password',
-        message: 'Le mot de passe doit faire au moins 8 caractères',
-      })
-    }
-    if (!passwordRules.value.lowercase) {
-      validationErrors.value.push({
-        field: 'password',
-        message: 'Le mot de passe doit contenir au moins une minuscule',
-      })
-    }
-    if (!passwordRules.value.uppercase) {
-      validationErrors.value.push({
-        field: 'password',
-        message: 'Le mot de passe doit contenir au moins une majuscule',
-      })
-    }
-    if (!passwordRules.value.number) {
-      validationErrors.value.push({
-        field: 'password',
-        message: 'Le mot de passe doit contenir au moins un chiffre',
-      })
-    }
-  }
-
-  // Validation confirmation mot de passe
-  if (!form.value.confirmPassword) {
-    validationErrors.value.push({
+      value: form.value.pseudo,
+      rules: [
+        { validator: validators.required, message: 'Le pseudo est requis' },
+        { validator: validators.minLength(3), message: 'Le pseudo doit faire au moins 3 caractères' },
+        { validator: validators.maxLength(50), message: 'Le pseudo ne peut pas dépasser 50 caractères' },
+      ],
+    },
+    {
+      field: 'email',
+      value: form.value.email,
+      rules: [
+        { validator: validators.required, message: "L'email est requis" },
+        { validator: validators.isEmail, message: "L'email n'est pas valide" },
+      ],
+    },
+    {
+      field: 'password',
+      value: form.value.password,
+      rules: [
+        { validator: validators.required, message: 'Le mot de passe est requis' },
+        { validator: validators.minLength(8), message: 'Le mot de passe doit faire au moins 8 caractères' },
+        { validator: (v) => /[a-z]/.test(String(v)), message: 'Le mot de passe doit contenir au moins une minuscule' },
+        { validator: (v) => /[A-Z]/.test(String(v)), message: 'Le mot de passe doit contenir au moins une majuscule' },
+        { validator: (v) => /\d/.test(String(v)), message: 'Le mot de passe doit contenir au moins un chiffre' },
+      ],
+    },
+    {
       field: 'confirmPassword',
-      message: 'La confirmation du mot de passe est requise',
-    })
-  } else if (!passwordsMatch.value) {
-    validationErrors.value.push({
-      field: 'confirmPassword',
-      message: 'Les mots de passe ne correspondent pas',
-    })
-  }
-
-  // Validation conditions d'utilisation
-  if (!form.value.acceptTerms) {
-    validationErrors.value.push({
+      value: form.value.confirmPassword,
+      rules: [
+        { validator: validators.required, message: 'La confirmation du mot de passe est requise' },
+        { validator: validators.matches(form.value.password), message: 'Les mots de passe ne correspondent pas' },
+      ],
+    },
+    {
       field: 'acceptTerms',
-      message: "Vous devez accepter les conditions d'utilisation",
-    })
-  }
-
-  return validationErrors.value.length === 0
+      value: form.value.acceptTerms,
+      rules: [
+        { validator: (v) => v === true, message: "Vous devez accepter les conditions d'utilisation" },
+      ],
+    },
+  ])
 }
 
 // Soumission du formulaire
 const handleSubmit = async () => {
   clearError()
+  clearErrors()
 
   if (!validateForm()) {
     return
@@ -538,7 +504,7 @@ const handleSubmit = async () => {
 
     // La redirection est gérée par le composable useAuth
   } catch (err) {
-    console.error("Erreur d'inscription:", err)
+    logger.error("Erreur d'inscription:", err)
   }
 }
 </script>

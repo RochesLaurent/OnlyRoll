@@ -9,7 +9,10 @@ use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
-class CorsListener implements EventSubscriberInterface
+/**
+ * Listener pour gérer les requêtes CORS.
+ */
+final class CorsListener implements EventSubscriberInterface
 {
     public static function getSubscribedEvents(): array
     {

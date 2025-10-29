@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\DTO\Token\CreateTokenDTO;
@@ -18,9 +20,12 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
+/**
+ * Contrôleur de gestion des tokens (pions) sur les cartes.
+ */
 #[Route('/api/games/{gameId}/maps/{mapId}/tokens', name: 'api_token_')]
 #[IsGranted('ROLE_USER')]
-class TokenController extends AbstractController
+final class TokenController extends AbstractController
 {
     public function __construct(
         private readonly TokenService $tokenService,

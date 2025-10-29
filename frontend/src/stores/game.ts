@@ -4,6 +4,7 @@ import type { Game, CreateGameDTO, UpdateGameDTO, GameFilters, PaginationMeta } 
 import { gameApi } from '@/services/api/gameApi'
 import { useAuthStore } from './auth'
 import { GameStatus } from '@/types/game'
+import { logger } from '@/utils/logger'
 
 // Type pour les erreurs API
 type ApiError = {
@@ -87,7 +88,7 @@ export const useGameStore = defineStore('game', () => {
       } else {
         error.value = 'Erreur lors du chargement des parties'
       }
-      console.error('Error fetching games:', e)
+      logger.error('Error fetching games:', e)
     } finally {
       isLoading.value = false
     }
@@ -108,7 +109,7 @@ export const useGameStore = defineStore('game', () => {
       } else {
         error.value = 'Erreur lors du chargement de vos parties'
       }
-      console.error('Error fetching my games:', e)
+      logger.error('Error fetching my games:', e)
     } finally {
       isLoading.value = false
     }
@@ -126,7 +127,7 @@ export const useGameStore = defineStore('game', () => {
       } else {
         error.value = 'Partie introuvable'
       }
-      console.error('Error fetching game:', e)
+      logger.error('Error fetching game:', e)
       throw e
     } finally {
       isLoading.value = false
@@ -149,7 +150,7 @@ export const useGameStore = defineStore('game', () => {
       } else {
         error.value = 'Erreur lors de la création de la partie'
       }
-      console.error('Error creating game:', e)
+      logger.error('Error creating game:', e)
       throw e
     } finally {
       isLoading.value = false
@@ -185,7 +186,7 @@ export const useGameStore = defineStore('game', () => {
       } else {
         error.value = 'Erreur lors de la mise à jour de la partie'
       }
-      console.error('Error updating game:', e)
+      logger.error('Error updating game:', e)
       throw e
     } finally {
       isLoading.value = false
@@ -212,7 +213,7 @@ export const useGameStore = defineStore('game', () => {
       } else {
         error.value = 'Erreur lors de la suppression de la partie'
       }
-      console.error('Error deleting game:', e)
+      logger.error('Error deleting game:', e)
       throw e
     } finally {
       isLoading.value = false
@@ -233,7 +234,7 @@ export const useGameStore = defineStore('game', () => {
       } else {
         error.value = 'Impossible de rejoindre la partie'
       }
-      console.error('Error joining game:', e)
+      logger.error('Error joining game:', e)
       throw e
     } finally {
       isLoading.value = false
@@ -256,7 +257,7 @@ export const useGameStore = defineStore('game', () => {
       } else {
         error.value = 'Impossible de quitter la partie'
       }
-      console.error('Error leaving game:', e)
+      logger.error('Error leaving game:', e)
       throw e
     } finally {
       isLoading.value = false
@@ -287,7 +288,7 @@ export const useGameStore = defineStore('game', () => {
       } else {
         error.value = 'Impossible de démarrer la partie'
       }
-      console.error('Error starting game:', e)
+      logger.error('Error starting game:', e)
       throw e
     } finally {
       isLoading.value = false

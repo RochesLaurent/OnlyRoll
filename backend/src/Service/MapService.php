@@ -11,7 +11,10 @@ use App\Entity\GameMap;
 use App\Repository\GameMapRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
-class MapService
+/**
+ * Service de gestion des cartes de jeu.
+ */
+final class MapService
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,

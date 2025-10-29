@@ -7,6 +7,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { chatApi } from '@/services/api'
 import type { GameMessage, MessageType } from '@/types/game'
+import { logger } from '@/utils/logger'
 import type {
   MercureChatMessageData,
   MercureDiceRollData,
@@ -38,7 +39,7 @@ export const useChatStore = defineStore('chat', () => {
   const sortedMessages = computed(() => {
     // Protection supplémentaire pour garantir que messages.value est un tableau
     if (!Array.isArray(messages.value)) {
-      console.error('messages.value is not an array:', messages.value)
+      logger.error('messages.value is not an array:', messages.value)
       messages.value = []
       return []
     }
@@ -126,7 +127,7 @@ export const useChatStore = defineStore('chat', () => {
       // Si on a moins de messages que demandé, il n'y en a plus
       hasMore.value = messages.value.length === limit
 
-      console.log('Messages chargés:', messages.value.length)
+      logger.log('Messages chargés:', messages.value.length)
     } catch (e: unknown) {
       messages.value = []
 
@@ -135,7 +136,7 @@ export const useChatStore = defineStore('chat', () => {
       } else {
         error.value = 'Erreur lors du chargement des messages'
       }
-      console.error('Erreur loadRecentMessages:', e)
+      logger.error('Erreur loadRecentMessages:', e)
       throw e
     } finally {
       isLoading.value = false
@@ -172,7 +173,7 @@ export const useChatStore = defineStore('chat', () => {
       } else {
         error.value = 'Erreur lors du chargement des messages'
       }
-      console.error('Erreur loadMoreMessages:', e)
+      logger.error('Erreur loadMoreMessages:', e)
       throw e
     } finally {
       isLoading.value = false
@@ -201,7 +202,7 @@ export const useChatStore = defineStore('chat', () => {
       } else {
         error.value = 'Erreur lors du chargement des nouveaux messages'
       }
-      console.error('Erreur loadMessagesSince:', e)
+      logger.error('Erreur loadMessagesSince:', e)
       throw e
     }
   }
@@ -227,7 +228,7 @@ export const useChatStore = defineStore('chat', () => {
       } else {
         error.value = "Erreur lors de l'envoi du message"
       }
-      console.error('Erreur sendMessage:', e)
+      logger.error('Erreur sendMessage:', e)
       throw e
     } finally {
       isSending.value = false
@@ -251,7 +252,7 @@ export const useChatStore = defineStore('chat', () => {
       } else {
         error.value = "Erreur lors de l'envoi de l'émote"
       }
-      console.error('Erreur sendEmote:', e)
+      logger.error('Erreur sendEmote:', e)
       throw e
     } finally {
       isSending.value = false
@@ -275,7 +276,7 @@ export const useChatStore = defineStore('chat', () => {
       } else {
         error.value = "Erreur lors de l'envoi du chuchotement"
       }
-      console.error('Erreur sendWhisper:', e)
+      logger.error('Erreur sendWhisper:', e)
       throw e
     } finally {
       isSending.value = false
@@ -300,7 +301,7 @@ export const useChatStore = defineStore('chat', () => {
       } else {
         error.value = "Erreur lors de l'envoi du message système"
       }
-      console.error('Erreur sendSystemMessage:', e)
+      logger.error('Erreur sendSystemMessage:', e)
       throw e
     } finally {
       isSending.value = false
@@ -327,7 +328,7 @@ export const useChatStore = defineStore('chat', () => {
       } else {
         error.value = 'Erreur lors du lancer de dés'
       }
-      console.error('Erreur rollDice:', e)
+      logger.error('Erreur rollDice:', e)
       throw e
     } finally {
       isSending.value = false
@@ -350,7 +351,7 @@ export const useChatStore = defineStore('chat', () => {
       } else {
         error.value = 'Erreur lors de la suppression du message'
       }
-      console.error('Erreur deleteMessage:', e)
+      logger.error('Erreur deleteMessage:', e)
       throw e
     }
   }
@@ -363,7 +364,7 @@ export const useChatStore = defineStore('chat', () => {
    * Gérer un message reçu via Mercure
    */
   function handleChatMessage(data: MercureChatMessageData) {
-    console.log('Message reçu via Mercure:', data)
+    logger.log('Message reçu via Mercure:', data)
 
     if (data.messageId) {
       const message: GameMessage = {
@@ -404,7 +405,7 @@ export const useChatStore = defineStore('chat', () => {
    * Gérer un lancer de dés reçu via Mercure
    */
   function handleDiceRoll(data: MercureDiceRollData) {
-    console.log('Dés reçus via Mercure:', data)
+    logger.log('Dés reçus via Mercure:', data)
 
     if (data.message) {
       addMessageToList(data.message)
@@ -415,7 +416,7 @@ export const useChatStore = defineStore('chat', () => {
    * Gérer la suppression d'un message via Mercure
    */
   function handleMessageDeleted(data: MercureMessageDeletedData) {
-    console.log('Message supprimé via Mercure:', data)
+    logger.log('Message supprimé via Mercure:', data)
 
     if (data.messageId) {
       removeMessageFromList(data.messageId)
@@ -437,9 +438,9 @@ export const useChatStore = defineStore('chat', () => {
     const exists = messages.value.some((m) => m.id === message.id)
     if (!exists) {
       messages.value.push(message)
-      console.log('Message ajouté à la liste:', message)
+      logger.log('Message ajouté à la liste:', message)
     } else {
-      console.log('Message déjà présent dans la liste (ignoré):', message.id)
+      logger.log('Message déjà présent dans la liste (ignoré):', message.id)
     }
   }
 

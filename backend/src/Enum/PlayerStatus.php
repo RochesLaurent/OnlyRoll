@@ -1,7 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enum;
 
+/**
+ * Statuts possibles d'un joueur dans une partie.
+ */
 enum PlayerStatus: string
 {
     case PENDING = 'pending';      // Invitation en attente

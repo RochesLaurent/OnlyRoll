@@ -6,7 +6,10 @@ namespace App\DTO\Map;
 
 use Symfony\Component\Validator\Constraints as Assert;
 
-class UpdateMapDTO
+/**
+ * DTO pour la mise à jour d'une carte de jeu.
+ */
+final class UpdateMapDTO
 {
     #[Assert\Length(
         min: 3,

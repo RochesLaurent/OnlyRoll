@@ -1,10 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\DTO\Game;
 
 use Symfony\Component\Validator\Constraints as Assert;
 
-class GameFilterDTO
+/**
+ * DTO pour filtrer la liste des parties.
+ */
+final class GameFilterDTO
 {
     /**
      * Recherche globale dans le nom et la description.

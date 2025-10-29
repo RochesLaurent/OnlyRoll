@@ -6,7 +6,10 @@ namespace App\DTO\Chat;
 
 use Symfony\Component\Validator\Constraints as Assert;
 
-class SendMessageDTO
+/**
+ * DTO pour l'envoi d'un message dans le chat.
+ */
+final class SendMessageDTO
 {
     #[Assert\NotBlank(message: 'Le type de message est obligatoire.')]
     #[Assert\Choice(

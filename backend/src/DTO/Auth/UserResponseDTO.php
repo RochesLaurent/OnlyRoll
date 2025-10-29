@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\DTO\Auth;
 
 use App\Entity\User;
@@ -7,7 +9,10 @@ use DateTimeImmutable;
 use RuntimeException;
 use Symfony\Component\Serializer\Annotation\Groups;
 
-class UserResponseDTO
+/**
+ * DTO pour la réponse utilisateur.
+ */
+final class UserResponseDTO
 {
     #[Groups(['user:read'])]
     private int $id;

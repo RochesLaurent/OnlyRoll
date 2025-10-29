@@ -9,7 +9,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 /**
  * DTO pour la création d'un token sur une carte.
  */
-class CreateTokenDTO
+final class CreateTokenDTO
 {
     #[Assert\NotBlank(message: 'Le nom du token est obligatoire.')]
     #[Assert\Length(

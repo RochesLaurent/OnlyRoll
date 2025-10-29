@@ -10,7 +10,10 @@ use Lexik\Bundle\JWTAuthenticationBundle\Events;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Cookie;
 
-class AuthenticationSuccessSubscriber implements EventSubscriberInterface
+/**
+ * Subscriber pour gérer le succès d'authentification JWT.
+ */
+final class AuthenticationSuccessSubscriber implements EventSubscriberInterface
 {
     public static function getSubscribedEvents(): array
     {

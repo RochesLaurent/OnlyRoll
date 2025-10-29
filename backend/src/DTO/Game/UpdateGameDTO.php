@@ -1,11 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\DTO\Game;
 
 use App\Enum\GameStatus;
 use Symfony\Component\Validator\Constraints as Assert;
 
-class UpdateGameDTO
+/**
+ * DTO pour mettre à jour une partie.
+ */
+final class UpdateGameDTO
 {
     #[Assert\Length(
         min: 3,

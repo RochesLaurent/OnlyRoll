@@ -16,10 +16,13 @@ use Symfony\Component\Security\Http\Authenticator\Passport\Badge\UserBadge;
 use Symfony\Component\Security\Http\Authenticator\Passport\Passport;
 use Symfony\Component\Security\Http\Authenticator\Passport\SelfValidatingPassport;
 
-class JwtCookieAuthenticator extends AbstractAuthenticator
+/**
+ * Authenticateur JWT via cookie httpOnly.
+ */
+final class JwtCookieAuthenticator extends AbstractAuthenticator
 {
     public function __construct(
-        private JWTTokenManagerInterface $jwtManager,
+        private readonly JWTTokenManagerInterface $jwtManager,
     ) {
     }
 

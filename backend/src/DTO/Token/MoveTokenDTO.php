@@ -6,7 +6,10 @@ namespace App\DTO\Token;
 
 use Symfony\Component\Validator\Constraints as Assert;
 
-class MoveTokenDTO
+/**
+ * DTO pour déplacer un token sur la carte.
+ */
+final class MoveTokenDTO
 {
     #[Assert\NotNull(message: 'La position X est obligatoire.')]
     #[Assert\PositiveOrZero(message: 'La position X doit être positive ou zéro.')]

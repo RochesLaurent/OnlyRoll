@@ -6,7 +6,10 @@ namespace App\DTO\Game;
 
 use Symfony\Component\Validator\Constraints as Assert;
 
-class CreateGameDTO
+/**
+ * DTO pour la création d'une nouvelle partie.
+ */
+final class CreateGameDTO
 {
     #[Assert\NotBlank(message: 'Le nom du jeu est obligatoire.')]
     #[Assert\Length(

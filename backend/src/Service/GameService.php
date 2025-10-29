@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Service;
 
 use App\DTO\Game\CreateGameDTO;
@@ -21,7 +23,10 @@ use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 
-class GameService
+/**
+ * Service de gestion des parties de jeu.
+ */
+final class GameService
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
@@ -33,6 +38,11 @@ class GameService
 
     /**
      * Crée une nouvelle partie.
+     *
+     * @param CreateGameDTO $dto Données de la partie à créer
+     * @param User $gameMaster Utilisateur maître de jeu
+     * @return Game La partie créée
+     * @throws InvalidArgumentException Si le mot de passe est invalide pour une partie privée
      */
     public function createGame(CreateGameDTO $dto, User $gameMaster): Game
     {

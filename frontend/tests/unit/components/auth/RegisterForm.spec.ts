@@ -258,7 +258,16 @@ describe('RegisterForm.vue', () => {
   it('should display error from store', async () => {
     mockAuth.error = 'Email already exists'
 
-    await wrapper.vm.$nextTick()
+    // Remount the component to pick up the new error value
+    wrapper = mount(RegisterForm, {
+      global: {
+        stubs: {
+          RouterLink: true,
+        },
+      },
+    })
+
+    await nextTick()
 
     expect(wrapper.text()).toContain('Email already exists')
   })
@@ -317,7 +326,7 @@ describe('RegisterForm.vue', () => {
 
     await nextTick()
 
-    expect(wrapper.find('button[type="submit"]').text()).toContain('Inscription en cours')
+    expect(wrapper.find('button[type="submit"]').text()).toContain('Création du compte...')
   })
 
   // ========== EMAIL VALIDATION ==========

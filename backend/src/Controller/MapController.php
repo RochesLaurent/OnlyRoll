@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\DTO\Map\CreateMapDTO;
@@ -19,9 +21,12 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
+/**
+ * Contrôleur de gestion des cartes de jeu.
+ */
 #[Route('/api/games/{gameId}/maps', name: 'api_map_')]
 #[IsGranted('ROLE_USER')]
-class MapController extends AbstractController
+final class MapController extends AbstractController
 {
     public function __construct(
         private readonly MapService $mapService,

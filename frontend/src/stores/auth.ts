@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { authApi } from '@/services/api/authApi'
 import type { ApiError } from '@/services/api/apiClient'
 import type { User, LoginCredentials, RegisterCredentials } from '@/types/auth'
+import { logger } from '@/utils/logger'
 
 /**
  * Store Pinia pour la gestion de l'authentification
@@ -162,7 +163,7 @@ export const useAuthStore = defineStore('auth', () => {
       // L'API /api/logout supprime le cookie HttpOnly
       await authApi.logout()
     } catch (err) {
-      console.error('Erreur lors de la déconnexion:', err)
+      logger.error('Erreur lors de la déconnexion:', err)
     } finally {
       // Nettoyage de l'état local
       setUser(null)
@@ -179,8 +180,8 @@ export const useAuthStore = defineStore('auth', () => {
       await fetchMe()
     } catch (err: unknown) {
       // Si ça échoue, c'est qu'il n'y a pas de session valide
-      console.log('No valid session, user not authenticated')
-      console.error(err)
+      logger.log('No valid session, user not authenticated')
+      logger.debug(err)
       clearError()
     }
   }

@@ -1,7 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enum;
 
+/**
+ * Rôles possibles d'un joueur dans une partie.
+ */
 enum PlayerRole: string
 {
     case GAME_MASTER = 'game_master';

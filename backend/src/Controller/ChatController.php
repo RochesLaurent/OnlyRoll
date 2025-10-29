@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\DTO\Chat\SendMessageDTO;
@@ -17,9 +19,12 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
+/**
+ * Contrôleur de gestion du chat et des lancers de dés.
+ */
 #[Route('/api/games/{gameId}/chat', name: 'api_chat_')]
 #[IsGranted('ROLE_USER')]
-class ChatController extends AbstractController
+final class ChatController extends AbstractController
 {
     public function __construct(
         private readonly ChatService $chatService,

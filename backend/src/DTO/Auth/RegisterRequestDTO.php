@@ -1,10 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\DTO\Auth;
 
 use Symfony\Component\Validator\Constraints as Assert;
 
-class RegisterRequestDTO
+/**
+ * DTO pour l'enregistrement d'un nouvel utilisateur.
+ */
+final class RegisterRequestDTO
 {
     #[Assert\NotBlank(message: 'Email is required')]
     #[Assert\Email(message: 'Invalid email format')]

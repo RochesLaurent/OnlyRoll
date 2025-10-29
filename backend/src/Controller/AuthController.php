@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\DTO\Auth\RegisterRequestDTO;
@@ -16,14 +18,25 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Serializer\SerializerInterface;
 
-class AuthController extends AbstractController
+/**
+ * Contrôleur d'authentification.
+ */
+final class AuthController extends AbstractController
 {
     public function __construct(
-        private DtoValidatorService $dtoValidator,
-        private SerializerInterface $serializer,
+        private readonly DtoValidatorService $dtoValidator,
+        private readonly SerializerInterface $serializer,
     ) {
     }
 
+    /**
+     * Enregistre un nouvel utilisateur.
+     *
+     * @param Request $request
+     * @param EntityManagerInterface $em
+     * @param UserPasswordHasherInterface $passwordHasher
+     * @return JsonResponse
+     */
     #[Route('/api/register', name: 'api_register', methods: ['POST'])]
     public function register(
         Request $request,
@@ -76,6 +89,12 @@ class AuthController extends AbstractController
         ], 201);
     }
 
+    /**
+     * Récupère les informations de l'utilisateur connecté.
+     *
+     * @param User|null $user
+     * @return JsonResponse
+     */
     #[Route('/api/me', name: 'api_me', methods: ['GET'])]
     public function me(#[CurrentUser] ?User $user): JsonResponse
     {
@@ -98,6 +117,11 @@ class AuthController extends AbstractController
         ]);
     }
 
+    /**
+     * Déconnecte l'utilisateur en supprimant le cookie JWT.
+     *
+     * @return JsonResponse
+     */
     #[Route('/api/logout', name: 'api_logout', methods: ['POST'])]
     public function logout(): JsonResponse
     {

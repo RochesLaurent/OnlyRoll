@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\DTO\Game\CreateGameDTO;
@@ -19,9 +21,12 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
+/**
+ * Contrôleur de gestion des parties de jeu.
+ */
 #[Route('/api/games', name: 'api_game_')]
 #[IsGranted('ROLE_USER')]
-class GameController extends AbstractController
+final class GameController extends AbstractController
 {
     public function __construct(
         private readonly GameService $gameService,

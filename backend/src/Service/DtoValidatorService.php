@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Service;
 
 use Exception;
@@ -7,11 +9,14 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-class DtoValidatorService
+/**
+ * Service de validation des Data Transfer Objects (DTOs).
+ */
+final class DtoValidatorService
 {
     public function __construct(
-        private SerializerInterface $serializer,
-        private ValidatorInterface $validator,
+        private readonly SerializerInterface $serializer,
+        private readonly ValidatorInterface $validator,
     ) {
     }
 

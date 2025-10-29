@@ -8,6 +8,7 @@ import { ref, computed } from 'vue'
 import { mapApi, tokenApi } from '@/services/api'
 import type { GameMap, GameToken, CreateTokenDTO, MoveTokenDTO, UpdateTokenDTO } from '@/types/game'
 import { TokenType, LayerType } from '@/types/game'
+import { logger } from '@/utils/logger'
 import type { MercureTokenEventData, MercureMapEventData } from '@/types/websocket'
 
 export const useMapStore = defineStore('map', () => {
@@ -89,7 +90,7 @@ export const useMapStore = defineStore('map', () => {
       } else {
         error.value = 'Erreur lors du chargement des cartes'
       }
-      console.error('Erreur loadGameMaps:', e)
+      logger.error('Erreur loadGameMaps:', e)
       throw e
     } finally {
       isLoading.value = false
@@ -115,7 +116,7 @@ export const useMapStore = defineStore('map', () => {
         // Aucune carte active
         activeMap.value = null
         tokens.value = []
-        console.log('ℹAucune carte active pour cette partie')
+        logger.log('ℹAucune carte active pour cette partie')
       }
     } catch (e: unknown) {
       // En cas d'erreur, réinitialiser
@@ -128,7 +129,7 @@ export const useMapStore = defineStore('map', () => {
       } else {
         error.value = 'Erreur lors du chargement de la carte active'
       }
-      console.error('Erreur loadActiveMap:', e)
+      logger.error('Erreur loadActiveMap:', e)
       throw e
     } finally {
       isLoading.value = false
@@ -158,7 +159,7 @@ export const useMapStore = defineStore('map', () => {
       } else {
         error.value = 'Erreur lors du chargement de la carte'
       }
-      console.error('Erreur loadMap:', e)
+      logger.error('Erreur loadMap:', e)
       throw e
     } finally {
       isLoading.value = false
@@ -186,7 +187,7 @@ export const useMapStore = defineStore('map', () => {
       } else {
         error.value = "Erreur lors de l'activation de la carte"
       }
-      console.error('Erreur activateMap:', e)
+      logger.error('Erreur activateMap:', e)
       throw e
     } finally {
       isLoading.value = false
@@ -203,20 +204,20 @@ export const useMapStore = defineStore('map', () => {
    */
   async function loadMapTokens(mapId: number) {
     if (!currentGameId.value) {
-      console.error('GameId not set. Call loadActiveMap first.')
+      logger.error('GameId not set. Call loadActiveMap first.')
       throw new Error('GameId not set. Call loadActiveMap first.')
     }
 
     if (!mapId || typeof mapId !== 'number' || mapId <= 0) {
-      console.error('Invalid mapId:', mapId)
+      logger.error('Invalid mapId:', mapId)
       tokens.value = []
       return
     }
 
     try {
-      console.log('Chargement des tokens:', { gameId: currentGameId.value, mapId })
+      logger.log('Chargement des tokens:', { gameId: currentGameId.value, mapId })
       tokens.value = await tokenApi.listVisible(currentGameId.value, mapId)
-      console.log('Tokens chargés:', tokens.value.length)
+      logger.log('Tokens chargés:', tokens.value.length)
     } catch (e: unknown) {
       // En cas d'erreur, vider les tokens plutôt que de crasher
       tokens.value = []
@@ -226,7 +227,7 @@ export const useMapStore = defineStore('map', () => {
       } else {
         error.value = 'Erreur lors du chargement des tokens'
       }
-      console.error('Erreur loadMapTokens:', e)
+      logger.error('Erreur loadMapTokens:', e)
       // Ne pas throw ici, car c'est un problème non-bloquant
     }
   }
@@ -263,7 +264,7 @@ export const useMapStore = defineStore('map', () => {
       dto.settings = data.settings
     }
 
-    console.log('DTO Token construit:', dto)
+    logger.log('DTO Token construit:', dto)
     return dto
   }
 
@@ -286,7 +287,7 @@ export const useMapStore = defineStore('map', () => {
       // Construction d'un DTO valide avec toutes les propriétés nécessaires
       const dto = buildCreateTokenDTO(tokenData)
 
-      console.log('📤 Envoi de la requête de création de token:', {
+      logger.log('📤 Envoi de la requête de création de token:', {
         gameId: currentGameId.value,
         mapId,
         dto,
@@ -294,11 +295,11 @@ export const useMapStore = defineStore('map', () => {
 
       const newToken = await tokenApi.create(currentGameId.value, mapId, dto)
 
-      console.log('✅ Token créé avec succès:', newToken)
+      logger.log('✅ Token créé avec succès:', newToken)
       tokens.value.push(newToken)
       return newToken
     } catch (e: unknown) {
-      console.error('❌ Erreur lors de la création du token:', e)
+      logger.error('❌ Erreur lors de la création du token:', e)
 
       if (e && typeof e === 'object' && 'message' in e) {
         error.value = (e as { message: string }).message || 'Erreur lors de la création du token'
@@ -346,7 +347,7 @@ export const useMapStore = defineStore('map', () => {
       } else {
         error.value = 'Erreur lors du déplacement du token'
       }
-      console.error('Erreur moveToken:', e)
+      logger.error('Erreur moveToken:', e)
       throw e
     }
   }
@@ -376,7 +377,7 @@ export const useMapStore = defineStore('map', () => {
       } else {
         error.value = 'Erreur lors de la mise à jour du token'
       }
-      console.error('Erreur updateToken:', e)
+      logger.error('Erreur updateToken:', e)
       throw e
     }
   }
@@ -400,7 +401,7 @@ export const useMapStore = defineStore('map', () => {
       } else {
         error.value = 'Erreur lors de la suppression du token'
       }
-      console.error('Erreur deleteToken:', e)
+      logger.error('Erreur deleteToken:', e)
       throw e
     }
   }
@@ -432,7 +433,7 @@ export const useMapStore = defineStore('map', () => {
       } else {
         error.value = 'Erreur lors du changement de visibilité'
       }
-      console.error('Erreur toggleTokenVisibility:', e)
+      logger.error('Erreur toggleTokenVisibility:', e)
       throw e
     }
   }
@@ -464,7 +465,7 @@ export const useMapStore = defineStore('map', () => {
       } else {
         error.value = 'Erreur lors du changement de verrouillage'
       }
-      console.error('Erreur toggleTokenLock:', e)
+      logger.error('Erreur toggleTokenLock:', e)
       throw e
     }
   }
@@ -477,7 +478,7 @@ export const useMapStore = defineStore('map', () => {
    * Gérer un événement de token reçu via Mercure
    */
   function handleTokenEvent(data: MercureTokenEventData) {
-    console.log('Token event reçu:', data)
+    logger.log('Token event reçu:', data)
 
     // Structure attendue depuis le backend :
     // { type: 'created' | 'updated' | 'moved' | 'deleted', token: GameToken }
@@ -497,7 +498,7 @@ export const useMapStore = defineStore('map', () => {
         break
 
       default:
-        console.warn('Type de token event inconnu:', data.type)
+        logger.warn('Type de token event inconnu:', data.type)
     }
   }
 
@@ -505,7 +506,7 @@ export const useMapStore = defineStore('map', () => {
    * Gérer un événement de carte reçu via Mercure
    */
   function handleMapEvent(data: MercureMapEventData) {
-    console.log('Map event reçu:', data)
+    logger.log('Map event reçu:', data)
 
     switch (data.type) {
       case 'activated':
@@ -521,7 +522,7 @@ export const useMapStore = defineStore('map', () => {
         break
 
       default:
-        console.warn('Type de map event inconnu:', data.type)
+        logger.warn('Type de map event inconnu:', data.type)
     }
   }
 

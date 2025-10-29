@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useGameStore } from '@/stores/game'
+import { usePagination } from '@/composables/usePagination'
 import type { Game, GameFilters } from '@/types/game'
 import GameCard from '@/components/game/GameCard.vue'
 import CreateGameModal from '@/components/game/CreateGameModal.vue'
@@ -29,6 +30,23 @@ const filters = ref<GameFilters>({
   status: undefined,
   page: 1,
   limit: 12,
+})
+
+// Pagination avec composable
+const paginationMeta = computed(() => gameStore.pagination)
+const {
+  goToPage,
+  nextPage: handleNextPage,
+  prevPage: handlePrevPage,
+  paginationRange,
+  canGoNext,
+  canGoPrev,
+  hasMultiplePages,
+} = usePagination(paginationMeta, {
+  onPageChange: async (page) => {
+    filters.value.page = page
+    await gameStore.fetchPublicGames(filters.value)
+  },
 })
 
 // Debounce timer
@@ -100,66 +118,10 @@ function handleJoinSuccess() {
   loadGames()
 }
 
-// Pagination
-async function goToPage(page: number) {
-  filters.value.page = page
-  await gameStore.fetchPublicGames(filters.value)
-  // Scroll to top
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-}
-
-async function nextPage() {
-  if (gameStore.pagination.page < gameStore.pagination.totalPages) {
-    await goToPage(gameStore.pagination.page + 1)
-  }
-}
-
-async function previousPage() {
-  if (gameStore.pagination.page > 1) {
-    await goToPage(gameStore.pagination.page - 1)
-  }
-}
-
-/**
- * Génère les numéros de pages à afficher avec ellipses
- */
-function getPaginationRange(): (number | string)[] {
-  const current = gameStore.pagination.page
-  const total = gameStore.pagination.totalPages
-  const delta = 2 // Nombre de pages de chaque côté
-
-  if (total <= 7) {
-    // Afficher toutes les pages si <= 7
-    return Array.from({ length: total }, (_, i) => i + 1)
-  }
-
-  // Logique avec ellipses
-  const range: (number | string)[] = []
-
-  // Toujours afficher la première page
-  range.push(1)
-
-  if (current > delta + 2) {
-    range.push('...')
-  }
-
-  // Pages autour de la page courante
-  const start = Math.max(2, current - delta)
-  const end = Math.min(total - 1, current + delta)
-
-  for (let i = start; i <= end; i++) {
-    range.push(i)
-  }
-
-  if (current < total - delta - 1) {
-    range.push('...')
-  }
-
-  // Toujours afficher la dernière page
-  range.push(total)
-
-  return range
-}
+// Alias pour le template (pour compatibilité)
+const previousPage = handlePrevPage
+const nextPage = handleNextPage
+const getPaginationRange = () => paginationRange.value
 </script>
 
 <template>

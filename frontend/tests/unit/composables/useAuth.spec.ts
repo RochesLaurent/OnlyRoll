@@ -179,12 +179,16 @@ describe('useAuth', () => {
   })
 
   it('should redirect even if logout fails', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     mockStore.logout.mockRejectedValueOnce(new Error('Network error'))
 
     const { logout } = useAuth()
     await logout()
 
+    expect(consoleErrorSpy).toHaveBeenCalled()
     expect(mockRouter.push).toHaveBeenCalledWith({ name: 'home' })
+    
+    consoleErrorSpy.mockRestore()
   })
 
   // ========== ROLE CHECKS ==========
@@ -329,6 +333,14 @@ describe('useAuth', () => {
   it('should format error without status code', () => {
     const { formatError } = useAuth()
     const error = { message: 'Error message' }
+    const result = formatError(error)
+
+    expect(result).toBe('Error message')
+  })
+
+  it('should format error with status code 0', () => {
+    const { formatError } = useAuth()
+    const error = { message: 'Error message', statusCode: 0 }
     const result = formatError(error)
 
     expect(result).toBe('Error message')

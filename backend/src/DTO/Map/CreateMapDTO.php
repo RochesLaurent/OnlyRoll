@@ -6,7 +6,10 @@ namespace App\DTO\Map;
 
 use Symfony\Component\Validator\Constraints as Assert;
 
-class CreateMapDTO
+/**
+ * DTO pour la création d'une carte de jeu.
+ */
+final class CreateMapDTO
 {
     #[Assert\NotBlank(message: 'Le nom de la carte est obligatoire.')]
     #[Assert\Length(

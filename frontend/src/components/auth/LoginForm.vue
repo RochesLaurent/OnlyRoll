@@ -177,9 +177,13 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useAuth } from '@/composables/useAuth'
+import { useFormValidation, usePasswordVisibility, validators } from '@/composables/useFormValidation'
 import type { LoginCredentials } from '@/types/auth'
+import { logger } from '@/utils/logger'
 
 const { login, isLoading, error, clearError } = useAuth()
+const { validationErrors, validateFields, clearErrors } = useFormValidation()
+const { showPassword, togglePasswordVisibility } = usePasswordVisibility()
 
 const form = ref<LoginCredentials & { rememberMe: boolean }>({
   email: '',
@@ -187,23 +191,13 @@ const form = ref<LoginCredentials & { rememberMe: boolean }>({
   rememberMe: false,
 })
 
-const showPassword = ref(false)
-const validationErrors = ref<Array<{ field: string; message: string }>>([])
-
 const isFormValid = computed(() => {
   return (
-    form.value.email.length > 0 && form.value.password.length > 0 && isValidEmail(form.value.email)
+    form.value.email.length > 0 &&
+    form.value.password.length > 0 &&
+    validators.isEmail(form.value.email)
   )
 })
-
-const isValidEmail = (email: string): boolean => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return emailRegex.test(email)
-}
-
-const togglePasswordVisibility = () => {
-  showPassword.value = !showPassword.value
-}
 
 const fillTestCredentials = () => {
   form.value.email = 'test@onlyroll.com'
@@ -211,38 +205,41 @@ const fillTestCredentials = () => {
 }
 
 const validateForm = (): boolean => {
-  validationErrors.value = []
-
-  if (!form.value.email) {
-    validationErrors.value.push({ field: 'email', message: "L'email est requis" })
-  } else if (!isValidEmail(form.value.email)) {
-    validationErrors.value.push({ field: 'email', message: "L'email n'est pas valide" })
-  }
-
-  if (!form.value.password) {
-    validationErrors.value.push({ field: 'password', message: 'Le mot de passe est requis' })
-  } else if (form.value.password.length < 3) {
-    validationErrors.value.push({
+  return validateFields([
+    {
+      field: 'email',
+      value: form.value.email,
+      rules: [
+        { validator: validators.required, message: "L'email est requis" },
+        { validator: validators.isEmail, message: "L'email n'est pas valide" },
+      ],
+    },
+    {
       field: 'password',
-      message: 'Le mot de passe doit faire au moins 3 caractères',
-    })
-  }
-
-  return validationErrors.value.length === 0
+      value: form.value.password,
+      rules: [
+        { validator: validators.required, message: 'Le mot de passe est requis' },
+        { validator: validators.minLength(3), message: 'Le mot de passe doit faire au moins 3 caractères' },
+      ],
+    },
+  ])
 }
 
 const handleSubmit = async () => {
   clearError()
+  clearErrors()
+
   if (!validateForm()) {
     return
   }
+
   try {
     await login({
       email: form.value.email,
       password: form.value.password,
     })
   } catch (err) {
-    console.error('Erreur de connexion:', err)
+    logger.error('Erreur de connexion:', err)
   }
 }
 </script>
