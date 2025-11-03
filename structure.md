@@ -13,7 +13,6 @@ OnlyRoll/
 ├── .claude/                        # Configuration Claude Code
 │
 ├── docs/                           # Documentation du projet
-│   └── KONAMI_CODE.md              # Documentation easter egg Konami Code
 │
 ├── .github/
 │   └── workflows/
@@ -256,7 +255,7 @@ OnlyRoll/
     │
     ├── public/
     │   └── sounds/                    # Fichiers audio
-    │       ├── konami.mp3             # Son easter egg Konami Code (à ajouter)
+    │       ├── konami.mp3             # Son easter egg Konami Code
     │       └── README.md              # Instructions pour les sons
     │
     ├── e2e/
@@ -298,21 +297,6 @@ OnlyRoll/
     ├── tailwind.config.js
     └── vite.config.ts
 ```
-
-## État des Tests
-
-### Backend (Symfony + PHPUnit)
-- **Tests fonctionnels** : 5 contrôleurs testés
-- **Tests unitaires** : 6 entités + 7 services testés
-- **Statut** : ✅ Tous les tests passent
-
-### Frontend (Vue 3 + Vitest)
-- **Tests de composants** : 2/18 composants testés (LoginForm, RegisterForm)
-- **Tests de stores** : 4/4 stores testés (auth, game, chat, map)
-- **Tests de composables** : 4/4 composables testés (useAuth, useMercure, useFormValidation, usePagination)
-- **Tests d'utilitaires** : 2/2 utilitaires testés (errorHelpers, logger)
-- **Total** : 326 tests dans 12 fichiers
-- **Statut** : ✅ Tous les tests passent (100%)
 
 ## Maintenance
 
