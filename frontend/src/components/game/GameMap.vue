@@ -9,6 +9,7 @@ const props = defineProps<{
   tokens: GameToken[]
   editable: boolean
   selectedTool: string
+  zoom: number
 }>()
 
 const mapStore = useMapStore()
@@ -22,6 +23,25 @@ const dragStartPos = ref({ x: 0, y: 0 })
 const gridSize = computed(() => props.map?.gridSize || 50)
 const mapWidth = computed(() => (props.map?.width || 20) * gridSize.value)
 const mapHeight = computed(() => (props.map?.height || 20) * gridSize.value)
+
+// URL complète de l'image de la carte
+const mapImageUrl = computed(() => {
+  if (!props.map?.imageUrl) return null
+
+  // Si l'URL commence par http:// ou https://, la retourner telle quelle
+  if (props.map.imageUrl.startsWith('http://') || props.map.imageUrl.startsWith('https://')) {
+    return props.map.imageUrl
+  }
+
+  // Sinon, ajouter l'URL du backend (sans /api car les uploads sont servis directement)
+  // On extrait le domaine de VITE_API_URL en retirant /api
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+  const baseUrl = apiUrl.replace(/\/api$/, '')
+  return `${baseUrl}${props.map.imageUrl}`
+})
+
+// Calculer le scale du zoom (100% = 1.0, 50% = 0.5, 200% = 2.0)
+const zoomScale = computed(() => props.zoom / 100)
 
 // ============================================
 // Gestion des tokens - Utilise mapStore
@@ -81,9 +101,9 @@ async function handleMouseUp() {
       try {
         // Utilise la fonction moveToken du mapStore
         await mapStore.moveToken(draggingToken.value, x, y)
-        console.log('✅ Token déplacé:', { id: draggingToken.value, x, y })
+        console.log('Token déplacé:', { id: draggingToken.value, x, y })
       } catch (error) {
-        console.error('❌ Erreur déplacement token:', error)
+        console.error('Erreur déplacement token:', error)
         // Restaurer la position originale
         tokenElement.style.left = `${dragStartPos.value.x * gridSize.value}px`
         tokenElement.style.top = `${dragStartPos.value.y * gridSize.value}px`
@@ -100,18 +120,18 @@ async function handleMouseUp() {
 async function toggleTokenVisibility(tokenId: number) {
   try {
     await mapStore.toggleTokenVisibility(tokenId)
-    console.log('✅ Visibilité du token changée')
+    console.log('Visibilité du token changée')
   } catch (error) {
-    console.error('❌ Erreur toggle visibility:', error)
+    console.error('Erreur toggle visibility:', error)
   }
 }
 
 async function toggleTokenLock(tokenId: number) {
   try {
     await mapStore.toggleTokenLock(tokenId)
-    console.log('✅ Verrouillage du token changé')
+    console.log('Verrouillage du token changé')
   } catch (error) {
-    console.error('❌ Erreur toggle lock:', error)
+    console.error('Erreur toggle lock:', error)
   }
 }
 
@@ -121,9 +141,9 @@ async function deleteToken(tokenId: number) {
   try {
     await mapStore.deleteToken(tokenId)
     selectedTokenId.value = null
-    console.log('✅ Token supprimé')
+    console.log('Token supprimé')
   } catch (error) {
-    console.error('❌ Erreur suppression token:', error)
+    console.error('Erreur suppression token:', error)
   }
 }
 
@@ -147,24 +167,24 @@ function getTokenSize(token: GameToken): number {
 
 <template>
   <div
-    class="w-full h-full relative overflow-auto bg-cover bg-center select-none"
-    :style="{
-      backgroundImage: map?.imageUrl
-        ? `url(${map.imageUrl})`
-        : 'linear-gradient(135deg, #1a0b2e 0%, #0f172a 100%)',
-    }"
+    class="w-full h-full relative overflow-auto select-none bg-secondary-900"
     @mousemove="handleMouseMove"
     @mouseup="handleMouseUp"
     @mouseleave="handleMouseUp"
   >
-    <!-- Container de la carte avec dimensions -->
+    <!-- Container de la carte avec dimensions et zoom -->
     <div
-      class="relative"
+      class="relative bg-cover bg-center transition-transform duration-200"
       :style="{
         width: mapWidth + 'px',
         height: mapHeight + 'px',
         minWidth: '100%',
         minHeight: '100%',
+        backgroundImage: mapImageUrl
+          ? `url(${mapImageUrl})`
+          : 'linear-gradient(135deg, #1a0b2e 0%, #0f172a 100%)',
+        transform: `scale(${zoomScale})`,
+        transformOrigin: 'center center',
       }"
     >
       <!-- Grille -->

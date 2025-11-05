@@ -96,15 +96,15 @@ export const mapApi = {
   /**
    * Activer une carte (désactive les autres cartes du jeu)
    */
-  async activate(mapId: number): Promise<GameMap> {
-    return post<GameMap>(`/maps/${mapId}/activate`)
+  async activate(gameId: number, mapId: number): Promise<GameMap> {
+    return post<GameMap>(`/games/${gameId}/maps/${mapId}/activate`)
   },
 
   /**
    * Désactiver une carte
    */
-  async deactivate(mapId: number): Promise<GameMap> {
-    return post<GameMap>(`/maps/${mapId}/deactivate`)
+  async deactivate(gameId: number, mapId: number): Promise<GameMap> {
+    return post<GameMap>(`/games/${gameId}/maps/${mapId}/deactivate`)
   },
 
   /**

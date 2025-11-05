@@ -35,6 +35,7 @@ const rightPanelOpen = ref(true)
 const activeTab = ref<'chat' | 'players' | 'dice'>('chat')
 const isLoading = ref(true)
 const selectedTool = ref('select')
+const mapZoom = ref(100)
 
 // État Mercure
 const isConnected = ref(false)
@@ -47,13 +48,13 @@ const showUploadModal = ref(false)
 // Lifecycle
 // ============================================
 onMounted(async () => {
-  console.log('🎮 Initialisation de la partie', gameId.value)
+  console.log('Initialisation de la partie', gameId.value)
   await initializeGame()
   setupMercure()
 })
 
 onUnmounted(() => {
-  console.log('🎮 Nettoyage de la partie')
+  console.log('Nettoyage de la partie')
   mercureService.disconnect()
 })
 
@@ -71,14 +72,14 @@ async function initializeGame() {
       chatStore.loadRecentMessages(gameId.value, 50),
     ])
 
-    console.log('✅ Partie chargée:', {
+    console.log('Partie chargée:', {
       game: gameStore.currentGame,
       map: mapStore.activeMap,
       tokens: mapStore.tokens.length,
       messages: chatStore.messages.length,
     })
   } catch (error) {
-    console.error('❌ Erreur lors du chargement de la partie:', error)
+    console.error('Erreur lors du chargement de la partie:', error)
     router.push('/games')
   } finally {
     isLoading.value = false
@@ -89,7 +90,7 @@ async function initializeGame() {
 // Setup Mercure
 // ============================================
 function setupMercure() {
-  console.log('📡 Configuration de Mercure pour la partie', gameId.value)
+  console.log('Configuration de Mercure pour la partie', gameId.value)
 
   mercureService.connect(gameId.value)
 
@@ -99,32 +100,32 @@ function setupMercure() {
     connectionState.value = mercureService.getConnectionState()
 
     if (isConnected.value) {
-      console.log('✅ Mercure connecté')
+      console.log('Mercure connecté')
       clearInterval(checkConnection)
     }
   }, 500)
 
   // Écouter les événements de tokens
   mercureService.on('token', (data) => {
-    console.log('🎭 Token event:', data)
+    console.log('Token event:', data)
     mapStore.handleTokenEvent(data as MercureTokenEventData)
   })
 
   // Écouter les événements de carte
   mercureService.on('map', (data) => {
-    console.log('🗺️ Map event:', data)
+    console.log('Map event:', data)
     mapStore.handleMapEvent(data as MercureMapEventData)
   })
 
   // Écouter les messages du chat
   mercureService.on('chat', (data) => {
-    console.log('💬 Chat message:', data)
+    console.log('Chat message:', data)
     chatStore.handleChatMessage(data as MercureChatMessageData)
   })
 
   // Écouter les événements de joueurs
   mercureService.on('player', (data) => {
-    console.log('👥 Player event:', data)
+    console.log('Player event:', data)
     gameStore.fetchGameById(gameId.value)
   })
 }
@@ -144,9 +145,9 @@ const hasActiveMap = computed(() => mapStore.hasActiveMap)
 // ============================================
 watch(isConnected, (connected) => {
   if (connected) {
-    console.log('✅ Mercure connecté')
+    console.log('Mercure connecté')
   } else {
-    console.log('❌ Mercure déconnecté')
+    console.log('Mercure déconnecté')
   }
 })
 
@@ -169,6 +170,11 @@ async function handleMapCreated() {
 function handleToolChanged(tool: string) {
   selectedTool.value = tool
   console.log('Outil sélectionné:', tool)
+}
+
+function handleZoomChanged(zoom: number) {
+  mapZoom.value = zoom
+  console.log('Zoom changé:', zoom)
 }
 
 function handleOpenSettings() {
@@ -213,11 +219,13 @@ async function handleLeaveGame() {
     <div class="flex-1 flex overflow-hidden relative">
       <!-- Zone centrale - Carte -->
       <div class="flex-1 flex flex-col">
-        <!-- Toolbar uniquement si une carte existe -->
+        <!-- Toolbar -->
         <MapToolbar
-          v-if="hasActiveMap"
           :is-game-master="isGameMaster"
+          :game-id="gameId"
           @tool-changed="handleToolChanged"
+          @open-upload-modal="handleCreateMap"
+          @zoom-changed="handleZoomChanged"
         />
 
         <div class="flex-1 relative overflow-hidden">
@@ -234,6 +242,7 @@ async function handleLeaveGame() {
             :tokens="tokens"
             :editable="isGameMaster"
             :selected-tool="selectedTool"
+            :zoom="mapZoom"
           />
         </div>
       </div>

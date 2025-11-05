@@ -175,7 +175,7 @@ export const useMapStore = defineStore('map', () => {
     currentGameId.value = gameId
 
     try {
-      activeMap.value = await mapApi.activate(mapId)
+      activeMap.value = await mapApi.activate(gameId, mapId)
 
       if (activeMap.value && activeMap.value.id) {
         await loadMapTokens(activeMap.value.id)
