@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { usePresenceStore } from '@/stores/presenceStore'
 import type { GamePlayer } from '@/types/game'
 import { PlayerRole, PlayerStatus } from '@/types/game'
 
@@ -7,6 +9,10 @@ const props = defineProps<{
   players: GamePlayer[]
   gameMasterId: number | undefined
 }>()
+
+const route = useRoute()
+const gameId = computed(() => Number(route.params.id))
+const presenceStore = usePresenceStore()
 
 // ============================================
 // Computed
@@ -22,9 +28,20 @@ const sortedPlayers = computed(() => {
   })
 })
 
+// Joueurs actuellement connectés (présence en temps réel)
 const onlinePlayers = computed(() => {
+  return props.players.filter((p) => presenceStore.isUserOnline(gameId.value, p.user.id))
+})
+
+// Joueurs actifs dans la partie (membre)
+const activePlayers = computed(() => {
   return props.players.filter((p) => p.status === PlayerStatus.ACTIVE)
 })
+
+// Vérifier si un joueur est connecté en ce moment
+function isPlayerOnline(player: GamePlayer): boolean {
+  return presenceStore.isUserOnline(gameId.value, player.user.id)
+}
 
 const playersByRole = computed(() => {
   return {
@@ -37,20 +54,9 @@ const playersByRole = computed(() => {
 // ============================================
 // Helpers
 // ============================================
-function getStatusColor(status: PlayerStatus): string {
-  const colors = {
-    [PlayerStatus.ACTIVE]: 'bg-success',
-    [PlayerStatus.INACTIVE]: 'bg-secondary-500',
-    [PlayerStatus.PENDING]: 'bg-warning',
-    [PlayerStatus.KICKED]: 'bg-error',
-    [PlayerStatus.LEFT]: 'bg-secondary-500',
-  }
-  return colors[status] || 'bg-secondary-500'
-}
-
 function getStatusLabel(status: PlayerStatus): string {
   const labels = {
-    [PlayerStatus.ACTIVE]: 'En ligne',
+    [PlayerStatus.ACTIVE]: 'Membre',
     [PlayerStatus.INACTIVE]: 'Inactif',
     [PlayerStatus.PENDING]: 'En attente',
     [PlayerStatus.KICKED]: 'Exclu',
@@ -121,8 +127,8 @@ function formatJoinedAt(dateString: string): string {
           <div class="text-secondary-400 text-xs">En ligne</div>
         </div>
         <div class="bg-secondary-700 rounded-lg p-2">
-          <div class="text-secondary-50 font-bold">{{ players.length }}</div>
-          <div class="text-secondary-400 text-xs">Total</div>
+          <div class="text-secondary-50 font-bold">{{ activePlayers.length }}</div>
+          <div class="text-secondary-400 text-xs">Membres</div>
         </div>
         <div class="bg-secondary-700 rounded-lg p-2">
           <div class="text-accent-purple font-bold">{{ playersByRole.gameMaster.length }}</div>
@@ -148,13 +154,13 @@ function formatJoinedAt(dateString: string): string {
           >
             <span>{{ player.user.pseudo.slice(0, 2).toUpperCase() }}</span>
 
-            <!-- Indicateur de statut -->
+            <!-- Indicateur de présence en ligne -->
             <div
               :class="[
                 'absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-secondary-800',
-                getStatusColor(player.status),
+                isPlayerOnline(player) ? 'bg-success' : 'bg-secondary-500',
               ]"
-              :title="getStatusLabel(player.status)"
+              :title="isPlayerOnline(player) ? 'En ligne' : 'Hors ligne'"
             ></div>
           </div>
 
@@ -178,6 +184,10 @@ function formatJoinedAt(dateString: string): string {
 
             <!-- Détails -->
             <div class="flex items-center gap-2 text-xs text-secondary-400">
+              <span :class="isPlayerOnline(player) ? 'text-success' : 'text-secondary-400'">
+                {{ isPlayerOnline(player) ? 'En ligne' : 'Hors ligne' }}
+              </span>
+              <span>•</span>
               <span>{{ getStatusLabel(player.status) }}</span>
               <span>•</span>
               <span>{{ formatJoinedAt(player.joinedAt) }}</span>

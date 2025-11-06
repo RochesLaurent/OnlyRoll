@@ -4,11 +4,14 @@ import { useRoute, useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/game'
 import { useMapStore } from '@/stores/mapStore'
 import { useChatStore } from '@/stores/chatStore'
+import { usePresenceStore } from '@/stores/presenceStore'
 import { mercureService } from '@/services/mercure'
+import { presenceApi } from '@/services/api/presenceApi'
 import type {
   MercureTokenEventData,
   MercureMapEventData,
   MercureChatMessageData,
+  MercurePresenceEventData,
 } from '@/types/websocket'
 
 // Composants
@@ -29,6 +32,7 @@ const gameId = computed(() => Number(route.params.id))
 const gameStore = useGameStore()
 const mapStore = useMapStore()
 const chatStore = useChatStore()
+const presenceStore = usePresenceStore()
 
 // États locaux
 const rightPanelOpen = ref(true)
@@ -44,6 +48,9 @@ const connectionState = ref<'connecting' | 'open' | 'closed'>('connecting')
 // État upload carte
 const showUploadModal = ref(false)
 
+// Référence au composant GameMap
+const gameMapRef = ref<InstanceType<typeof GameMap> | null>(null)
+
 // ============================================
 // Lifecycle
 // ============================================
@@ -51,11 +58,22 @@ onMounted(async () => {
   console.log('Initialisation de la partie', gameId.value)
   await initializeGame()
   setupMercure()
+  setupBeforeUnload()
 })
 
-onUnmounted(() => {
+onUnmounted(async () => {
   console.log('Nettoyage de la partie')
+
+  // Notifier la déconnexion
+  try {
+    await presenceApi.leave(gameId.value)
+    console.log('Déconnexion notifiée')
+  } catch (error) {
+    console.error('Erreur lors de la notification de déconnexion:', error)
+  }
+
   mercureService.disconnect()
+  presenceStore.clearGamePresence(gameId.value)
 })
 
 // ============================================
@@ -78,6 +96,17 @@ async function initializeGame() {
       tokens: mapStore.tokens.length,
       messages: chatStore.messages.length,
     })
+
+    // Notifier la présence et charger la liste des utilisateurs en ligne
+    try {
+      const response = await presenceApi.join(gameId.value)
+      if (response.onlineUsers) {
+        presenceStore.setOnlineUsers(gameId.value, response.onlineUsers)
+      }
+      console.log('Présence notifiée, utilisateurs en ligne:', response.onlineUsers?.length || 0)
+    } catch (error) {
+      console.error('Erreur lors de la notification de présence:', error)
+    }
   } catch (error) {
     console.error('Erreur lors du chargement de la partie:', error)
     router.push('/games')
@@ -128,6 +157,61 @@ function setupMercure() {
     console.log('Player event:', data)
     gameStore.fetchGameById(gameId.value)
   })
+
+  // Écouter les événements de présence
+  mercureService.on('presence', (data) => {
+    console.log('Presence event:', data)
+    presenceStore.handlePresenceEvent(data as MercurePresenceEventData)
+  })
+
+  // Envoyer un heartbeat de présence toutes les 30 secondes
+  const heartbeatInterval = setInterval(async () => {
+    if (mercureService.isConnected()) {
+      try {
+        await presenceApi.heartbeat(gameId.value)
+        console.log('Heartbeat envoyé pour la partie', gameId.value)
+      } catch (error) {
+        console.error('Erreur lors de l\'envoi du heartbeat:', error)
+      }
+    }
+  }, 30000)
+
+  // Nettoyer l'interval au démontage
+  onUnmounted(() => {
+    clearInterval(heartbeatInterval)
+  })
+}
+
+// ============================================
+// Setup BeforeUnload - Notifier la déconnexion
+// ============================================
+function setupBeforeUnload() {
+  const handleBeforeUnload = () => {
+    // Utiliser sendBeacon pour envoyer une requête même si la page se ferme
+    const url = `/api/games/${gameId.value}/presence/leave`
+    const blob = new Blob([JSON.stringify({})], { type: 'application/json' })
+
+    try {
+      navigator.sendBeacon(url, blob)
+    } catch (error) {
+      console.error('Erreur lors de l\'envoi du beacon:', error)
+    }
+  }
+
+  // Ajouter les listeners pour beforeunload et visibilitychange
+  window.addEventListener('beforeunload', handleBeforeUnload)
+
+  // Gérer aussi le changement de visibilité (onglet caché)
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      handleBeforeUnload()
+    }
+  })
+
+  // Nettoyer au démontage
+  onUnmounted(() => {
+    window.removeEventListener('beforeunload', handleBeforeUnload)
+  })
 }
 
 // ============================================
@@ -175,6 +259,12 @@ function handleToolChanged(tool: string) {
 function handleZoomChanged(zoom: number) {
   mapZoom.value = zoom
   console.log('Zoom changé:', zoom)
+}
+
+function handleCenterMap() {
+  if (gameMapRef.value) {
+    gameMapRef.value.centerView()
+  }
 }
 
 function handleOpenSettings() {
@@ -226,6 +316,7 @@ async function handleLeaveGame() {
           @tool-changed="handleToolChanged"
           @open-upload-modal="handleCreateMap"
           @zoom-changed="handleZoomChanged"
+          @center-map="handleCenterMap"
         />
 
         <div class="flex-1 relative overflow-hidden">
@@ -238,6 +329,7 @@ async function handleLeaveGame() {
           <!-- Carte normale si elle existe -->
           <GameMap
             v-else
+            ref="gameMapRef"
             :map="activeMap"
             :tokens="tokens"
             :editable="isGameMaster"

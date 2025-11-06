@@ -174,4 +174,28 @@ readonly class MercurePublisher
     {
         return $this->publishGameEvent($gameId, 'system', $systemData);
     }
+
+    /**
+     * Publie un événement de présence (join/leave/heartbeat).
+     *
+     * @param int $gameId ID de la partie
+     * @param int $userId ID de l'utilisateur
+     * @param string $type Type d'événement: 'join', 'leave', ou 'heartbeat'
+     * @param array<int> $onlineUsers Liste complète des IDs des utilisateurs actuellement en ligne
+     */
+    public function publishPresenceEvent(
+        int $gameId,
+        int $userId,
+        string $type,
+        array $onlineUsers = [],
+    ): bool {
+        $data = [
+            'userId' => $userId,
+            'type' => $type,
+            'timestamp' => (new DateTimeImmutable())->format('c'),
+            'onlineUsers' => $onlineUsers,
+        ];
+
+        return $this->publishGameEvent($gameId, 'presence', $data);
+    }
 }

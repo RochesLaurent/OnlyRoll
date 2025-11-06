@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useGameStore } from '@/stores/game'
-import { usePagination } from '@/composables/usePagination'
+import { useAuthStore } from '@/stores/auth'
 import type { Game, GameFilters } from '@/types/game'
 import GameCard from '@/components/game/GameCard.vue'
 import CreateGameModal from '@/components/game/CreateGameModal.vue'
@@ -11,11 +11,10 @@ import {
   MagnifyingGlassIcon,
   FunnelIcon,
   InboxIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
 } from '@heroicons/vue/24/outline'
 
 const gameStore = useGameStore()
+const authStore = useAuthStore()
 const showCreateModal = ref(false)
 const showJoinModal = ref(false)
 const selectedGame = ref<Game | null>(null)
@@ -32,66 +31,38 @@ const filters = ref<GameFilters>({
   limit: 12,
 })
 
-// Pagination avec composable
-const paginationMeta = computed(() => gameStore.pagination)
-const {
-  goToPage,
-  nextPage: handleNextPage,
-  prevPage: handlePrevPage,
-  paginationRange,
-  canGoNext,
-  canGoPrev,
-  hasMultiplePages,
-} = usePagination(paginationMeta, {
-  onPageChange: async (page) => {
-    filters.value.page = page
-    await gameStore.fetchPublicGames(filters.value)
-  },
-})
-
-// Debounce timer
-let debounceTimer: ReturnType<typeof setTimeout> | null = null
+// Pagination désactivée pour le moment (tri côté client)
 
 onMounted(() => {
   loadGames()
 })
 
-// Watch filters pour recherche automatique (avec debounce)
-watch(
-  () => [filters.value.title, filters.value.gameMaster, filters.value.status],
-  () => {
-    if (activeTab.value === 'public') {
-      // Reset à la page 1 quand on change les filtres
-      filters.value.page = 1
-      debouncedSearch()
-    }
-  }
-)
-
 async function loadGames() {
   if (activeTab.value === 'public') {
-    await gameStore.fetchPublicGames(filters.value)
+    // Pour l'onglet "Toutes", charger à la fois myGames et les parties publiques
+    // Les filtres sont appliqués côté client via les computed
+    await Promise.all([
+      gameStore.fetchMyGames(),
+      gameStore.fetchPublicGames()
+    ])
   } else {
+    // Pour l'onglet "M.J.", charger uniquement myGames
     await gameStore.fetchMyGames()
   }
 }
 
-function debouncedSearch() {
-  if (debounceTimer) clearTimeout(debounceTimer)
-
-  debounceTimer = setTimeout(() => {
-    loadGames()
-  }, 500) // 500ms de délai
-}
-
-async function handleSearch() {
-  filters.value.page = 1
-  await gameStore.fetchPublicGames(filters.value)
-}
-
 function handleTabChange(tab: 'public' | 'my-games') {
   activeTab.value = tab
-  resetFilters()
+  // Réinitialiser les filtres sans recharger
+  filters.value = {
+    search: '',
+    title: '',
+    gameMaster: '',
+    status: undefined,
+    page: 1,
+    limit: 12,
+  }
+  // Charger les données appropriées pour l'onglet
   loadGames()
 }
 
@@ -118,10 +89,136 @@ function handleJoinSuccess() {
   loadGames()
 }
 
-// Alias pour le template (pour compatibilité)
-const previousPage = handlePrevPage
-const nextPage = handleNextPage
-const getPaginationRange = () => paginationRange.value
+// ============================================
+// Tri et filtrage personnalisé pour "Toutes"
+// ============================================
+const sortedGamesForAllTab = computed(() => {
+  if (!authStore.user) return []
+
+  // Combiner myGames et games publics
+  const allGames: Game[] = []
+  const seenIds = new Set<number>()
+
+  // D'abord ajouter myGames (pour éviter les doublons)
+  gameStore.myGames.forEach((game) => {
+    allGames.push(game)
+    seenIds.add(game.id)
+  })
+
+  // Ajouter les parties publiques qui ne sont pas déjà dans myGames
+  gameStore.games.forEach((game) => {
+    if (!seenIds.has(game.id)) {
+      allGames.push(game)
+    }
+  })
+
+  // Appliquer les filtres
+  let filteredGames = allGames
+
+  // Filtre par recherche globale (titre ou nom de campagne)
+  if (filters.value.search) {
+    const searchTerm = filters.value.search.toLowerCase()
+    filteredGames = filteredGames.filter((game) =>
+      (game.title || game.name).toLowerCase().includes(searchTerm)
+    )
+  }
+
+  // Filtre par titre
+  if (filters.value.title) {
+    const titleFilter = filters.value.title.toLowerCase()
+    filteredGames = filteredGames.filter((game) =>
+      (game.title || game.name).toLowerCase().includes(titleFilter)
+    )
+  }
+
+  // Filtre par maître du jeu
+  if (filters.value.gameMaster) {
+    const gmFilter = filters.value.gameMaster.toLowerCase()
+    filteredGames = filteredGames.filter((game) =>
+      game.gameMaster.pseudo.toLowerCase().includes(gmFilter)
+    )
+  }
+
+  // Filtre par statut
+  if (filters.value.status) {
+    filteredGames = filteredGames.filter((game) => game.status === filters.value.status)
+  }
+
+  // Catégoriser les parties filtrées
+  const asMaster: Game[] = []
+  const asPlayer: Game[] = []
+  const publicGames: Game[] = []
+
+  filteredGames.forEach((game) => {
+    // Vérifier si l'utilisateur est le MJ
+    if (game.gameMaster.id === authStore.user!.id) {
+      asMaster.push(game)
+    }
+    // Vérifier si l'utilisateur est un joueur (mais pas MJ)
+    else if (game.gamePlayers?.some((gp) => gp.user.id === authStore.user!.id)) {
+      asPlayer.push(game)
+    }
+    // Sinon c'est une partie publique
+    else if (game.isPublic) {
+      publicGames.push(game)
+    }
+  })
+
+  // Trier chaque catégorie par ordre alphabétique du titre
+  const sortByTitle = (a: Game, b: Game) => {
+    const titleA = (a.title || a.name).toLowerCase()
+    const titleB = (b.title || b.name).toLowerCase()
+    return titleA.localeCompare(titleB)
+  }
+
+  asMaster.sort(sortByTitle)
+  asPlayer.sort(sortByTitle)
+  publicGames.sort(sortByTitle)
+
+  // Combiner dans l'ordre : MJ > Joueur > Public
+  return [...asMaster, ...asPlayer, ...publicGames]
+})
+
+// Computed pour les parties à afficher selon l'onglet
+const displayedGames = computed(() => {
+  if (!authStore.user) return []
+
+  if (activeTab.value === 'my-games') {
+    // Onglet "M.J." : uniquement les parties où l'utilisateur est MJ
+    let gmGames = gameStore.myGames.filter((game) => game.gameMaster.id === authStore.user!.id)
+
+    // Appliquer les filtres côté client
+    if (filters.value.search) {
+      const searchTerm = filters.value.search.toLowerCase()
+      gmGames = gmGames.filter((game) =>
+        (game.title || game.name).toLowerCase().includes(searchTerm)
+      )
+    }
+
+    if (filters.value.title) {
+      const titleFilter = filters.value.title.toLowerCase()
+      gmGames = gmGames.filter((game) =>
+        (game.title || game.name).toLowerCase().includes(titleFilter)
+      )
+    }
+
+    if (filters.value.status) {
+      gmGames = gmGames.filter((game) => game.status === filters.value.status)
+    }
+
+    // Trier par ordre alphabétique
+    return gmGames.sort((a, b) => {
+      const titleA = (a.title || a.name).toLowerCase()
+      const titleB = (b.title || b.name).toLowerCase()
+      return titleA.localeCompare(titleB)
+    })
+  } else {
+    // Onglet "Toutes" : tri personnalisé
+    return sortedGamesForAllTab.value
+  }
+})
+
+// Pagination désactivée - pas d'alias nécessaires
 </script>
 
 <template>
@@ -202,17 +299,11 @@ const getPaginationRange = () => paginationRange.value
               <div class="relative">
                 <input
                   v-model="filters.search"
-                  @keyup.enter="handleSearch"
                   type="text"
                   placeholder="Rechercher..."
                   class="w-full px-3 py-2 pr-10 bg-secondary-700 border border-secondary-600 rounded-md text-secondary-50 placeholder-secondary-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
-                <button
-                  @click="handleSearch"
-                  class="absolute right-2 top-1/2 -translate-y-1/2 text-secondary-400 hover:text-primary-500 transition-colors"
-                >
-                  <MagnifyingGlassIcon class="w-5 h-5" />
-                </button>
+                <MagnifyingGlassIcon class="w-5 h-5 absolute right-3 top-1/2 -translate-y-1/2 text-secondary-400" />
               </div>
             </div>
 
@@ -227,8 +318,8 @@ const getPaginationRange = () => paginationRange.value
               />
             </div>
 
-            <!-- Maître du Jeu -->
-            <div>
+            <!-- Maître du Jeu (masqué dans l'onglet M.J.) -->
+            <div v-if="activeTab === 'public'">
               <label class="block text-sm font-medium text-secondary-300 mb-2">
                 Maître du Jeu
               </label>
@@ -267,14 +358,14 @@ const getPaginationRange = () => paginationRange.value
 
         <!-- Main Content -->
         <main class="flex-1 min-w-0">
-          <!-- Results counter (public only) -->
+          <!-- Results counter -->
           <div
-            v-if="activeTab === 'public' && !gameStore.isLoading && gameStore.games.length > 0"
+            v-if="!gameStore.isLoading && displayedGames.length > 0"
             class="mb-4"
           >
             <p class="text-secondary-400 text-sm">
-              <span class="text-secondary-50 font-medium">{{ gameStore.pagination.total }}</span>
-              {{ gameStore.pagination.total > 1 ? 'parties trouvées' : 'partie trouvée' }}
+              <span class="text-secondary-50 font-medium">{{ displayedGames.length }}</span>
+              {{ displayedGames.length > 1 ? 'parties trouvées' : 'partie trouvée' }}
             </p>
           </div>
 
@@ -286,30 +377,17 @@ const getPaginationRange = () => paginationRange.value
             <p class="text-secondary-400 mt-4">Chargement des parties...</p>
           </div>
 
-          <!-- Games Grid - Public -->
+          <!-- Games Grid -->
           <div
-            v-else-if="activeTab === 'public' && gameStore.games.length > 0"
+            v-else-if="displayedGames.length > 0"
             class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
           >
             <GameCard
-              v-for="game in gameStore.games"
+              v-for="game in displayedGames"
               :key="game.id"
               :game="game"
-              :show-join-button="true"
+              :show-join-button="activeTab === 'public'"
               @join="handleJoinGame"
-            />
-          </div>
-
-          <!-- Games Grid - My Games -->
-          <div
-            v-else-if="activeTab === 'my-games' && gameStore.myGames.length > 0"
-            class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
-          >
-            <GameCard
-              v-for="game in gameStore.myGames"
-              :key="game.id"
-              :game="game"
-              :show-join-button="false"
             />
           </div>
 
@@ -343,52 +421,7 @@ const getPaginationRange = () => paginationRange.value
             </button>
           </div>
 
-          <!-- Pagination (public only) -->
-          <div
-            v-if="
-              activeTab === 'public' && !gameStore.isLoading && gameStore.pagination.totalPages > 1
-            "
-            class="mt-8 flex items-center justify-between"
-          >
-            <!-- Previous button -->
-            <button
-              @click="previousPage"
-              :disabled="gameStore.pagination.page === 1"
-              class="px-4 py-2 bg-secondary-800 border border-secondary-700 rounded-lg text-secondary-300 hover:text-secondary-50 hover:bg-secondary-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-secondary-800 disabled:hover:text-secondary-300 transition-all flex items-center gap-2"
-            >
-              <ChevronLeftIcon class="w-5 h-5" />
-              Précédent
-            </button>
-
-            <!-- Page indicators -->
-            <div class="flex items-center gap-2">
-              <template v-for="page in getPaginationRange()" :key="page">
-                <button
-                  v-if="page !== '...'"
-                  @click="goToPage(page as number)"
-                  :class="[
-                    'w-10 h-10 rounded-lg font-medium transition-all',
-                    gameStore.pagination.page === page
-                      ? 'bg-primary-500 text-white shadow-purple'
-                      : 'bg-secondary-800 text-secondary-300 hover:bg-secondary-700 hover:text-secondary-50 border border-secondary-700',
-                  ]"
-                >
-                  {{ page }}
-                </button>
-                <span v-else class="text-secondary-400 px-2">...</span>
-              </template>
-            </div>
-
-            <!-- Next button -->
-            <button
-              @click="nextPage"
-              :disabled="gameStore.pagination.page === gameStore.pagination.totalPages"
-              class="px-4 py-2 bg-secondary-800 border border-secondary-700 rounded-lg text-secondary-300 hover:text-secondary-50 hover:bg-secondary-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-secondary-800 disabled:hover:text-secondary-300 transition-all flex items-center gap-2"
-            >
-              Suivant
-              <ChevronRightIcon class="w-5 h-5" />
-            </button>
-          </div>
+          <!-- Pagination désactivée (tri côté client) -->
 
           <!-- Error State -->
           <div

@@ -18,7 +18,7 @@ export interface MercureEvent<T = unknown> {
 /**
  * Types d'événements supportés
  */
-export type EventType = 'chat' | 'token' | 'map' | 'dice' | 'player' | 'system'
+export type EventType = 'chat' | 'token' | 'map' | 'dice' | 'player' | 'presence' | 'system'
 
 /**
  * Callback pour les événements
@@ -46,7 +46,7 @@ export class MercureService {
     }
 
     // Construction de l'URL avec les topics à écouter
-    const topics: EventType[] = ['chat', 'token', 'map', 'dice', 'player', 'system']
+    const topics: EventType[] = ['chat', 'token', 'map', 'dice', 'player', 'presence', 'system']
     const url = new URL(MERCURE_URL)
 
     topics.forEach((topic) => {

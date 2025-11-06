@@ -46,6 +46,11 @@ export enum MercureEventType {
   PLAYER_KICKED = 'player.kicked',
   PLAYER_ROLE_CHANGED = 'player.role_changed',
 
+  // Événements de présence
+  PRESENCE_JOIN = 'presence.join',
+  PRESENCE_LEAVE = 'presence.leave',
+  PRESENCE_HEARTBEAT = 'presence.heartbeat',
+
   // Événements de jeu
   GAME_UPDATED = 'game.updated',
   GAME_STARTED = 'game.started',
@@ -144,6 +149,17 @@ export interface MercureSystemEventData {
   gameId?: number
 }
 
+/**
+ * Données reçues lors d'un événement de présence via Mercure
+ */
+export interface MercurePresenceEventData {
+  gameId: number
+  userId: number
+  type: 'join' | 'leave' | 'heartbeat'
+  onlineUsers?: number[]
+  timestamp: string
+}
+
 // ===========================
 // PAYLOADS DES ÉVÉNEMENTS
 // ===========================
@@ -230,6 +246,7 @@ export type MercureEventData =
   | MercureTokenEventData
   | MercureMapEventData
   | MercurePlayerEventData
+  | MercurePresenceEventData
   | MercureSystemEventData
 
 // ===========================
@@ -311,6 +328,11 @@ export const MercureTopic = {
    * Topic pour les événements de joueurs d'un jeu
    */
   players: (gameId: number): string => `/games/${gameId}/players`,
+
+  /**
+   * Topic pour les événements de présence d'un jeu
+   */
+  presence: (gameId: number): string => `/games/${gameId}/presence`,
 }
 
 // ===========================

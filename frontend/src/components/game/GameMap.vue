@@ -19,6 +19,9 @@ const selectedTokenId = ref<number | null>(null)
 const draggingToken = ref<number | null>(null)
 const dragStartPos = ref({ x: 0, y: 0 })
 
+// Ref pour le conteneur scrollable
+const mapContainer = ref<HTMLElement | null>(null)
+
 // Dimensions de la grille
 const gridSize = computed(() => props.map?.gridSize || 50)
 const mapWidth = computed(() => (props.map?.width || 20) * gridSize.value)
@@ -163,10 +166,57 @@ function getTokenColor(type: TokenType): string {
 function getTokenSize(token: GameToken): number {
   return gridSize.value * (token.size || 1)
 }
+
+// ============================================
+// Fonction de centrage
+// ============================================
+function centerView() {
+  if (!mapContainer.value) return
+
+  let targetX = 0
+  let targetY = 0
+
+  // Si un token est sélectionné, centrer sur lui
+  if (selectedTokenId.value) {
+    const token = props.tokens.find((t) => t.id === selectedTokenId.value)
+    if (token) {
+      // Position du centre du token en pixels
+      const tokenCenterX = (token.x + (token.size || 1) / 2) * gridSize.value
+      const tokenCenterY = (token.y + (token.size || 1) / 2) * gridSize.value
+
+      // Appliquer le zoom
+      targetX = tokenCenterX * zoomScale.value
+      targetY = tokenCenterY * zoomScale.value
+    }
+  } else {
+    // Sinon, centrer sur le centre de la carte
+    targetX = (mapWidth.value / 2) * zoomScale.value
+    targetY = (mapHeight.value / 2) * zoomScale.value
+  }
+
+  // Calculer la position de scroll pour centrer
+  const container = mapContainer.value
+  const scrollLeft = targetX - container.clientWidth / 2
+  const scrollTop = targetY - container.clientHeight / 2
+
+  // Animer le scroll
+  container.scrollTo({
+    left: scrollLeft,
+    top: scrollTop,
+    behavior: 'smooth',
+  })
+}
+
+// Exposer la fonction pour l'utiliser depuis le parent
+defineExpose({
+  centerView,
+  selectedTokenId,
+})
 </script>
 
 <template>
   <div
+    ref="mapContainer"
     class="w-full h-full relative overflow-auto select-none bg-secondary-900"
     @mousemove="handleMouseMove"
     @mouseup="handleMouseUp"

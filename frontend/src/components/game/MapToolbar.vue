@@ -12,6 +12,7 @@ const emit = defineEmits<{
   toolChanged: [tool: string]
   openUploadModal: []
   zoomChanged: [zoom: number]
+  centerMap: []
 }>()
 
 const mapStore = useMapStore()
@@ -113,11 +114,6 @@ function adjustZoom(delta: number) {
   emit('zoomChanged', zoomLevel.value)
 }
 
-function resetZoom() {
-  zoomLevel.value = 100
-  emit('zoomChanged', zoomLevel.value)
-}
-
 function startEditingZoom() {
   isEditingZoom.value = true
   zoomInputValue.value = zoomLevel.value.toString()
@@ -154,9 +150,7 @@ function handleZoomInputKeydown(event: KeyboardEvent) {
 }
 
 function centerMap() {
-  // Émettre un événement pour centrer la carte
-  console.log('Centrer la carte')
-  // TODO: Implémenter la logique de centrage
+  emit('centerMap')
 }
 
 // ============================================
@@ -357,16 +351,6 @@ function toggleMapDropdown() {
       <span>🎯</span>
       <span class="text-sm">Centrer</span>
     </button>
-
-    <!-- Badge MJ -->
-    <div v-if="isGameMaster" class="ml-auto">
-      <span
-        class="px-3 py-1.5 bg-accent-purple text-white text-sm font-medium rounded-lg flex items-center gap-2 shadow-lg"
-      >
-        <span>👑</span>
-        <span>Maître du Jeu</span>
-      </span>
-    </div>
   </div>
 </template>
 

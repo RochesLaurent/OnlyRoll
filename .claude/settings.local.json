@@ -5,7 +5,11 @@
       "Bash(cat:*)",
       "Bash(npm run test:unit:*)",
       "Bash(npm install:*)",
-      "Bash(npm run type-check:*)"
+      "Bash(npm run type-check:*)",
+      "Bash(npx vue-tsc:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npm run build:*)",
+      "Bash(vendor/bin/phpstan analyse:*)"
     ],
     "deny": [],
     "ask": []
