@@ -113,6 +113,9 @@ async function handleUpload() {
     mapStore.activeMap = newMap
     await mapStore.loadMapTokens(newMap.id)
 
+    // Recharger la liste de toutes les cartes pour que le select soit à jour
+    await mapStore.loadGameMaps(props.gameId)
+
     // Succès !
     emit('success')
     emit('close')

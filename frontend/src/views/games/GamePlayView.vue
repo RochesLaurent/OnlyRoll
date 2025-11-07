@@ -341,7 +341,7 @@ async function handleLeaveGame() {
 
     <div class="flex-1 flex overflow-hidden relative">
       <!-- Zone centrale - Carte -->
-      <div class="flex-1 flex flex-col">
+      <div class="flex-1 flex flex-col min-w-0">
         <!-- Toolbar -->
         <MapToolbar
           :is-game-master="isGameMaster"
@@ -352,7 +352,7 @@ async function handleLeaveGame() {
           @center-map="handleCenterMap"
         />
 
-        <div class="flex-1 relative overflow-hidden">
+        <div class="flex-1 relative overflow-hidden min-h-0">
           <EmptyMapState
             v-if="!hasActiveMap"
             :is-game-master="isGameMaster"
@@ -413,20 +413,29 @@ async function handleLeaveGame() {
       <!-- Toggle panel -->
       <button
         @click="rightPanelOpen = !rightPanelOpen"
-        class="absolute right-0 top-1/2 -translate-y-1/2 bg-secondary-800 border border-secondary-700 p-2 rounded-l-lg hover:bg-secondary-700 transition-colors z-10 shadow-lg"
-        :title="rightPanelOpen ? 'Masquer le panel' : 'Afficher le panel'"
+        :class="[
+          'absolute top-1/2 -translate-y-1/2 bg-secondary-800 border border-secondary-700 p-3 hover:bg-secondary-700 transition-all z-20 shadow-lg',
+          rightPanelOpen ? 'right-96' : 'right-0',
+          rightPanelOpen ? 'rounded-l-lg' : 'rounded-l-lg'
+        ]"
+        :title="rightPanelOpen ? 'Masquer le panel (chat, joueurs, dés)' : 'Afficher le panel (chat, joueurs, dés)'"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="w-5 h-5 text-secondary-300 transition-transform"
-          :class="{ 'rotate-180': !rightPanelOpen }"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <polyline points="9 18 15 12 9 6"></polyline>
-        </svg>
+        <div class="flex items-center gap-2">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-5 h-5 text-secondary-300 transition-transform duration-300"
+            :class="{ 'rotate-180': !rightPanelOpen }"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+          <span v-if="!rightPanelOpen" class="text-xs text-secondary-400 font-medium">
+            Panel
+          </span>
+        </div>
       </button>
     </div>
 

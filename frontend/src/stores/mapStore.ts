@@ -194,6 +194,44 @@ export const useMapStore = defineStore('map', () => {
     }
   }
 
+  /**
+   * Supprimer une carte
+   */
+  async function deleteMap(mapId: number) {
+    if (!currentGameId.value) {
+      throw new Error('GameId not set')
+    }
+
+    isLoading.value = true
+    error.value = null
+
+    try {
+      await mapApi.delete(currentGameId.value, mapId)
+
+      // Retirer la carte de la liste
+      const index = allMaps.value.findIndex((m) => m.id === mapId)
+      if (index !== -1) {
+        allMaps.value.splice(index, 1)
+      }
+
+      // Si c'était la carte active, la désactiver
+      if (activeMap.value && activeMap.value.id === mapId) {
+        activeMap.value = null
+        tokens.value = []
+      }
+    } catch (e: unknown) {
+      if (e && typeof e === 'object' && 'message' in e) {
+        error.value = (e as { message: string }).message || 'Erreur lors de la suppression de la carte'
+      } else {
+        error.value = 'Erreur lors de la suppression de la carte'
+      }
+      logger.error('Erreur deleteMap:', e)
+      throw e
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   // ===========================
   // Actions - Tokens
   // ===========================
@@ -512,6 +550,12 @@ export const useMapStore = defineStore('map', () => {
       case 'activated':
         if (data.map) {
           activeMap.value = data.map
+          // Recharger les tokens de la nouvelle carte active
+          if (data.map.id) {
+            loadMapTokens(data.map.id).catch((err) => {
+              logger.error('Erreur lors du rechargement des tokens:', err)
+            })
+          }
         }
         break
 
@@ -601,6 +645,7 @@ export const useMapStore = defineStore('map', () => {
     loadActiveMap,
     loadMap,
     activateMap,
+    deleteMap,
 
     // Actions - Tokens
     loadMapTokens,

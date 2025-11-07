@@ -110,8 +110,8 @@ export const mapApi = {
   /**
    * Supprimer une carte
    */
-  async delete(mapId: number): Promise<void> {
-    await del<void>(`/maps/${mapId}`)
+  async delete(gameId: number, mapId: number): Promise<void> {
+    await del<void>(`/games/${gameId}/maps/${mapId}`)
   },
 
   /**

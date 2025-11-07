@@ -19,6 +19,7 @@ final class MapService
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly GameMapRepository $mapRepository,
+        private readonly MercurePublisher $mercurePublisher,
     ) {
     }
 
@@ -118,6 +119,28 @@ final class MapService
     public function activateMap(GameMap $map): GameMap
     {
         $this->mapRepository->activateMap($map);
+
+        // Publier l'événement Mercure pour notifier tous les joueurs
+        $game = $map->getGame();
+        \assert(null !== $game, 'Map must have a game');
+        $gameId = $game->getId();
+        \assert(null !== $gameId, 'Game ID cannot be null');
+
+        $this->mercurePublisher->publishMapChange($gameId, [
+            'type' => 'activated',
+            'map' => [
+                'id' => $map->getId(),
+                'name' => $map->getName(),
+                'description' => $map->getDescription(),
+                'imageUrl' => $map->getImageUrl(),
+                'gridSize' => $map->getGridSize(),
+                'gridType' => $map->getGridType(),
+                'width' => $map->getWidth(),
+                'height' => $map->getHeight(),
+                'isActive' => $map->isActive(),
+                'settings' => $map->getSettings(),
+            ],
+        ]);
 
         return $map;
     }

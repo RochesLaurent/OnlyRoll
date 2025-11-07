@@ -182,6 +182,21 @@ function toggleMapDropdown() {
     }, 100)
   }
 }
+
+async function deleteMapConfirm(map: GameMap, event: Event) {
+  event.stopPropagation() // Empêcher l'activation de la carte
+
+  if (!confirm(`Êtes-vous sûr de vouloir supprimer la carte "${map.name}" ?`)) {
+    return
+  }
+
+  try {
+    await mapStore.deleteMap(map.id)
+  } catch (error) {
+    console.error('Erreur lors de la suppression de la carte:', error)
+    alert('Erreur lors de la suppression de la carte')
+  }
+}
 </script>
 
 <template>
@@ -238,7 +253,7 @@ function toggleMapDropdown() {
                   :key="map.id"
                   @click="selectMap(map)"
                   :class="[
-                    'w-full px-4 py-3 text-left hover:bg-secondary-700 transition-colors flex items-center gap-3',
+                    'w-full px-4 py-3 text-left hover:bg-secondary-700 transition-colors flex items-center gap-3 group',
                     map.id === activeMapId ? 'bg-primary-500/20 text-primary-300' : 'text-secondary-300',
                   ]"
                 >
@@ -249,7 +264,14 @@ function toggleMapDropdown() {
                       {{ map.description }}
                     </div>
                   </div>
-                  <span v-if="map.id === activeMapId" class="text-xs text-primary-400">✓ Active</span>
+                  <span v-if="map.id === activeMapId" class="text-xs text-primary-400 mr-2">✓ Active</span>
+                  <button
+                    @click="deleteMapConfirm(map, $event)"
+                    class="p-2 rounded-lg text-secondary-400 hover:text-red-400 hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"
+                    title="Supprimer cette carte"
+                  >
+                    🗑️
+                  </button>
                 </button>
 
                 <div
