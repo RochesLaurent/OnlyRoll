@@ -11,6 +11,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   openSettings: []
   leaveGame: []
+  goBack: []
 }>()
 
 // ============================================
@@ -108,6 +109,25 @@ const maxPlayers = computed(() => {
 
         <!-- Boutons d'action -->
         <div class="flex items-center gap-2">
+          <!-- Retour à la liste -->
+          <button
+            @click="emit('goBack')"
+            class="px-4 py-2 bg-secondary-700 text-secondary-200 rounded-lg hover:bg-secondary-600 transition-colors font-medium flex items-center gap-2"
+            title="Retour à la liste des parties"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-4 h-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M19 12H5M12 19l-7-7 7-7"></path>
+            </svg>
+            <span>Retour</span>
+          </button>
+
           <!-- Paramètres -->
           <button
             @click="emit('openSettings')"
@@ -129,12 +149,13 @@ const maxPlayers = computed(() => {
             </svg>
           </button>
 
-          <!-- Quitter -->
+          <!-- Quitter la partie (retirer en tant que membre) -->
           <button
             @click="emit('leaveGame')"
             class="px-4 py-2 bg-error text-white rounded-lg hover:bg-red-600 transition-colors font-medium shadow-lg"
+            title="Se retirer définitivement de cette partie"
           >
-            Quitter
+            Quitter la partie
           </button>
         </div>
       </div>

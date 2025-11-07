@@ -26,3 +26,8 @@ services:
     App\Service\FileUploader:
         arguments:
             $uploadsDirectory: '%uploads_directory%'
+
+    # Injecter le pool de cache Redis dédié à la présence
+    App\Service\PresenceService:
+        arguments:
+            $presenceCache: '@cache.presence'

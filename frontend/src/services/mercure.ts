@@ -35,6 +35,31 @@ export class MercureService {
   private maxReconnectAttempts = 5
 
   /**
+   * Se connecter aux événements de présence de plusieurs parties
+   * @param gameIds - IDs des parties à écouter
+   */
+  connectToPresence(gameIds: number[]): void {
+    // Fermer la connexion existante si présente
+    if (this.eventSource) {
+      this.disconnect()
+    }
+
+    // Construction de l'URL avec uniquement les topics de présence
+    const url = new URL(MERCURE_URL)
+
+    gameIds.forEach((gameId) => {
+      url.searchParams.append('topic', `game/${gameId}/presence`)
+    })
+
+    console.log('Connexion à Mercure (présence uniquement)...', url.toString())
+
+    // Création de la connexion EventSource
+    this.eventSource = new EventSource(url.toString())
+
+    this.setupEventHandlers()
+  }
+
+  /**
    * Se connecter aux événements d'une partie
    * @param gameId - ID de la partie
    * @param token - Token JWT optionnel pour les événements privés
@@ -63,6 +88,16 @@ export class MercureService {
     // Création de la connexion EventSource
     this.eventSource = new EventSource(url.toString())
 
+    this.setupEventHandlers()
+  }
+
+  /**
+   * Configure les handlers d'événements pour EventSource
+   * @private
+   */
+  private setupEventHandlers(): void {
+    if (!this.eventSource) return
+
     // Gestion des messages entrants
     this.eventSource.onmessage = (event: MessageEvent) => {
       try {
@@ -71,7 +106,8 @@ export class MercureService {
         console.log('Événement Mercure reçu:', mercureEvent)
 
         // Notifier tous les listeners du type d'événement
-        this.notifyListeners(mercureEvent.type, mercureEvent.data)
+        // On passe l'événement complet pour que gameId soit accessible
+        this.notifyListeners(mercureEvent.type, mercureEvent)
 
         // Réinitialiser le compteur de reconnexions après un message réussi
         this.reconnectAttempts = 0
@@ -82,7 +118,7 @@ export class MercureService {
 
     // Gestion de l'ouverture de connexion
     this.eventSource.onopen = () => {
-      console.log('Connecté à Mercure pour la partie', gameId)
+      console.log('Connecté à Mercure')
       this.reconnectAttempts = 0
     }
 

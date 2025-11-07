@@ -9,7 +9,13 @@
       "Bash(npx vue-tsc:*)",
       "Bash(npx eslint:*)",
       "Bash(npm run build:*)",
-      "Bash(vendor/bin/phpstan analyse:*)"
+      "Bash(vendor/bin/phpstan analyse:*)",
+      "Bash(redis-cli ping:*)",
+      "Bash(composer require:*)",
+      "Bash(php bin/console:*)",
+      "Bash(php -l:*)",
+      "Bash(php -r:*)",
+      "Bash(redis-cli:*)"
     ],
     "deny": [],
     "ask": []

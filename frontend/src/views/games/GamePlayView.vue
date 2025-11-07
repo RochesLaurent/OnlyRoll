@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, computed, onMounted, onUnmounted, onBeforeUnmount, watch } from 'vue'
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useGameStore } from '@/stores/game'
 import { useMapStore } from '@/stores/mapStore'
 import { useChatStore } from '@/stores/chatStore'
@@ -52,6 +52,31 @@ const showUploadModal = ref(false)
 const gameMapRef = ref<InstanceType<typeof GameMap> | null>(null)
 
 // ============================================
+// Fonction de déconnexion synchrone pour beforeunload
+// ============================================
+function notifyDisconnectionBeacon() {
+  try {
+    // Pour beforeunload, on utilise sendBeacon (pas d'auth mais c'est le mieux qu'on puisse faire)
+    const url = `/api/games/${gameId.value}/presence/leave`
+    const blob = new Blob([JSON.stringify({})], { type: 'application/json' })
+    navigator.sendBeacon(url, blob)
+  } catch (error) {
+    console.error('Erreur sendBeacon:', error)
+  }
+}
+
+// Fonction de déconnexion async pour navigation interne
+async function notifyDisconnection() {
+  try {
+    console.log('Envoi notification de déconnexion...')
+    await presenceApi.leave(gameId.value)
+    console.log('Déconnexion notifiée avec succès')
+  } catch (error) {
+    console.error('Erreur lors de la notification de déconnexion:', error)
+  }
+}
+
+// ============================================
 // Lifecycle
 // ============================================
 onMounted(async () => {
@@ -61,17 +86,23 @@ onMounted(async () => {
   setupBeforeUnload()
 })
 
-onUnmounted(async () => {
+// Détecter la navigation interne (retour arrière, changement de route)
+onBeforeRouteLeave(async (to, from) => {
+  console.log('Navigation détectée - déconnexion en cours')
+
+  // Attendre que la déconnexion soit notifiée avant de continuer
+  await notifyDisconnection()
+
+  mercureService.disconnect()
+  presenceStore.clearGamePresence(gameId.value)
+
+  return true // Permettre la navigation
+})
+
+onUnmounted(() => {
   console.log('Nettoyage de la partie')
-
-  // Notifier la déconnexion
-  try {
-    await presenceApi.leave(gameId.value)
-    console.log('Déconnexion notifiée')
-  } catch (error) {
-    console.error('Erreur lors de la notification de déconnexion:', error)
-  }
-
+  // Le nettoyage a déjà été fait dans onBeforeRouteLeave pour la navigation interne
+  // Mais on le fait quand même au cas où le composant serait détruit autrement
   mercureService.disconnect()
   presenceStore.clearGamePresence(gameId.value)
 })
@@ -135,33 +166,41 @@ function setupMercure() {
   }, 500)
 
   // Écouter les événements de tokens
-  mercureService.on('token', (data) => {
-    console.log('Token event:', data)
-    mapStore.handleTokenEvent(data as MercureTokenEventData)
+  mercureService.on('token', (event: any) => {
+    console.log('Token event:', event.data)
+    mapStore.handleTokenEvent(event.data as MercureTokenEventData)
   })
 
   // Écouter les événements de carte
-  mercureService.on('map', (data) => {
-    console.log('Map event:', data)
-    mapStore.handleMapEvent(data as MercureMapEventData)
+  mercureService.on('map', (event: any) => {
+    console.log('Map event:', event.data)
+    mapStore.handleMapEvent(event.data as MercureMapEventData)
   })
 
   // Écouter les messages du chat
-  mercureService.on('chat', (data) => {
-    console.log('Chat message:', data)
-    chatStore.handleChatMessage(data as MercureChatMessageData)
+  mercureService.on('chat', (event: any) => {
+    console.log('Chat message:', event.data)
+    chatStore.handleChatMessage(event.data as MercureChatMessageData)
   })
 
   // Écouter les événements de joueurs
-  mercureService.on('player', (data) => {
-    console.log('Player event:', data)
+  mercureService.on('player', (event: any) => {
+    console.log('Player event:', event.data)
     gameStore.fetchGameById(gameId.value)
   })
 
   // Écouter les événements de présence
-  mercureService.on('presence', (data) => {
-    console.log('Presence event:', data)
-    presenceStore.handlePresenceEvent(data as MercurePresenceEventData)
+  mercureService.on('presence', (event: any) => {
+    console.log('Presence event:', event)
+    // L'événement Mercure a gameId au niveau principal
+    const presenceData: MercurePresenceEventData = {
+      gameId: event.gameId,
+      userId: event.data.userId,
+      type: event.data.type,
+      onlineUsers: event.data.onlineUsers,
+      timestamp: event.data.timestamp,
+    }
+    presenceStore.handlePresenceEvent(presenceData)
   })
 
   // Envoyer un heartbeat de présence toutes les 30 secondes
@@ -186,31 +225,13 @@ function setupMercure() {
 // Setup BeforeUnload - Notifier la déconnexion
 // ============================================
 function setupBeforeUnload() {
-  const handleBeforeUnload = () => {
-    // Utiliser sendBeacon pour envoyer une requête même si la page se ferme
-    const url = `/api/games/${gameId.value}/presence/leave`
-    const blob = new Blob([JSON.stringify({})], { type: 'application/json' })
-
-    try {
-      navigator.sendBeacon(url, blob)
-    } catch (error) {
-      console.error('Erreur lors de l\'envoi du beacon:', error)
-    }
-  }
-
-  // Ajouter les listeners pour beforeunload et visibilitychange
-  window.addEventListener('beforeunload', handleBeforeUnload)
-
-  // Gérer aussi le changement de visibilité (onglet caché)
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-      handleBeforeUnload()
-    }
-  })
+  // Ajouter les listeners pour beforeunload (fermeture navigateur/onglet)
+  // On utilise sendBeacon car async n'est pas possible dans beforeunload
+  window.addEventListener('beforeunload', notifyDisconnectionBeacon)
 
   // Nettoyer au démontage
   onUnmounted(() => {
-    window.removeEventListener('beforeunload', handleBeforeUnload)
+    window.removeEventListener('beforeunload', notifyDisconnectionBeacon)
   })
 }
 
@@ -272,8 +293,19 @@ function handleOpenSettings() {
   // TODO: Implémenter le modal des paramètres
 }
 
+function handleGoBack() {
+  // Simplement retourner à la liste des parties
+  // La déconnexion sera gérée automatiquement par onBeforeRouteLeave
+  router.push('/games')
+}
+
 async function handleLeaveGame() {
-  if (!confirm('Êtes-vous sûr de vouloir quitter cette partie ?')) return
+  if (
+    !confirm(
+      'Êtes-vous sûr de vouloir quitter cette partie ?\n\nVous serez retiré en tant que membre et ne pourrez plus y accéder.',
+    )
+  )
+    return
 
   try {
     await gameStore.leaveGame(gameId.value)
@@ -302,6 +334,7 @@ async function handleLeaveGame() {
       :game="currentGame"
       :is-connected="isConnected"
       :connection-state="connectionState"
+      @go-back="handleGoBack"
       @open-settings="handleOpenSettings"
       @leave-game="handleLeaveGame"
     />

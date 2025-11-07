@@ -2,6 +2,7 @@
 import type { Game } from '@/types/game'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { usePresenceStore } from '@/stores/presenceStore'
 import { UsersIcon, LockClosedIcon } from '@heroicons/vue/24/outline'
 
 interface Props {
@@ -18,6 +19,7 @@ const emit = defineEmits<{
 }>()
 
 const router = useRouter()
+const presenceStore = usePresenceStore()
 
 const statusConfig = computed(() => {
   const configs = {
@@ -50,6 +52,11 @@ const isFull = computed(() => props.game.currentPlayersCount >= props.game.maxPl
 // Extraction du niveau de campagne depuis settings (si disponible)
 const campaignLevel = computed(() => {
   return props.game.settings?.campaignLevel || 6 // Valeur par défaut
+})
+
+// Nombre de joueurs actuellement connectés en temps réel
+const onlinePlayersCount = computed(() => {
+  return presenceStore.getOnlineCount(props.game.id)
 })
 
 function viewGame() {
@@ -109,9 +116,12 @@ function handleJoin(event: Event) {
 
       <!-- Players Count et Bouton -->
       <div class="flex items-center justify-between">
-        <div class="flex items-center text-secondary-400 text-sm gap-2">
-          <UsersIcon class="w-5 h-5" />
-          <span>{{ game.currentPlayersCount }} / {{ game.maxPlayers }} joueurs connectés</span>
+        <div class="flex items-center text-sm gap-2">
+          <UsersIcon class="w-5 h-5" :class="onlinePlayersCount > 0 ? 'text-success' : 'text-secondary-400'" />
+          <span class="text-secondary-400">
+            <span :class="onlinePlayersCount > 0 ? 'text-success font-semibold' : ''">{{ onlinePlayersCount }}</span>
+             joueur(s) connecté(s)
+          </span>
         </div>
 
         <!-- Bouton Jouer -->

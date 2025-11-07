@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useGameStore } from '@/stores/game'
 import { useAuthStore } from '@/stores/auth'
+import { usePresenceStore } from '@/stores/presenceStore'
+import { mercureService } from '@/services/mercure'
 import type { Game, GameFilters } from '@/types/game'
+import type { MercurePresenceEventData } from '@/types/websocket'
+import DashboardNav from '@/components/dashboard/DashboardNav.vue'
 import GameCard from '@/components/game/GameCard.vue'
 import CreateGameModal from '@/components/game/CreateGameModal.vue'
 import JoinGameModal from '@/components/game/JoinGameModal.vue'
@@ -15,11 +19,13 @@ import {
 
 const gameStore = useGameStore()
 const authStore = useAuthStore()
+const presenceStore = usePresenceStore()
 const showCreateModal = ref(false)
 const showJoinModal = ref(false)
 const selectedGame = ref<Game | null>(null)
 const activeTab = ref<'public' | 'my-games'>('public')
 const showFilters = ref(true)
+const connectedGameIds = ref<number[]>([]) // Garder trace des parties écoutées
 
 // Filtres
 const filters = ref<GameFilters>({
@@ -31,10 +37,60 @@ const filters = ref<GameFilters>({
   limit: 12,
 })
 
-// Pagination désactivée pour le moment (tri côté client)
+// Handler pour les événements de présence
+function handlePresenceEvent(event: any) {
+  console.log('Presence event in GameListView:', event)
+  const presenceData: MercurePresenceEventData = {
+    gameId: event.gameId,
+    userId: event.data.userId,
+    type: event.data.type,
+    onlineUsers: event.data.onlineUsers,
+    timestamp: event.data.timestamp,
+  }
+  presenceStore.handlePresenceEvent(presenceData)
+}
 
-onMounted(() => {
-  loadGames()
+// Connecter aux événements de présence pour les parties affichées
+function connectToPresence() {
+  const gameIds = displayedGames.value.map((game) => game.id)
+
+  if (gameIds.length === 0) {
+    console.log('Aucune partie à écouter')
+    return
+  }
+
+  // Vérifier si les IDs ont changé
+  const idsChanged =
+    gameIds.length !== connectedGameIds.value.length ||
+    !gameIds.every((id) => connectedGameIds.value.includes(id))
+
+  if (!idsChanged) {
+    console.log('Déjà connecté aux mêmes parties, skip reconnexion')
+    return
+  }
+
+  console.log('Connexion aux événements de présence pour les parties:', gameIds)
+
+  // Se connecter aux événements de présence
+  mercureService.connectToPresence(gameIds)
+
+  // Mémoriser les IDs connectés
+  connectedGameIds.value = [...gameIds]
+}
+
+onMounted(async () => {
+  // Enregistrer le listener une seule fois
+  mercureService.on('presence', handlePresenceEvent)
+
+  await loadGames()
+  // Connecter aux événements de présence après le chargement des parties
+  connectToPresence()
+})
+
+onUnmounted(() => {
+  // Se déconnecter de Mercure
+  mercureService.off('presence', handlePresenceEvent)
+  mercureService.disconnect()
 })
 
 async function loadGames() {
@@ -218,11 +274,21 @@ const displayedGames = computed(() => {
   }
 })
 
+// Reconnecter quand les parties affichées changent
+watch(displayedGames, () => {
+  if (displayedGames.value.length > 0) {
+    connectToPresence()
+  }
+})
+
 // Pagination désactivée - pas d'alias nécessaires
 </script>
 
 <template>
   <div class="min-h-screen bg-primary-900">
+    <!-- Navigation -->
+    <DashboardNav />
+
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <!-- Header -->
       <div class="flex items-center justify-between mb-8">
