@@ -258,4 +258,27 @@ export const tokenApi = {
       isVisible,
     })
   },
+
+  /**
+   * Gérer les permissions de contrôle d'un token
+   * Permet au MJ d'autoriser/retirer le contrôle d'un token à un joueur
+   * @param gameId - ID du jeu
+   * @param mapId - ID de la carte
+   * @param tokenId - ID du token
+   * @param action - 'add' ou 'remove'
+   * @param userId - ID de l'utilisateur
+   * @returns Le token mis à jour avec ses nouvelles permissions
+   */
+  async managePermissions(
+    gameId: number,
+    mapId: number,
+    tokenId: number,
+    action: 'add' | 'remove',
+    userId: number
+  ): Promise<GameToken> {
+    return post<GameToken>(`/games/${gameId}/maps/${mapId}/tokens/${tokenId}/permissions`, {
+      action,
+      userId,
+    })
+  },
 }

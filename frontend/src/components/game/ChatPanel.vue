@@ -128,29 +128,27 @@ function getMessageIcon(type: MessageType) {
 function normalizeDiceResult(result: unknown): DiceResult | null {
   if (!result || typeof result !== 'object') return null
 
-  // Type guard pour la nouvelle structure
-  if (
-    'rolls' in result &&
-    'formula' in result &&
-    Array.isArray((result as { rolls: unknown }).rolls)
-  ) {
+  // Type guard pour la nouvelle structure (avec 'rolls' ou 'results')
+  // La nouvelle structure a 'formula' et 'modifier' directement accessibles
+  if ('formula' in result && 'modifier' in result) {
     const newResult = result as {
       formula?: string
       rolls?: number[]
+      results?: number[]
       total?: number
       modifier?: number
     }
 
     return {
       formula: newResult.formula || '',
-      results: newResult.rolls || [],
+      results: newResult.results || newResult.rolls || [],
       total: newResult.total || 0,
       modifier: newResult.modifier || 0,
     }
   }
 
-  // Type guard pour l'ancienne structure
-  if ('results' in result && Array.isArray((result as LegacyDiceResult).results)) {
+  // Type guard pour l'ancienne structure (fixtures avec config.dice)
+  if ('results' in result && 'config' in result && Array.isArray((result as LegacyDiceResult).results)) {
     const oldResult = result as LegacyDiceResult
 
     console.warn('Ancienne structure diceResult détectée, conversion en cours...')

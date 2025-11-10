@@ -508,6 +508,46 @@ export const useMapStore = defineStore('map', () => {
     }
   }
 
+  /**
+   * Gérer les permissions de contrôle d'un token
+   */
+  async function manageTokenPermissions(
+    tokenId: number,
+    action: 'add' | 'remove',
+    userId: number
+  ) {
+    if (!currentGameId.value || !activeMap.value) {
+      throw new Error('GameId or Map not set')
+    }
+
+    try {
+      const updatedToken = await tokenApi.managePermissions(
+        currentGameId.value,
+        activeMap.value.id,
+        tokenId,
+        action,
+        userId
+      )
+
+      // Mettre à jour le token localement
+      const tokenIndex = tokens.value.findIndex((t) => t.id === tokenId)
+      if (tokenIndex !== -1) {
+        tokens.value[tokenIndex] = updatedToken
+      }
+
+      logger.log(`Permission ${action} pour l'utilisateur ${userId} sur le token ${tokenId}`)
+    } catch (e: unknown) {
+      if (e && typeof e === 'object' && 'message' in e) {
+        error.value =
+          (e as { message: string }).message || 'Erreur lors de la gestion des permissions'
+      } else {
+        error.value = 'Erreur lors de la gestion des permissions'
+      }
+      logger.error('Erreur manageTokenPermissions:', e)
+      throw e
+    }
+  }
+
   // ===========================
   // Actions - Synchronisation Mercure
   // ===========================
@@ -520,8 +560,10 @@ export const useMapStore = defineStore('map', () => {
 
     // Structure attendue depuis le backend :
     // { type: 'created' | 'updated' | 'moved' | 'deleted', token: GameToken }
+    // Note: Le backend envoie 'action' au lieu de 'type' pour certains événements
+    const eventType = (data as any).type || (data as any).action
 
-    switch (data.type) {
+    switch (eventType) {
       case 'created':
         addTokenToList(data.token)
         break
@@ -536,7 +578,7 @@ export const useMapStore = defineStore('map', () => {
         break
 
       default:
-        logger.warn('Type de token event inconnu:', data.type)
+        logger.warn('Type de token event inconnu:', eventType, data)
     }
   }
 
@@ -655,6 +697,7 @@ export const useMapStore = defineStore('map', () => {
     deleteToken,
     toggleTokenVisibility,
     toggleTokenLock,
+    manageTokenPermissions,
 
     // Actions - Mercure
     handleTokenEvent,

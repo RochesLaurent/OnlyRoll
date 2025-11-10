@@ -62,9 +62,16 @@ readonly class TokenService
         $gameId = $game->getId();
         \assert(null !== $gameId, 'Game ID cannot be null after flush');
 
+        // Vérifications pour PHPStan
+        $tokenId = $token->getId();
+        \assert(null !== $tokenId, 'Token ID cannot be null after flush');
+        $createdAt = $token->getCreatedAt();
+        \assert(null !== $createdAt, 'CreatedAt cannot be null after flush');
+
         // Publication via Mercure
+        // IMPORTANT: Utiliser 'id' et non 'tokenId' pour compatibilité frontend
         $this->mercurePublisher->publishTokenCreated($gameId, [
-            'tokenId' => $token->getId(),
+            'id' => $tokenId,
             'mapId' => $map->getId(),
             'name' => $token->getName(),
             'type' => $token->getType(),
@@ -76,6 +83,8 @@ readonly class TokenService
             'isVisible' => $token->isVisible(),
             'isLocked' => $token->isLocked(),
             'layer' => $token->getLayer(),
+            'createdAt' => $createdAt->format('c'),
+            'updatedAt' => $token->getUpdatedAt()?->format('c'),
         ]);
 
         return $token;
@@ -116,14 +125,31 @@ readonly class TokenService
         \assert(null !== $gameId, 'Game ID cannot be null');
         $mapId = $map->getId();
         \assert(null !== $mapId, 'Map ID cannot be null');
+        $tokenId = $token->getId();
+        \assert(null !== $tokenId, 'Token ID cannot be null');
+        $createdAt = $token->getCreatedAt();
+        \assert(null !== $createdAt, 'CreatedAt cannot be null');
 
-        // Publication via Mercure
-        $this->mercurePublisher->publishTokenMove($gameId, [
-            'tokenId' => $token->getId(),
-            'mapId' => $mapId,
-            'x' => $token->getX(),
-            'y' => $token->getY(),
-            'movedAt' => (new DateTimeImmutable())->format('c'),
+        // Publication via Mercure - Structure complète pour cohérence frontend
+        $this->mercurePublisher->publishGameEvent($gameId, 'token', [
+            'action' => 'moved',
+            'token' => [
+                'id' => $tokenId,
+                'mapId' => $mapId,
+                'name' => $token->getName(),
+                'type' => $token->getType(),
+                'x' => $token->getX(),
+                'y' => $token->getY(),
+                'size' => $token->getSize(),
+                'rotation' => $token->getRotation(),
+                'imageUrl' => $token->getImageUrl(),
+                'isVisible' => $token->isVisible(),
+                'isLocked' => $token->isLocked(),
+                'layer' => $token->getLayer(),
+                'settings' => $token->getSettings(),
+                'createdAt' => $createdAt->format('c'),
+                'updatedAt' => $token->getUpdatedAt()?->format('c'),
+            ],
         ]);
 
         return $token;
@@ -166,15 +192,33 @@ readonly class TokenService
         \assert(null !== $game, 'Map must have a game');
         $gameId = $game->getId();
         \assert(null !== $gameId, 'Game ID cannot be null');
+        $tokenId = $token->getId();
+        \assert(null !== $tokenId, 'Token ID cannot be null');
+        $createdAt = $token->getCreatedAt();
+        \assert(null !== $createdAt, 'CreatedAt cannot be null');
 
-        // Publication Mercure
+        // Publication Mercure - Structure complète avec 'action' = 'updated'
         $this->mercurePublisher->publishGameEvent(
             $gameId,
             'token',
             [
-                'action' => 'visibility_changed',
-                'tokenId' => $token->getId(),
-                'isVisible' => $token->isVisible(),
+                'action' => 'updated',
+                'token' => [
+                    'id' => $tokenId,
+                    'mapId' => $map->getId(),
+                    'name' => $token->getName(),
+                    'type' => $token->getType(),
+                    'x' => $token->getX(),
+                    'y' => $token->getY(),
+                    'size' => $token->getSize(),
+                    'rotation' => $token->getRotation(),
+                    'imageUrl' => $token->getImageUrl(),
+                    'isVisible' => $token->isVisible(),
+                    'isLocked' => $token->isLocked(),
+                    'layer' => $token->getLayer(),
+                    'createdAt' => $createdAt->format('c'),
+                    'updatedAt' => $token->getUpdatedAt()?->format('c'),
+                ],
             ],
         );
 
@@ -196,15 +240,33 @@ readonly class TokenService
         \assert(null !== $game, 'Map must have a game');
         $gameId = $game->getId();
         \assert(null !== $gameId, 'Game ID cannot be null');
+        $tokenId = $token->getId();
+        \assert(null !== $tokenId, 'Token ID cannot be null');
+        $createdAt = $token->getCreatedAt();
+        \assert(null !== $createdAt, 'CreatedAt cannot be null');
 
-        // Publication Mercure
+        // Publication Mercure - Structure complète avec 'action' = 'updated'
         $this->mercurePublisher->publishGameEvent(
             $gameId,
             'token',
             [
-                'action' => 'lock_changed',
-                'tokenId' => $token->getId(),
-                'isLocked' => $token->isLocked(),
+                'action' => 'updated',
+                'token' => [
+                    'id' => $tokenId,
+                    'mapId' => $map->getId(),
+                    'name' => $token->getName(),
+                    'type' => $token->getType(),
+                    'x' => $token->getX(),
+                    'y' => $token->getY(),
+                    'size' => $token->getSize(),
+                    'rotation' => $token->getRotation(),
+                    'imageUrl' => $token->getImageUrl(),
+                    'isVisible' => $token->isVisible(),
+                    'isLocked' => $token->isLocked(),
+                    'layer' => $token->getLayer(),
+                    'createdAt' => $createdAt->format('c'),
+                    'updatedAt' => $token->getUpdatedAt()?->format('c'),
+                ],
             ],
         );
 
@@ -249,5 +311,124 @@ readonly class TokenService
     public function countTokensOnMap(GameMap $map): int
     {
         return $this->tokenRepository->countByMap($map);
+    }
+
+    /**
+     * Vérifie si un utilisateur peut contrôler un token.
+     * Le MJ peut toujours contrôler tous les tokens.
+     * Les joueurs peuvent contrôler si leur userId est dans token_settings.controllableBy
+     */
+    public function canControlToken(GameToken $token, User $user, \App\Entity\Game $game): bool
+    {
+        // Le MJ peut toujours contrôler tous les tokens
+        if ($game->isGameMaster($user)) {
+            return true;
+        }
+
+        // Récupérer les settings du token
+        $settings = $token->getSettings();
+        if (!$settings || !isset($settings['controllableBy'])) {
+            return false;
+        }
+
+        $controllableBy = $settings['controllableBy'];
+        if (!\is_array($controllableBy)) {
+            return false;
+        }
+
+        // Vérifier si l'utilisateur est dans la liste
+        return \in_array($user->getId(), $controllableBy, true);
+    }
+
+    /**
+     * Ajoute la permission de contrôle à un utilisateur.
+     */
+    public function addControlPermission(GameToken $token, int $userId): GameToken
+    {
+        $settings = $token->getSettings() ?? [];
+        $controllableBy = $settings['controllableBy'] ?? [];
+
+        if (!\is_array($controllableBy)) {
+            $controllableBy = [];
+        }
+
+        // Ajouter l'utilisateur s'il n'est pas déjà dans la liste
+        if (!\in_array($userId, $controllableBy, true)) {
+            $controllableBy[] = $userId;
+            $settings['controllableBy'] = $controllableBy;
+            $token->setSettings($settings);
+            $this->em->flush();
+
+            // Publication Mercure
+            $this->publishTokenUpdate($token);
+        }
+
+        return $token;
+    }
+
+    /**
+     * Retire la permission de contrôle à un utilisateur.
+     */
+    public function removeControlPermission(GameToken $token, int $userId): GameToken
+    {
+        $settings = $token->getSettings() ?? [];
+        $controllableBy = $settings['controllableBy'] ?? [];
+
+        if (!\is_array($controllableBy)) {
+            return $token;
+        }
+
+        // Retirer l'utilisateur de la liste
+        $controllableBy = array_values(array_filter($controllableBy, static fn ($id) => $id !== $userId));
+        $settings['controllableBy'] = $controllableBy;
+        $token->setSettings($settings);
+        $this->em->flush();
+
+        // Publication Mercure
+        $this->publishTokenUpdate($token);
+
+        return $token;
+    }
+
+    /**
+     * Publie une mise à jour de token via Mercure.
+     */
+    private function publishTokenUpdate(GameToken $token): void
+    {
+        $map = $token->getMap();
+        \assert(null !== $map, 'Token must have a map');
+        $game = $map->getGame();
+        \assert(null !== $game, 'Map must have a game');
+        $gameId = $game->getId();
+        \assert(null !== $gameId, 'Game ID cannot be null');
+        $tokenId = $token->getId();
+        \assert(null !== $tokenId, 'Token ID cannot be null');
+        $createdAt = $token->getCreatedAt();
+        \assert(null !== $createdAt, 'CreatedAt cannot be null');
+
+        $this->mercurePublisher->publishGameEvent(
+            $gameId,
+            'token',
+            [
+                'action' => 'updated',
+                'token' => [
+                    'id' => $tokenId,
+                    'mapId' => $map->getId(),
+                    'name' => $token->getName(),
+                    'type' => $token->getType(),
+                    'x' => $token->getX(),
+                    'y' => $token->getY(),
+                    'size' => $token->getSize(),
+                    'rotation' => $token->getRotation(),
+                    'imageUrl' => $token->getImageUrl(),
+                    'isVisible' => $token->isVisible(),
+                    'isLocked' => $token->isLocked(),
+                    'layer' => $token->getLayer(),
+                    'settings' => $token->getSettings(),
+                    'createdAt' => $createdAt->format('c'),
+                    'updatedAt' => $token->getUpdatedAt()?->format('c'),
+                ],
+            ],
+        );
     }
 }

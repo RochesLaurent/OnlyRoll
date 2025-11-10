@@ -237,6 +237,7 @@ const handleSubmit = async () => {
     await login({
       email: form.value.email,
       password: form.value.password,
+      rememberMe: form.value.rememberMe,
     })
   } catch (err) {
     logger.error('Erreur de connexion:', err)

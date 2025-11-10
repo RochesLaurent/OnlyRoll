@@ -66,11 +66,12 @@ OnlyRoll/
 │   │   │   └── GameFixtures.php
 │   │   │
 │   │   ├── Controller/
-│   │   │   ├── GameController.php
+│   │   │   ├── AuthController.php
 │   │   │   ├── ChatController.php
+│   │   │   ├── GameController.php
 │   │   │   ├── MapController.php
-│   │   │   ├── TokenController.php
-│   │   │   └── AuthController.php
+│   │   │   ├── PresenceController.php
+│   │   │   └── TokenController.php
 │   │   │
 │   │   ├── Enum/
 │   │   │   ├── GameStatus.php
@@ -121,13 +122,14 @@ OnlyRoll/
 │   │   │       └── UserResponseDTO.php
 │   │   │
 │   │   └── Service/
-│   │       ├── GameService.php
 │   │       ├── ChatService.php
-│   │       ├── MapService.php
-│   │       ├── TokenService.php
-│   │       ├── MercurePublisher.php
+│   │       ├── DtoValidatorService.php
 │   │       ├── FileUploader.php
-│   │       └── DtoValidatorService.php
+│   │       ├── GameService.php
+│   │       ├── MapService.php
+│   │       ├── MercurePublisher.php
+│   │       ├── PresenceService.php
+│   │       └── TokenService.php
 │   │
 │   ├── tests/
 │   │   ├── Functional/
@@ -180,14 +182,16 @@ OnlyRoll/
     │   │   ├── game/
     │   │   │   ├── ChatPanel.vue
     │   │   │   ├── CreateGameModal.vue
+    │   │   │   ├── CreateTokenModal.vue
     │   │   │   ├── DiceRoller.vue
     │   │   │   ├── EmptyMapState.vue
-    │   │   │   ├── UploadMapModal.vue
     │   │   │   ├── GameCard.vue
+    │   │   │   ├── GameHeader.vue
     │   │   │   ├── GameMap.vue
+    │   │   │   ├── JoinGameModal.vue
     │   │   │   ├── MapToolbar.vue
-    │   │   │   ├── PlayerList.vue
-    │   │   │   └── JoinGameModal.vue
+    │   │   │   ├── PlayersList.vue
+    │   │   │   └── UploadMapModal.vue
     │   │   │
     │   │   └── dashboard/
     │   │       └── DashboardCard.vue
@@ -214,13 +218,15 @@ OnlyRoll/
     │   │       ├── gameApi.ts
     │   │       ├── index.ts
     │   │       ├── mapApi.ts
+    │   │       ├── presenceApi.ts
     │   │       └── tokenApi.ts
     │   │
     │   ├── stores/
     │   │   ├── auth.ts
     │   │   ├── chatStore.ts
+    │   │   ├── game.ts
     │   │   ├── mapStore.ts
-    │   │   └── game.ts
+    │   │   └── presenceStore.ts
     │   │
     │   ├── styles/
     │   │   └── tailwind.css

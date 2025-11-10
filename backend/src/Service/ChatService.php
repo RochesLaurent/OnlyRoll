@@ -208,14 +208,18 @@ readonly class ChatService
         $createdAt = $message->getCreatedAt();
         \assert(null !== $createdAt, 'CreatedAt cannot be null after flush');
 
-        // Publication via Mercure
-        $this->mercurePublisher->publishDiceRoll($gameId, [
+        // Publication via Mercure (utilise publishChatMessage pour cohérence avec les autres messages)
+        $this->mercurePublisher->publishChatMessage($gameId, [
             'messageId' => $message->getId(),
             'userId' => $user->getId(),
             'userName' => $user->getPseudo(),
-            'expression' => $diceExpression,
-            'results' => $results,
+            'content' => $content,
+            'type' => GameMessage::TYPE_DICE_ROLL,
+            'isIC' => $message->isInCharacter(),
+            'recipientId' => null,
+            'recipientName' => null,
             'createdAt' => $createdAt->format('c'),
+            'diceResult' => $results,
         ]);
 
         return $message;

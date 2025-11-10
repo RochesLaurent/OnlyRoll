@@ -63,7 +63,7 @@ class GameTokenRepository extends ServiceEntityRepository
 
     /**
      * Trouve les tokens visibles pour un utilisateur spécifique.
-     * Les tokens invisibles sont visibles uniquement pour le propriétaire.
+     * Les joueurs ne voient que les tokens visibles (isVisible = true).
      *
      * @return GameToken[]
      */
@@ -71,9 +71,8 @@ class GameTokenRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('t')
             ->where('t.map = :map')
-            ->andWhere('t.isVisible = true OR t.owner = :user')
+            ->andWhere('t.isVisible = true')
             ->setParameter('map', $map)
-            ->setParameter('user', $user)
             ->orderBy('t.layer', 'ASC')
             ->addOrderBy('t.createdAt', 'ASC')
             ->getQuery()

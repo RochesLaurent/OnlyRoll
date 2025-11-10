@@ -242,6 +242,14 @@ final class TokenController extends AbstractController
             );
         }
 
+        // Vérifier les permissions de contrôle du token
+        if (!$this->tokenService->canControlToken($token, $user, $game)) {
+            return $this->json(
+                ['error' => 'Vous n\'avez pas la permission de déplacer ce token'],
+                Response::HTTP_FORBIDDEN,
+            );
+        }
+
         $dto = $this->serializer->deserialize(
             $request->getContent(),
             MoveTokenDTO::class,
@@ -366,6 +374,76 @@ final class TokenController extends AbstractController
 
         try {
             $token = $this->tokenService->toggleLock($token);
+
+            return $this->json(
+                $token,
+                Response::HTTP_OK,
+                [],
+                ['groups' => 'token:read'],
+            );
+        }
+        catch (Exception $e) {
+            return $this->json(
+                ['error' => $e->getMessage()],
+                Response::HTTP_INTERNAL_SERVER_ERROR,
+            );
+        }
+    }
+
+    /**
+     * Gérer les permissions de contrôle d'un token.
+     */
+    #[Route('/{id}/permissions', name: 'permissions', methods: ['POST'])]
+    public function managePermissions(int $gameId, int $mapId, int $id, Request $request): JsonResponse
+    {
+        $game = $this->gameRepository->find($gameId);
+
+        if (!$game) {
+            return $this->json(
+                ['error' => 'Partie introuvable'],
+                Response::HTTP_NOT_FOUND,
+            );
+        }
+
+        $token = $this->tokenRepository->find($id);
+
+        // Vérification null-safety pour PHPStan
+        $tokenMap = $token?->getMap();
+        if (!$token || !$tokenMap || $tokenMap->getId() !== $mapId) {
+            return $this->json(
+                ['error' => 'Token introuvable'],
+                Response::HTTP_NOT_FOUND,
+            );
+        }
+
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+
+        if (!$game->isGameMaster($user)) {
+            return $this->json(
+                ['error' => 'Seul le maître du jeu peut modifier les permissions'],
+                Response::HTTP_FORBIDDEN,
+            );
+        }
+
+        // Récupérer les données de la requête
+        $data = json_decode($request->getContent(), true);
+        $action = $data['action'] ?? null; // 'add' ou 'remove'
+        $userId = $data['userId'] ?? null;
+
+        if (!in_array($action, ['add', 'remove'], true) || !$userId) {
+            return $this->json(
+                ['error' => 'Action ou userId invalide'],
+                Response::HTTP_BAD_REQUEST,
+            );
+        }
+
+        try {
+            if ($action === 'add') {
+                $token = $this->tokenService->addControlPermission($token, $userId);
+            } else {
+                $token = $this->tokenService->removeControlPermission($token, $userId);
+            }
 
             return $this->json(
                 $token,

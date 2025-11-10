@@ -23,6 +23,7 @@ import PlayersList from '@/components/game/PlayersList.vue'
 import DiceRoller from '@/components/game/DiceRoller.vue'
 import EmptyMapState from '@/components/game/EmptyMapState.vue'
 import UploadMapModal from '@/components/game/UploadMapModal.vue'
+import CreateTokenModal from '@/components/game/CreateTokenModal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -47,6 +48,10 @@ const connectionState = ref<'connecting' | 'open' | 'closed'>('connecting')
 
 // État upload carte
 const showUploadModal = ref(false)
+
+// État création token
+const showCreateTokenModal = ref(false)
+const tokenCreationPosition = ref<{ x: number; y: number } | null>(null)
 
 // Référence au composant GameMap
 const gameMapRef = ref<InstanceType<typeof GameMap> | null>(null)
@@ -177,7 +182,7 @@ function setupMercure() {
     mapStore.handleMapEvent(event.data as MercureMapEventData)
   })
 
-  // Écouter les messages du chat
+  // Écouter les messages du chat (inclut aussi les lancers de dés)
   mercureService.on('chat', (event: any) => {
     console.log('Chat message:', event.data)
     chatStore.handleChatMessage(event.data as MercureChatMessageData)
@@ -314,6 +319,21 @@ async function handleLeaveGame() {
     console.error('Erreur en quittant la partie:', error)
   }
 }
+
+// ============================================
+// Handlers - Création de token
+// ============================================
+function handleCreateToken(position: { x: number; y: number }) {
+  tokenCreationPosition.value = position
+  showCreateTokenModal.value = true
+}
+
+async function handleTokenCreated() {
+  showCreateTokenModal.value = false
+  tokenCreationPosition.value = null
+  // Revenir à l'outil de sélection après création
+  selectedTool.value = 'select'
+}
 </script>
 
 <template>
@@ -366,8 +386,11 @@ async function handleLeaveGame() {
             :map="activeMap"
             :tokens="tokens"
             :editable="isGameMaster"
+            :is-game-master="isGameMaster"
+            :game-players="currentGame?.gamePlayers || []"
             :selected-tool="selectedTool"
             :zoom="mapZoom"
+            @create-token="handleCreateToken"
           />
         </div>
       </div>
@@ -444,6 +467,14 @@ async function handleLeaveGame() {
       :game-id="gameId"
       @close="showUploadModal = false"
       @success="handleMapCreated"
+    />
+
+    <CreateTokenModal
+      :show="showCreateTokenModal"
+      :position="tokenCreationPosition"
+      :map-id="activeMap?.id || 0"
+      @close="showCreateTokenModal = false"
+      @success="handleTokenCreated"
     />
   </div>
 </template>
