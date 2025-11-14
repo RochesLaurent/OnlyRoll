@@ -183,7 +183,7 @@ final class GameService
     }
 
     /**
-     * Supprime une partie (soft delete ou hard selon vos besoins).
+     * Supprime une partie (soft delete).
      */
     public function deleteGame(Game $game, User $user): void
     {

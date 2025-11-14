@@ -51,7 +51,7 @@ final class UserResponseDTO
     {
         $dto = new self();
 
-        // Gestion du cas où l'ID serait null (ne devrait pas arriver en production)
+        // Gestion du cas où l'ID serait null (ne devrait pas arriver)
         $userId = $user->getId();
         if (null === $userId) {
             throw new RuntimeException('User ID cannot be null');

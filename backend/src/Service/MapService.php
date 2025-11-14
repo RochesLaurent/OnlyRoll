@@ -24,7 +24,7 @@ final class MapService
     }
 
     /**
-     * Crée une nouvelle carte pour un jeu.
+     * Crée une nouvelle carte pour une partie.
      */
     public function createMap(Game $game, CreateMapDTO $dto): GameMap
     {
@@ -52,7 +52,7 @@ final class MapService
     }
 
     /**
-     * Récupère la carte active d'un jeu.
+     * Récupère la carte active d'une partie.
      */
     public function getActiveMap(Game $game): ?GameMap
     {
@@ -114,7 +114,7 @@ final class MapService
     }
 
     /**
-     * Active une carte et désactive toutes les autres du même jeu.
+     * Active une carte et désactive toutes les autres d'une même partie.
      */
     public function activateMap(GameMap $map): GameMap
     {
@@ -155,7 +155,7 @@ final class MapService
     }
 
     /**
-     * Récupère toutes les cartes d'un jeu.
+     * Récupère toutes les cartes d'une partie.
      *
      * @return GameMap[]
      */
@@ -165,7 +165,7 @@ final class MapService
     }
 
     /**
-     * Désactive toutes les cartes d'un jeu sauf celle fournie.
+     * Désactive toutes les cartes d'une partie sauf celle fournie.
      */
     private function deactivateOtherMaps(Game $game): void
     {

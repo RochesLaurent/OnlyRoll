@@ -11,12 +11,12 @@ use Symfony\Component\Validator\Constraints as Assert;
  */
 final class CreateGameDTO
 {
-    #[Assert\NotBlank(message: 'Le nom du jeu est obligatoire.')]
+    #[Assert\NotBlank(message: 'Le nom de la partie est obligatoire.')]
     #[Assert\Length(
         min: 3,
         max: 250,
-        minMessage: 'Le nom du jeu doit faire au moins {{ limit }} caractères.',
-        maxMessage: 'Le nom du jeu ne peut pas dépasser {{ limit }} caractères.',
+        minMessage: 'Le nom de la partie doit faire au moins {{ limit }} caractères.',
+        maxMessage: 'Le nom de la partie ne peut pas dépasser {{ limit }} caractères.',
     )]
     public string $name;
 

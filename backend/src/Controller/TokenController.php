@@ -21,7 +21,7 @@ use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 /**
- * Contrôleur de gestion des tokens (pions) sur les cartes.
+ * Contrôleur de gestion des tokens sur les cartes.
  */
 #[Route('/api/games/{gameId}/maps/{mapId}/tokens', name: 'api_token_')]
 #[IsGranted('ROLE_USER')]

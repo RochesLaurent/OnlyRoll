@@ -22,7 +22,7 @@ class GameMessageRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve les messages récents d'un jeu.
+     * Trouve les messages récents d'une partie.
      *
      * @return GameMessage[]
      */
@@ -182,7 +182,7 @@ class GameMessageRepository extends ServiceEntityRepository
     }
 
     /**
-     * Compte les messages par type pour un jeu.
+     * Compte les messages par type pour une partie.
      *
      * @return array<string, int>
      */
@@ -205,7 +205,7 @@ class GameMessageRepository extends ServiceEntityRepository
     }
 
     /**
-     * Compte le total de messages dans un jeu.
+     * Compte le total de messages dans une partie.
      */
     public function countMessagesByGame(Game $game): int
     {
@@ -257,7 +257,7 @@ class GameMessageRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve les messages d'un utilisateur spécifique dans un jeu.
+     * Trouve les messages d'un utilisateur spécifique dans une partie.
      *
      * @return GameMessage[]
      */

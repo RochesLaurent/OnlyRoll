@@ -21,7 +21,7 @@ class PresenceService
     /**
      * Durée avant qu'un utilisateur soit considéré comme déconnecté (en secondes).
      */
-    private const TIMEOUT_SECONDS = 60;
+    private const TIMEOUT_SECONDS = 120;
 
     /**
      * Préfixe pour les clés de cache.

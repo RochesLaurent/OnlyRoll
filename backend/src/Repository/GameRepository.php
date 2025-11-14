@@ -143,7 +143,6 @@ class GameRepository extends ServiceEntityRepository
             ->addSelect('gp')
             ->leftJoin('gp.user', 'u')
             ->addSelect('u')
-            // 🔧 FIX: Ajouter le JOIN sur gameMaster
             ->leftJoin('g.gameMaster', 'gm')
             ->addSelect('gm')
             ->where('gp.user = :user')
@@ -154,7 +153,7 @@ class GameRepository extends ServiceEntityRepository
     }
 
     /**
-     * 🔧 FIX CRITIQUE: Trouve une partie avec tous ses joueurs ET son gameMaster (pour éviter N+1).
+     * Trouve une partie avec tous ses joueurs ET son gameMaster (pour éviter N+1).
      */
     public function findGameWithPlayers(int $id): ?Game
     {
@@ -165,7 +164,7 @@ class GameRepository extends ServiceEntityRepository
             // Charger les utilisateurs des joueurs
             ->leftJoin('gp.user', 'u')
             ->addSelect('u')
-            // 🔧 FIX: Charger le Game Master (CRITIQUE!)
+            // Charger le Game Master
             ->leftJoin('g.gameMaster', 'gm')
             ->addSelect('gm')
             ->where('g.id = :id')
@@ -180,7 +179,6 @@ class GameRepository extends ServiceEntityRepository
     public function findByInviteCode(string $code): ?Game
     {
         return $this->createQueryBuilder('g')
-            // 🔧 FIX: Charger aussi le gameMaster ici
             ->leftJoin('g.gameMaster', 'gm')
             ->addSelect('gm')
             ->where('g.inviteCode = :code')

@@ -21,7 +21,7 @@ class GameMapRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve la carte active d'un jeu.
+     * Trouve la carte active d'une partie.
      */
     public function findActiveMapByGame(Game $game): ?GameMap
     {
@@ -35,7 +35,7 @@ class GameMapRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve toutes les cartes d'un jeu.
+     * Trouve toutes les cartes d'une partie.
      *
      * @return GameMap[]
      */
@@ -69,7 +69,7 @@ class GameMapRepository extends ServiceEntityRepository
     }
 
     /**
-     * Active une carte et désactive toutes les autres du même jeu.
+     * Active une carte et désactive toutes les autres d'une même partie.
      */
     public function activateMap(GameMap $map): void
     {
@@ -97,7 +97,7 @@ class GameMapRepository extends ServiceEntityRepository
     }
 
     /**
-     * Compte le nombre de cartes par jeu.
+     * Compte le nombre de cartes par partie.
      *
      * @return array<int, int> Tableau [game_id => count]
      */

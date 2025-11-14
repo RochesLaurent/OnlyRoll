@@ -39,7 +39,7 @@ final class MapController extends AbstractController
     }
 
     /**
-     * Liste toutes les cartes d'un jeu.
+     * Liste toutes les cartes d'une partie.
      */
     #[Route('', name: 'list', methods: ['GET'])]
     public function list(int $gameId): JsonResponse
@@ -74,7 +74,7 @@ final class MapController extends AbstractController
     }
 
     /**
-     * Récupère la carte active d'un jeu.
+     * Récupère la carte active d'une partie.
      */
     #[Route('/active', name: 'active', methods: ['GET'])]
     public function getActive(int $gameId): JsonResponse

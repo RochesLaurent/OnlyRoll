@@ -86,7 +86,7 @@ final class PresenceController extends AbstractController
 
     /**
      * Heartbeat pour indiquer que l'utilisateur est toujours actif.
-     * À appeler régulièrement (toutes les 30 secondes par exemple).
+     * À appeler régulièrement (toutes les 30 secondes).
      */
     #[Route('/heartbeat', name: 'heartbeat', methods: ['POST'])]
     public function heartbeat(int $gameId): JsonResponse

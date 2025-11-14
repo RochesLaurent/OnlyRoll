@@ -29,7 +29,7 @@ security:
             pattern: ^/api/logout
             stateless: true
 
-        # Firewall principal API avec notre custom authenticator
+        # Firewall principal API avec custom authenticator
         api:
             pattern: ^/api
             stateless: true

@@ -72,7 +72,7 @@ final class AuthController extends AbstractController
         $user->setEmail($dto->email);
         $user->setPseudo($dto->pseudo);
         $user->setRoles(['ROLE_USER']);
-        $user->setIsVerified(true);
+        $user->setIsVerified(true); // Passeras à false lorsque l'emailing sera en place
 
         $hashedPassword = $passwordHasher->hashPassword($user, $dto->password);
         $user->setPassword($hashedPassword);

@@ -251,7 +251,6 @@ final class ChatController extends AbstractController
         $formula = $data['formula'];
 
         try {
-            // Exemple simple de parsing de dés (à améliorer selon vos besoins)
             // Format attendu: "2d6+3" ou "1d20"
             if (!preg_match('/^(\d+)d(\d+)([+-]\d+)?$/i', $formula, $matches)) {
                 return $this->json(

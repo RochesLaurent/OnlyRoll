@@ -260,9 +260,9 @@ OnlyRoll/
     │   └── main.ts
     │
     ├── public/
-    │   └── sounds/                    # Fichiers audio
-    │       ├── konami.mp3             # Son easter egg Konami Code
-    │       └── README.md              # Instructions pour les sons
+    │   └── sounds/
+    │       ├── konami.mp3
+    │       └── README.md
     │
     ├── e2e/
     │   ├── tsconfig.json

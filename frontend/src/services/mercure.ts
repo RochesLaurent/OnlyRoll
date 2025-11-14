@@ -126,7 +126,7 @@ export class MercureService {
     this.eventSource.onerror = (error) => {
       console.error('Erreur connexion Mercure:', error)
 
-      // EventSource reconnecte automatiquement, mais on peut ajouter une logique custom
+      // EventSource reconnecte automatiquement
       if (this.reconnectAttempts < this.maxReconnectAttempts) {
         this.reconnectAttempts++
         console.log(
