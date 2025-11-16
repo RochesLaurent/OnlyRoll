@@ -51,6 +51,7 @@ const mockGame: Game = {
   id: 1,
   name: 'Test Game',
   gameMaster: mockUser,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   status: 'in_progress' as any,
   maxPlayers: 5,
   currentPlayersCount: 2,
@@ -58,6 +59,7 @@ const mockGame: Game = {
   inviteCode: 'ABC123',
   createdAt: '2024-01-01',
   updatedAt: '2024-01-01',
+  gamePlayers: [],
 }
 
 const createMockMap = (overrides: Partial<GameMap> = {}): GameMap => ({
@@ -68,7 +70,6 @@ const createMockMap = (overrides: Partial<GameMap> = {}): GameMap => ({
   gridSize: 50,
   gridType: GridType.SQUARE,
   imageUrl: '/maps/test.jpg',
-  thumbnailUrl: '/maps/test-thumb.jpg',
   isActive: true,
   game: mockGame,
   createdAt: '2024-01-01',
@@ -250,6 +251,7 @@ describe('mapStore', () => {
   it('should handle no active map', async () => {
     const store = useMapStore()
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(mapApi.getActive).mockResolvedValueOnce(null as any)
 
     await store.loadActiveMap(1)
@@ -548,7 +550,8 @@ describe('mapStore', () => {
     store.activeMap = createMockMap({ id: 1 })
     store.tokens = [createMockToken({ id: 1, isVisible: true })]
 
-    vi.mocked(tokenApi.hide).mockResolvedValueOnce(undefined)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(tokenApi.hide).mockResolvedValueOnce(undefined as any)
 
     await store.toggleTokenVisibility(1)
 
@@ -562,7 +565,8 @@ describe('mapStore', () => {
     store.activeMap = createMockMap({ id: 1 })
     store.tokens = [createMockToken({ id: 1, isVisible: false })]
 
-    vi.mocked(tokenApi.show).mockResolvedValueOnce(undefined)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(tokenApi.show).mockResolvedValueOnce(undefined as any)
 
     await store.toggleTokenVisibility(1)
 
@@ -578,7 +582,8 @@ describe('mapStore', () => {
     store.activeMap = createMockMap({ id: 1 })
     store.tokens = [createMockToken({ id: 1, isLocked: true })]
 
-    vi.mocked(tokenApi.unlock).mockResolvedValueOnce(undefined)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(tokenApi.unlock).mockResolvedValueOnce(undefined as any)
 
     await store.toggleTokenLock(1)
 
@@ -592,7 +597,8 @@ describe('mapStore', () => {
     store.activeMap = createMockMap({ id: 1 })
     store.tokens = [createMockToken({ id: 1, isLocked: false })]
 
-    vi.mocked(tokenApi.lock).mockResolvedValueOnce(undefined)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(tokenApi.lock).mockResolvedValueOnce(undefined as any)
 
     await store.toggleTokenLock(1)
 

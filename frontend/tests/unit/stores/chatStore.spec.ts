@@ -83,6 +83,7 @@ describe('chatStore', () => {
   it('should handle load messages with non-array response', async () => {
     const store = useChatStore()
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(chatApi.listRecent).mockResolvedValueOnce(null as any)
 
     await store.loadRecentMessages(1)
@@ -428,6 +429,7 @@ describe('chatStore', () => {
 
   it('should handle non-array messages in sortedMessages', () => {
     const store = useChatStore()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     store.messages = null as any
 
     const sorted = store.sortedMessages

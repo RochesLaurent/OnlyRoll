@@ -8,6 +8,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { reactive } from 'vue'
 import { useGameStore } from '@/stores/game'
+import type { Game } from '@/types/game'
 import { useAuthStore } from '@/stores/auth'
 import { gameApi } from '@/services/api/gameApi'
 import { GameStatus } from '@/types/game'
@@ -31,6 +32,7 @@ vi.mock('@/stores/auth', () => ({
 }))
 
 describe('gameStore', () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let mockAuthStore: any
 
   beforeEach(() => {
@@ -68,7 +70,7 @@ describe('gameStore', () => {
     const mockGames = [
       { id: 1, name: 'Game 1', isPublic: true },
       { id: 2, name: 'Game 2', isPublic: true },
-    ]
+    ] as Game[]
 
     vi.mocked(gameApi.listPublic).mockResolvedValueOnce({
       data: mockGames,
@@ -101,7 +103,7 @@ describe('gameStore', () => {
 
   it('should fetch my games successfully', async () => {
     const store = useGameStore()
-    const mockGames = [{ id: 1, name: 'My Game' }]
+    const mockGames = [{ id: 1, name: 'My Game' }] as Game[]
 
     vi.mocked(gameApi.myGames).mockResolvedValueOnce(mockGames)
 
@@ -128,7 +130,7 @@ describe('gameStore', () => {
 
   it('should fetch game by id successfully', async () => {
     const store = useGameStore()
-    const mockGame = { id: 1, name: 'Test Game' }
+    const mockGame = { id: 1, name: 'Test Game' } as Game
 
     vi.mocked(gameApi.getById).mockResolvedValueOnce(mockGame)
 
@@ -154,7 +156,7 @@ describe('gameStore', () => {
   it('should create game successfully', async () => {
     const store = useGameStore()
     const dto = { name: 'New Game', maxPlayers: 5 }
-    const mockGame = { id: 1, ...dto }
+    const mockGame = { id: 1, ...dto } as Game
 
     vi.mocked(gameApi.create).mockResolvedValueOnce(mockGame)
 
@@ -182,11 +184,11 @@ describe('gameStore', () => {
 
   it('should update game successfully', async () => {
     const store = useGameStore()
-    store.games = [{ id: 1, name: 'Old Name' }]
-    store.myGames = [{ id: 1, name: 'Old Name' }]
-    store.currentGame = { id: 1, name: 'Old Name' }
+    store.games = [{ id: 1, name: 'Old Name' }] as Game[]
+    store.myGames = [{ id: 1, name: 'Old Name' }] as Game[]
+    store.currentGame = { id: 1, name: 'Old Name' } as Game
 
-    const updatedGame = { id: 1, name: 'New Name' }
+    const updatedGame = { id: 1, name: 'New Name' } as Game
     vi.mocked(gameApi.update).mockResolvedValueOnce(updatedGame)
 
     await store.updateGame(1, { name: 'New Name' })
@@ -201,9 +203,9 @@ describe('gameStore', () => {
 
   it('should delete game successfully', async () => {
     const store = useGameStore()
-    store.games = [{ id: 1, name: 'Game 1' }, { id: 2, name: 'Game 2' }]
-    store.myGames = [{ id: 1, name: 'Game 1' }]
-    store.currentGame = { id: 1, name: 'Game 1' }
+    store.games = [{ id: 1, name: 'Game 1' }, { id: 2, name: 'Game 2' }] as Game[]
+    store.myGames = [{ id: 1, name: 'Game 1' }] as Game[]
+    store.currentGame = { id: 1, name: 'Game 1' } as Game
 
     vi.mocked(gameApi.delete).mockResolvedValueOnce(undefined)
 
@@ -219,7 +221,7 @@ describe('gameStore', () => {
 
   it('should join game successfully', async () => {
     const store = useGameStore()
-    const mockGame = { id: 1, name: 'Joined Game' }
+    const mockGame = { id: 1, name: 'Joined Game' } as Game
 
     vi.mocked(gameApi.joinByCode).mockResolvedValueOnce(mockGame)
 
@@ -245,8 +247,8 @@ describe('gameStore', () => {
 
   it('should leave game successfully', async () => {
     const store = useGameStore()
-    store.myGames = [{ id: 1, name: 'Game 1' }]
-    store.currentGame = { id: 1, name: 'Game 1' }
+    store.myGames = [{ id: 1, name: 'Game 1' }] as Game[]
+    store.currentGame = { id: 1, name: 'Game 1' } as Game
 
     vi.mocked(gameApi.leave).mockResolvedValueOnce(undefined)
 
@@ -261,10 +263,10 @@ describe('gameStore', () => {
 
   it('should start game successfully', async () => {
     const store = useGameStore()
-    const mockGame = { id: 1, name: 'Game', status: GameStatus.IN_PROGRESS }
+    const mockGame = { id: 1, name: 'Game', status: GameStatus.IN_PROGRESS } as Game
 
-    store.currentGame = { id: 1, name: 'Game', status: GameStatus.PREPARATION }
-    store.myGames = [{ id: 1, name: 'Game', status: GameStatus.PREPARATION }]
+    store.currentGame = { id: 1, name: 'Game', status: GameStatus.PREPARATION } as Game
+    store.myGames = [{ id: 1, name: 'Game', status: GameStatus.PREPARATION }] as Game[]
 
     vi.mocked(gameApi.start).mockResolvedValueOnce(mockGame)
 
@@ -280,9 +282,9 @@ describe('gameStore', () => {
   it('should compute publicGames correctly', () => {
     const store = useGameStore()
     store.games = [
-      { id: 1, isPublic: true },
-      { id: 2, isPublic: false },
-      { id: 3, isPublic: true },
+      { id: 1, isPublic: true } as Game,
+      { id: 2, isPublic: false } as Game,
+      { id: 3, isPublic: true } as Game,
     ]
 
     expect(store.publicGames).toHaveLength(2)
@@ -292,12 +294,14 @@ describe('gameStore', () => {
     const store = useGameStore()
     store.currentGame = {
       id: 1,
-      gameMaster: { id: 1 },
-    }
+      gameMaster: { id: 1, pseudo: '', email: '' },
+    } as Game
 
     expect(store.isGameMaster).toBe(true)
 
-    store.currentGame.gameMaster = { id: 2 }
+    if (store.currentGame) {
+      store.currentGame.gameMaster = { id: 2, pseudo: '', email: '' }
+    }
     expect(store.isGameMaster).toBe(false)
   })
 
@@ -315,9 +319,12 @@ describe('gameStore', () => {
       createdAt: '2024-01-01',
       updatedAt: '2024-01-01',
       gamePlayers: [
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { id: 1, user: { id: 1, email: 'test@test.com', pseudo: 'TestUser' }, role: 'player', status: 'active' } as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { id: 2, user: { id: 2, email: 'test2@test.com', pseudo: 'TestUser2' }, role: 'player', status: 'active' } as any,
       ],
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any
 
     expect(store.isPlayerInGame).toBe(true)
@@ -332,12 +339,14 @@ describe('gameStore', () => {
       id: 1,
       status: GameStatus.PREPARATION,
       currentPlayersCount: 2,
-      gameMaster: { id: 1 },
-    }
+      gameMaster: { id: 1, pseudo: '', email: '' },
+    } as Game
 
     expect(store.canStartGame).toBe(true)
 
-    store.currentGame.currentPlayersCount = 0
+    if (store.currentGame) {
+      store.currentGame.currentPlayersCount = 0
+    }
     expect(store.canStartGame).toBe(false)
   })
 
@@ -346,8 +355,8 @@ describe('gameStore', () => {
     store.currentGame = {
       id: 1,
       status: GameStatus.PREPARATION,
-      gameMaster: { id: 1 },
-    }
+      gameMaster: { id: 1, pseudo: '', email: '' },
+    } as Game
 
     expect(store.canModifyGame).toBe(true)
 

@@ -215,6 +215,7 @@ readonly class TokenService
                     'isVisible' => $token->isVisible(),
                     'isLocked' => $token->isLocked(),
                     'layer' => $token->getLayer(),
+                    'settings' => $token->getSettings(),
                     'createdAt' => $createdAt->format('c'),
                     'updatedAt' => $token->getUpdatedAt()?->format('c'),
                 ],
@@ -263,6 +264,7 @@ readonly class TokenService
                     'isVisible' => $token->isVisible(),
                     'isLocked' => $token->isLocked(),
                     'layer' => $token->getLayer(),
+                    'settings' => $token->getSettings(),
                     'createdAt' => $createdAt->format('c'),
                     'updatedAt' => $token->getUpdatedAt()?->format('c'),
                 ],
@@ -392,7 +394,7 @@ readonly class TokenService
     /**
      * Publie une mise à jour de token via Mercure.
      */
-    private function publishTokenUpdate(GameToken $token): void
+    public function publishTokenUpdate(GameToken $token): void
     {
         $map = $token->getMap();
         \assert(null !== $map, 'Token must have a map');

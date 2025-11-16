@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\DTO\Chat\SendMessageDTO;
 use App\Entity\GameMessage;
 use App\Repository\GameRepository;
+use App\Repository\UserRepository;
 use App\Service\ChatService;
 use DateTimeImmutable;
 use Exception;
@@ -29,6 +30,7 @@ final class ChatController extends AbstractController
     public function __construct(
         private readonly ChatService $chatService,
         private readonly GameRepository $gameRepository,
+        private readonly UserRepository $userRepository,
         private readonly SerializerInterface $serializer,
         private readonly ValidatorInterface $validator,
     ) {
@@ -249,6 +251,7 @@ final class ChatController extends AbstractController
         }
 
         $formula = $data['formula'];
+        $recipientId = $data['recipientId'] ?? null;
 
         try {
             // Format attendu: "2d6+3" ou "1d20"
@@ -287,6 +290,26 @@ final class ChatController extends AbstractController
                 $total += $roll;
             }
 
+            // Récupérer le destinataire si c'est un jet privé
+            $recipient = null;
+            if (null !== $recipientId) {
+                $recipient = $this->userRepository->find($recipientId);
+                if (!$recipient) {
+                    return $this->json(
+                        ['error' => 'Destinataire introuvable'],
+                        Response::HTTP_NOT_FOUND,
+                    );
+                }
+
+                // Vérifier que le destinataire fait partie de la partie
+                if (!$game->hasPlayer($recipient)) {
+                    return $this->json(
+                        ['error' => 'Le destinataire doit faire partie de la partie'],
+                        Response::HTTP_BAD_REQUEST,
+                    );
+                }
+            }
+
             // Créer le message de lancer de dés
             $message = $this->chatService->createDiceRollMessage(
                 $game,
@@ -298,6 +321,8 @@ final class ChatController extends AbstractController
                     'modifier' => $modifier,
                     'formula' => $formula,
                 ],
+                false,
+                $recipient,
             );
 
             return $this->json($message, Response::HTTP_CREATED, [], ['groups' => 'message:read']);

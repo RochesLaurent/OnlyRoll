@@ -20,7 +20,7 @@
             :class="[
               route.path === '/dashboard'
                 ? 'bg-primary-500 text-white'
-                : 'text-secondary-300 hover:text-secondary-50 hover:bg-secondary-700'
+                : 'text-secondary-300 hover:text-secondary-50 hover:bg-secondary-700',
             ]"
           >
             Dashboard
@@ -31,7 +31,7 @@
             :class="[
               route.path.startsWith('/games')
                 ? 'bg-primary-500 text-white'
-                : 'text-secondary-300 hover:text-secondary-50 hover:bg-secondary-700'
+                : 'text-secondary-300 hover:text-secondary-50 hover:bg-secondary-700',
             ]"
           >
             Parties

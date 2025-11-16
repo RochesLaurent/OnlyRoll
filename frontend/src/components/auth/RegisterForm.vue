@@ -444,8 +444,14 @@ const validateForm = (): boolean => {
       value: form.value.pseudo,
       rules: [
         { validator: validators.required, message: 'Le pseudo est requis' },
-        { validator: validators.minLength(3), message: 'Le pseudo doit faire au moins 3 caractères' },
-        { validator: validators.maxLength(50), message: 'Le pseudo ne peut pas dépasser 50 caractères' },
+        {
+          validator: validators.minLength(3),
+          message: 'Le pseudo doit faire au moins 3 caractères',
+        },
+        {
+          validator: validators.maxLength(50),
+          message: 'Le pseudo ne peut pas dépasser 50 caractères',
+        },
       ],
     },
     {
@@ -461,10 +467,22 @@ const validateForm = (): boolean => {
       value: form.value.password,
       rules: [
         { validator: validators.required, message: 'Le mot de passe est requis' },
-        { validator: validators.minLength(8), message: 'Le mot de passe doit faire au moins 8 caractères' },
-        { validator: (v) => /[a-z]/.test(String(v)), message: 'Le mot de passe doit contenir au moins une minuscule' },
-        { validator: (v) => /[A-Z]/.test(String(v)), message: 'Le mot de passe doit contenir au moins une majuscule' },
-        { validator: (v) => /\d/.test(String(v)), message: 'Le mot de passe doit contenir au moins un chiffre' },
+        {
+          validator: validators.minLength(8),
+          message: 'Le mot de passe doit faire au moins 8 caractères',
+        },
+        {
+          validator: (v) => /[a-z]/.test(String(v)),
+          message: 'Le mot de passe doit contenir au moins une minuscule',
+        },
+        {
+          validator: (v) => /[A-Z]/.test(String(v)),
+          message: 'Le mot de passe doit contenir au moins une majuscule',
+        },
+        {
+          validator: (v) => /\d/.test(String(v)),
+          message: 'Le mot de passe doit contenir au moins un chiffre',
+        },
       ],
     },
     {
@@ -472,14 +490,20 @@ const validateForm = (): boolean => {
       value: form.value.confirmPassword,
       rules: [
         { validator: validators.required, message: 'La confirmation du mot de passe est requise' },
-        { validator: validators.matches(form.value.password), message: 'Les mots de passe ne correspondent pas' },
+        {
+          validator: validators.matches(form.value.password),
+          message: 'Les mots de passe ne correspondent pas',
+        },
       ],
     },
     {
       field: 'acceptTerms',
       value: form.value.acceptTerms,
       rules: [
-        { validator: (v) => v === true, message: "Vous devez accepter les conditions d'utilisation" },
+        {
+          validator: (v) => v === true,
+          message: "Vous devez accepter les conditions d'utilisation",
+        },
       ],
     },
   ])

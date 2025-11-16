@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 
 /**
  * Store pour gérer la présence en temps réel des joueurs

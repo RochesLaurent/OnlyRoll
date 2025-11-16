@@ -31,11 +31,6 @@ final class AuthController extends AbstractController
 
     /**
      * Enregistre un nouvel utilisateur.
-     *
-     * @param Request $request
-     * @param EntityManagerInterface $em
-     * @param UserPasswordHasherInterface $passwordHasher
-     * @return JsonResponse
      */
     #[Route('/api/register', name: 'api_register', methods: ['POST'])]
     public function register(
@@ -91,9 +86,6 @@ final class AuthController extends AbstractController
 
     /**
      * Récupère les informations de l'utilisateur connecté.
-     *
-     * @param User|null $user
-     * @return JsonResponse
      */
     #[Route('/api/me', name: 'api_me', methods: ['GET'])]
     public function me(#[CurrentUser] ?User $user): JsonResponse
@@ -119,8 +111,6 @@ final class AuthController extends AbstractController
 
     /**
      * Déconnecte l'utilisateur en supprimant le cookie JWT.
-     *
-     * @return JsonResponse
      */
     #[Route('/api/logout', name: 'api_logout', methods: ['POST'])]
     public function logout(): JsonResponse

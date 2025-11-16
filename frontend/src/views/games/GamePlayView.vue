@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useGameStore } from '@/stores/game'
 import { useMapStore } from '@/stores/mapStore'
@@ -13,6 +13,7 @@ import type {
   MercureChatMessageData,
   MercurePresenceEventData,
 } from '@/types/websocket'
+import type { GameMap as GameMapType } from '@/types/game'
 
 // Composants
 import GameHeader from '@/components/game/GameHeader.vue'
@@ -23,6 +24,7 @@ import PlayersList from '@/components/game/PlayersList.vue'
 import DiceRoller from '@/components/game/DiceRoller.vue'
 import EmptyMapState from '@/components/game/EmptyMapState.vue'
 import UploadMapModal from '@/components/game/UploadMapModal.vue'
+import EditMapModal from '@/components/game/EditMapModal.vue'
 import CreateTokenModal from '@/components/game/CreateTokenModal.vue'
 
 const route = useRoute()
@@ -48,6 +50,10 @@ const connectionState = ref<'connecting' | 'open' | 'closed'>('connecting')
 
 // État upload carte
 const showUploadModal = ref(false)
+
+// État édition carte
+const showEditModal = ref(false)
+const editingMap = ref<GameMapType | null>(null)
 
 // État création token
 const showCreateTokenModal = ref(false)
@@ -92,7 +98,7 @@ onMounted(async () => {
 })
 
 // Détecter la navigation interne (retour arrière, changement de route)
-onBeforeRouteLeave(async (to, from) => {
+onBeforeRouteLeave(async () => {
   console.log('Navigation détectée - déconnexion en cours')
 
   // Attendre que la déconnexion soit notifiée avant de continuer
@@ -171,30 +177,35 @@ function setupMercure() {
   }, 500)
 
   // Écouter les événements de tokens
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   mercureService.on('token', (event: any) => {
     console.log('Token event:', event.data)
     mapStore.handleTokenEvent(event.data as MercureTokenEventData)
   })
 
   // Écouter les événements de carte
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   mercureService.on('map', (event: any) => {
     console.log('Map event:', event.data)
     mapStore.handleMapEvent(event.data as MercureMapEventData)
   })
 
   // Écouter les messages du chat (inclut aussi les lancers de dés)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   mercureService.on('chat', (event: any) => {
     console.log('Chat message:', event.data)
     chatStore.handleChatMessage(event.data as MercureChatMessageData)
   })
 
   // Écouter les événements de joueurs
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   mercureService.on('player', (event: any) => {
     console.log('Player event:', event.data)
     gameStore.fetchGameById(gameId.value)
   })
 
   // Écouter les événements de présence
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   mercureService.on('presence', (event: any) => {
     console.log('Presence event:', event)
     // L'événement Mercure a gameId au niveau principal
@@ -214,8 +225,19 @@ function setupMercure() {
       try {
         await presenceApi.heartbeat(gameId.value)
         console.log('Heartbeat envoyé pour la partie', gameId.value)
-      } catch (error) {
-        console.error('Erreur lors de l\'envoi du heartbeat:', error)
+      } catch (error: unknown) {
+        console.error("Erreur lors de l'envoi du heartbeat:", error)
+
+        // Si erreur 401, la session a expiré (géré automatiquement par l'intercepteur)
+        // L'utilisateur sera redirigé vers /login par apiClient
+        if (
+          error &&
+          typeof error === 'object' &&
+          'statusCode' in error &&
+          error.statusCode === 401
+        ) {
+          console.warn('⚠️ Session expirée détectée, redirection vers la page de connexion...')
+        }
       }
     }
   }, 30000)
@@ -275,6 +297,36 @@ async function handleMapCreated() {
 }
 
 // ============================================
+// Handlers - Édition de carte
+// ============================================
+async function handleEditMap(map: GameMapType) {
+  try {
+    // Charger les données complètes de la carte depuis l'API
+    const response = await fetch(`http://localhost:8000/api/games/${gameId.value}/maps/${map.id}`, {
+      method: 'GET',
+      credentials: 'include',
+    })
+
+    if (!response.ok) {
+      throw new Error('Erreur lors du chargement de la carte')
+    }
+
+    const fullMapData = await response.json()
+    editingMap.value = fullMapData
+    showEditModal.value = true
+  } catch (error) {
+    console.error('Erreur lors du chargement de la carte:', error)
+    alert('Impossible de charger les données de la carte')
+  }
+}
+
+async function handleMapUpdated() {
+  // Les données seront mises à jour via Mercure
+  showEditModal.value = false
+  editingMap.value = null
+}
+
+// ============================================
 // Handlers - Toolbar & Navigation
 // ============================================
 function handleToolChanged(tool: string) {
@@ -307,7 +359,7 @@ function handleGoBack() {
 async function handleLeaveGame() {
   if (
     !confirm(
-      'Êtes-vous sûr de vouloir quitter cette partie ?\n\nVous serez retiré en tant que membre et ne pourrez plus y accéder.',
+      'Êtes-vous sûr de vouloir quitter cette partie ?\n\nVous serez retiré en tant que membre et ne pourrez plus y accéder.'
     )
   )
     return
@@ -368,6 +420,7 @@ async function handleTokenCreated() {
           :game-id="gameId"
           @tool-changed="handleToolChanged"
           @open-upload-modal="handleCreateMap"
+          @open-edit-modal="handleEditMap"
           @zoom-changed="handleZoomChanged"
           @center-map="handleCenterMap"
         />
@@ -388,6 +441,7 @@ async function handleTokenCreated() {
             :editable="isGameMaster"
             :is-game-master="isGameMaster"
             :game-players="currentGame?.gamePlayers || []"
+            :game-id="gameId"
             :selected-tool="selectedTool"
             :zoom="mapZoom"
             @create-token="handleCreateToken"
@@ -421,7 +475,12 @@ async function handleTokenCreated() {
           </div>
 
           <!-- Contenu -->
-          <ChatPanel v-if="activeTab === 'chat'" :messages="messages" :game-id="gameId" />
+          <ChatPanel
+            v-if="activeTab === 'chat'"
+            :messages="messages"
+            :game-id="gameId"
+            :players="currentGame?.gamePlayers || []"
+          />
 
           <PlayersList
             v-if="activeTab === 'players'"
@@ -439,9 +498,13 @@ async function handleTokenCreated() {
         :class="[
           'absolute top-1/2 -translate-y-1/2 bg-secondary-800 border border-secondary-700 p-3 hover:bg-secondary-700 transition-all z-20 shadow-lg',
           rightPanelOpen ? 'right-96' : 'right-0',
-          rightPanelOpen ? 'rounded-l-lg' : 'rounded-l-lg'
+          rightPanelOpen ? 'rounded-l-lg' : 'rounded-l-lg',
         ]"
-        :title="rightPanelOpen ? 'Masquer le panel (chat, joueurs, dés)' : 'Afficher le panel (chat, joueurs, dés)'"
+        :title="
+          rightPanelOpen
+            ? 'Masquer le panel (chat, joueurs, dés)'
+            : 'Afficher le panel (chat, joueurs, dés)'
+        "
       >
         <div class="flex items-center gap-2">
           <svg
@@ -455,9 +518,7 @@ async function handleTokenCreated() {
           >
             <polyline points="9 18 15 12 9 6"></polyline>
           </svg>
-          <span v-if="!rightPanelOpen" class="text-xs text-secondary-400 font-medium">
-            Panel
-          </span>
+          <span v-if="!rightPanelOpen" class="text-xs text-secondary-400 font-medium"> Panel </span>
         </div>
       </button>
     </div>
@@ -469,9 +530,19 @@ async function handleTokenCreated() {
       @success="handleMapCreated"
     />
 
+    <EditMapModal
+      v-if="editingMap"
+      :show="showEditModal"
+      :game-id="gameId"
+      :map="editingMap"
+      @close="showEditModal = false"
+      @success="handleMapUpdated"
+    />
+
     <CreateTokenModal
       :show="showCreateTokenModal"
       :position="tokenCreationPosition"
+      :game-id="gameId"
       :map-id="activeMap?.id || 0"
       @close="showCreateTokenModal = false"
       @success="handleTokenCreated"

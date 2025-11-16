@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useMapStore } from '@/stores/mapStore'
+import { PencilIcon } from '@heroicons/vue/24/outline'
 import type { GameMap } from '@/types/game'
 
 const props = defineProps<{
@@ -11,6 +12,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   toolChanged: [tool: string]
   openUploadModal: []
+  openEditModal: [map: GameMap]
   zoomChanged: [zoom: number]
   centerMap: []
 }>()
@@ -164,7 +166,7 @@ async function selectMap(map: GameMap) {
     showMapDropdown.value = false
     mapSearchQuery.value = ''
   } catch (error) {
-    console.error('Erreur lors de l\'activation de la carte:', error)
+    console.error("Erreur lors de l'activation de la carte:", error)
   }
 }
 
@@ -181,6 +183,11 @@ function toggleMapDropdown() {
       input?.focus()
     }, 100)
   }
+}
+
+function editMapConfirm(map: GameMap, event: Event) {
+  event.stopPropagation() // Empêcher l'activation de la carte
+  emit('openEditModal', map)
 }
 
 async function deleteMapConfirm(map: GameMap, event: Event) {
@@ -224,7 +231,12 @@ async function deleteMapConfirm(map: GameMap, event: Event) {
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
           </button>
 
@@ -254,7 +266,9 @@ async function deleteMapConfirm(map: GameMap, event: Event) {
                   @click="selectMap(map)"
                   :class="[
                     'w-full px-4 py-3 text-left hover:bg-secondary-700 transition-colors flex items-center gap-3 group',
-                    map.id === activeMapId ? 'bg-primary-500/20 text-primary-300' : 'text-secondary-300',
+                    map.id === activeMapId
+                      ? 'bg-primary-500/20 text-primary-300'
+                      : 'text-secondary-300',
                   ]"
                 >
                   <span class="text-lg">🗺️</span>
@@ -264,7 +278,16 @@ async function deleteMapConfirm(map: GameMap, event: Event) {
                       {{ map.description }}
                     </div>
                   </div>
-                  <span v-if="map.id === activeMapId" class="text-xs text-primary-400 mr-2">✓ Active</span>
+                  <span v-if="map.id === activeMapId" class="text-xs text-primary-400 mr-2"
+                    >✓ Active</span
+                  >
+                  <button
+                    @click="editMapConfirm(map, $event)"
+                    class="p-2 rounded-lg text-secondary-400 hover:text-blue-400 hover:bg-blue-900/20 transition-colors opacity-0 group-hover:opacity-100"
+                    title="Éditer cette carte"
+                  >
+                    <PencilIcon class="w-5 h-5" />
+                  </button>
                   <button
                     @click="deleteMapConfirm(map, $event)"
                     class="p-2 rounded-lg text-secondary-400 hover:text-red-400 hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"

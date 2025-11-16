@@ -117,10 +117,15 @@ function handleJoin(event: Event) {
       <!-- Players Count et Bouton -->
       <div class="flex items-center justify-between">
         <div class="flex items-center text-sm gap-2">
-          <UsersIcon class="w-5 h-5" :class="onlinePlayersCount > 0 ? 'text-success' : 'text-secondary-400'" />
+          <UsersIcon
+            class="w-5 h-5"
+            :class="onlinePlayersCount > 0 ? 'text-success' : 'text-secondary-400'"
+          />
           <span class="text-secondary-400">
-            <span :class="onlinePlayersCount > 0 ? 'text-success font-semibold' : ''">{{ onlinePlayersCount }}</span>
-             joueur(s) connecté(s)
+            <span :class="onlinePlayersCount > 0 ? 'text-success font-semibold' : ''">{{
+              onlinePlayersCount
+            }}</span>
+            joueur(s) connecté(s)
           </span>
         </div>
 

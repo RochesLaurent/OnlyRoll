@@ -17,6 +17,7 @@ vi.mock('@/composables/useAuth', () => ({
 
 describe('RegisterForm.vue', () => {
   let wrapper: VueWrapper
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let mockAuth: any
 
   beforeEach(() => {

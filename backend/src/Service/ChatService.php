@@ -175,6 +175,7 @@ readonly class ChatService
      * @param string $diceExpression Expression du lancer (ex: "1d20+5")
      * @param array<string, mixed> $results Résultats du lancer
      * @param bool $isPrivate Si le lancer est privé
+     * @param User|null $recipient Destinataire du jet de dés (pour les jets privés)
      */
     public function createDiceRollMessage(
         Game $game,
@@ -182,6 +183,7 @@ readonly class ChatService
         string $diceExpression,
         array $results,
         bool $isPrivate = false,
+        ?User $recipient = null,
     ): GameMessage {
         $content = \sprintf(
             '%s a lancé %s et obtenu %d',
@@ -197,6 +199,11 @@ readonly class ChatService
         $message->setType(GameMessage::TYPE_DICE_ROLL);
         $message->setIsInCharacter(true);
         $message->setDiceResult($results);
+
+        // Si c'est un jet privé, définir le destinataire
+        if (null !== $recipient) {
+            $message->setRecipient($recipient);
+        }
 
         $this->em->persist($message);
         $this->em->flush();
@@ -216,8 +223,8 @@ readonly class ChatService
             'content' => $content,
             'type' => GameMessage::TYPE_DICE_ROLL,
             'isIC' => $message->isInCharacter(),
-            'recipientId' => null,
-            'recipientName' => null,
+            'recipientId' => $recipient?->getId(),
+            'recipientName' => $recipient?->getPseudo(),
             'createdAt' => $createdAt->format('c'),
             'diceResult' => $results,
         ]);

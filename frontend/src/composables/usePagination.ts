@@ -55,12 +55,7 @@ export function usePagination(
   paginationMeta: Ref<PaginationMeta>,
   options: UsePaginationOptions = {}
 ) {
-  const {
-    onPageChange,
-    delta = 2,
-    scrollToTop = true,
-    scrollBehavior = 'smooth',
-  } = options
+  const { onPageChange, delta = 2, scrollToTop = true, scrollBehavior = 'smooth' } = options
 
   /**
    * Navigue vers une page spécifique.
@@ -228,11 +223,7 @@ export function usePagination(
 /**
  * Helper pour créer une pagination initiale.
  */
-export function createPagination(
-  page = 1,
-  limit = 12,
-  total = 0
-): PaginationMeta {
+export function createPagination(page = 1, limit = 12, total = 0): PaginationMeta {
   return {
     page,
     limit,

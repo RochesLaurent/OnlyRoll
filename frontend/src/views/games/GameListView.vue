@@ -10,12 +10,7 @@ import DashboardNav from '@/components/dashboard/DashboardNav.vue'
 import GameCard from '@/components/game/GameCard.vue'
 import CreateGameModal from '@/components/game/CreateGameModal.vue'
 import JoinGameModal from '@/components/game/JoinGameModal.vue'
-import {
-  PlusIcon,
-  MagnifyingGlassIcon,
-  FunnelIcon,
-  InboxIcon,
-} from '@heroicons/vue/24/outline'
+import { PlusIcon, MagnifyingGlassIcon, FunnelIcon, InboxIcon } from '@heroicons/vue/24/outline'
 
 const gameStore = useGameStore()
 const authStore = useAuthStore()
@@ -38,12 +33,16 @@ const filters = ref<GameFilters>({
 })
 
 // Handler pour les événements de présence
-function handlePresenceEvent(event: any) {
+function handlePresenceEvent(data: unknown) {
+  const event = data as {
+    gameId: number
+    data: { userId: number; type: string; onlineUsers?: number[]; timestamp: string }
+  }
   console.log('Presence event in GameListView:', event)
   const presenceData: MercurePresenceEventData = {
     gameId: event.gameId,
     userId: event.data.userId,
-    type: event.data.type,
+    type: event.data.type as 'join' | 'leave' | 'heartbeat',
     onlineUsers: event.data.onlineUsers,
     timestamp: event.data.timestamp,
   }
@@ -97,10 +96,7 @@ async function loadGames() {
   if (activeTab.value === 'public') {
     // Pour l'onglet "Toutes", charger à la fois myGames et les parties publiques
     // Les filtres sont appliqués côté client via les computed
-    await Promise.all([
-      gameStore.fetchMyGames(),
-      gameStore.fetchPublicGames()
-    ])
+    await Promise.all([gameStore.fetchMyGames(), gameStore.fetchPublicGames()])
   } else {
     // Pour l'onglet "M.J.", charger uniquement myGames
     await gameStore.fetchMyGames()
@@ -369,7 +365,9 @@ watch(displayedGames, () => {
                   placeholder="Rechercher..."
                   class="w-full px-3 py-2 pr-10 bg-secondary-700 border border-secondary-600 rounded-md text-secondary-50 placeholder-secondary-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
-                <MagnifyingGlassIcon class="w-5 h-5 absolute right-3 top-1/2 -translate-y-1/2 text-secondary-400" />
+                <MagnifyingGlassIcon
+                  class="w-5 h-5 absolute right-3 top-1/2 -translate-y-1/2 text-secondary-400"
+                />
               </div>
             </div>
 
@@ -425,10 +423,7 @@ watch(displayedGames, () => {
         <!-- Main Content -->
         <main class="flex-1 min-w-0">
           <!-- Results counter -->
-          <div
-            v-if="!gameStore.isLoading && displayedGames.length > 0"
-            class="mb-4"
-          >
+          <div v-if="!gameStore.isLoading && displayedGames.length > 0" class="mb-4">
             <p class="text-secondary-400 text-sm">
               <span class="text-secondary-50 font-medium">{{ displayedGames.length }}</span>
               {{ displayedGames.length > 1 ? 'parties trouvées' : 'partie trouvée' }}

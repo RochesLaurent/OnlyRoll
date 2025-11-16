@@ -451,6 +451,7 @@ export interface RollDiceDTO {
   reason?: string // Raison du lancer (ex: "Attaque", "Perception")
   isInCharacter?: boolean // Lancer au nom du personnage ou du joueur
   isVisible?: boolean // Visible par tous ou secret (MJ uniquement)
+  recipientId?: number // Pour les jets de dés privés (whisper)
 }
 
 // ===========================

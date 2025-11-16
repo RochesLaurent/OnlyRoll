@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { ref } from 'vue'
+import { ref, type Ref } from 'vue'
 import { usePagination, createPagination } from '@/composables/usePagination'
 import type { PaginationMeta } from '@/composables/usePagination'
 
@@ -13,10 +13,10 @@ import type { PaginationMeta } from '@/composables/usePagination'
 global.scrollTo = vi.fn()
 
 describe('usePagination', () => {
-  let paginationMeta: ReturnType<typeof ref<PaginationMeta>>
+  let paginationMeta: Ref<PaginationMeta>
 
   beforeEach(() => {
-    paginationMeta = ref({
+    paginationMeta = ref<PaginationMeta>({
       page: 1,
       limit: 12,
       total: 100,

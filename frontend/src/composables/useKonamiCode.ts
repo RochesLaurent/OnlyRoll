@@ -14,17 +14,17 @@ export function useKonamiCode(callback?: () => void) {
 
   // Séquence du Konami Code
   const konamiSequence = [
-    'ArrowUp', 
-    'ArrowUp', 
-    'ArrowDown', 
+    'ArrowUp',
+    'ArrowUp',
     'ArrowDown',
-    'ArrowLeft', 
-    'ArrowRight', 
-    'ArrowLeft', 
+    'ArrowDown',
+    'ArrowLeft',
+    'ArrowRight',
+    'ArrowLeft',
     'ArrowRight',
     (code: string) => ['KeyB', 'KeyQ'].includes(code),
     (code: string) => ['KeyA', 'KeyQ'].includes(code),
-  ];
+  ]
 
   // Historique des touches pressées
   let userSequence: string[] = []
@@ -34,7 +34,7 @@ export function useKonamiCode(callback?: () => void) {
    */
   const handleKeydown = (event: KeyboardEvent) => {
     // Ajoute la touche pressée à la séquence utilisateur
-    console.log("Touche pressée :", event.code);
+    console.log('Touche pressée :', event.code)
     userSequence.push(event.code)
 
     // Limite la taille de l'historique à la longueur de la séquence
@@ -44,12 +44,12 @@ export function useKonamiCode(callback?: () => void) {
 
     // Vérifie si la séquence correspond
     const isMatch = userSequence.every((key, index) => {
-      const expected = konamiSequence[index];
+      const expected = konamiSequence[index]
       if (typeof expected === 'function') {
-        return expected(key);
+        return expected(key)
       }
-      return key === expected;
-    });
+      return key === expected
+    })
 
     if (isMatch && userSequence.length === konamiSequence.length) {
       isActivated.value = true

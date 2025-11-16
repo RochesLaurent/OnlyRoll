@@ -310,8 +310,14 @@ export const useChatStore = defineStore('chat', () => {
 
   /**
    * Lancer des dés
+   * @param recipientId - ID du destinataire pour un jet privé (optionnel)
    */
-  async function rollDice(gameId: number, formula: string, isInCharacter: boolean = true) {
+  async function rollDice(
+    gameId: number,
+    formula: string,
+    isInCharacter: boolean = true,
+    recipientId?: number
+  ) {
     isSending.value = true
     error.value = null
 
@@ -319,6 +325,7 @@ export const useChatStore = defineStore('chat', () => {
       const message = await chatApi.rollDice(gameId, {
         formula,
         isInCharacter,
+        recipientId,
       })
       addMessageToList(message)
       return message

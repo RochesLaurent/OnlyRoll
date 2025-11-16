@@ -3,10 +3,7 @@
     <RouterView />
 
     <!-- Easter Egg: Konami Code -->
-    <KonamiVictory
-      :is-active="konamiActivated"
-      @close="resetKonami"
-    />
+    <KonamiVictory :is-active="konamiActivated" @close="resetKonami" />
   </div>
 </template>
 

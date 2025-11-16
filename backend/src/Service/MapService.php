@@ -110,6 +110,28 @@ final class MapService
 
         $this->entityManager->flush();
 
+        // Publier l'événement Mercure pour notifier tous les joueurs de la mise à jour
+        $game = $map->getGame();
+        \assert(null !== $game, 'Map must have a game');
+        $gameId = $game->getId();
+        \assert(null !== $gameId, 'Game ID cannot be null');
+
+        $this->mercurePublisher->publishMapChange($gameId, [
+            'type' => 'updated',
+            'map' => [
+                'id' => $map->getId(),
+                'name' => $map->getName(),
+                'description' => $map->getDescription(),
+                'imageUrl' => $map->getImageUrl(),
+                'gridSize' => $map->getGridSize(),
+                'gridType' => $map->getGridType(),
+                'width' => $map->getWidth(),
+                'height' => $map->getHeight(),
+                'isActive' => $map->isActive(),
+                'settings' => $map->getSettings(),
+            ],
+        ]);
+
         return $map;
     }
 

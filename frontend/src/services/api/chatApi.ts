@@ -166,7 +166,7 @@ export const chatApi = {
    * Lancer des dés et envoyer le résultat au chat
    * Utilise l'endpoint dédié qui calcule le résultat des dés côté serveur
    * @param gameId - ID du jeu
-   * @param dto - Données du lancer (formule, raison, visibilité)
+   * @param dto - Données du lancer (formule, raison, visibilité, destinataire)
    * @returns Le message avec le résultat du lancer de dés intégré
    */
   async rollDice(gameId: number, dto: RollDiceDTO): Promise<GameMessage> {
@@ -175,6 +175,7 @@ export const chatApi = {
       reason: dto.reason,
       isInCharacter: dto.isInCharacter,
       isVisible: dto.isVisible,
+      recipientId: dto.recipientId,
     })
   },
 

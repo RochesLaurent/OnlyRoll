@@ -15,7 +15,17 @@
       "Bash(php bin/console:*)",
       "Bash(php -l:*)",
       "Bash(php -r:*)",
-      "Bash(redis-cli:*)"
+      "Bash(redis-cli:*)",
+      "Bash(Get-Content backendvarlogdev.log -Tail 100)",
+      "Bash(node -e:*)",
+      "Bash(test:*)",
+      "Bash(curl:*)",
+      "Bash(vendor/bin/php-cs-fixer fix:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run format:check:*)",
+      "Bash(npx prettier --write \"src/**/*.{js,ts,vue}\")",
+      "Bash(npx prettier:*)"
     ],
     "deny": [],
     "ask": []

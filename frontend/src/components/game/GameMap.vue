@@ -4,6 +4,7 @@ import { useMapStore } from '@/stores/mapStore'
 import { useAuthStore } from '@/stores/auth'
 import type { GameMap, GameToken, GamePlayer } from '@/types/game'
 import { TokenType } from '@/types/game'
+import EditTokenModal from './EditTokenModal.vue'
 
 const props = defineProps<{
   map: GameMap | null
@@ -13,6 +14,7 @@ const props = defineProps<{
   zoom: number
   isGameMaster?: boolean
   gamePlayers?: GamePlayer[]
+  gameId: number
 }>()
 
 const mapStore = useMapStore()
@@ -24,9 +26,12 @@ const draggingToken = ref<number | null>(null)
 const dragStartPos = ref({ x: 0, y: 0 })
 const showPermissionsModal = ref(false)
 const permissionsTokenId = ref<number | null>(null)
+const showEditTokenModal = ref(false)
+const editingToken = ref<GameToken | null>(null)
 
-// Ref pour le conteneur scrollable
+// Ref pour le conteneur scrollable et pour le div de la carte
 const mapContainer = ref<HTMLElement | null>(null)
+const mapElement = ref<HTMLElement | null>(null)
 
 // Dimensions de la grille
 const gridSize = computed(() => props.map?.gridSize || 50)
@@ -56,9 +61,20 @@ const zoomScale = computed(() => props.zoom / 100)
 // Gestion des tokens - Utilise mapStore
 // ============================================
 
-// État pour la création de token
-const isCreatingToken = ref(false)
-const pendingTokenPosition = ref<{ x: number; y: number } | null>(null)
+/**
+ * Tokens filtrés que l'utilisateur devrait voir
+ * Les tokens invisibles ne sont visibles que pour le MJ ou les joueurs qui ont le contrôle
+ */
+const visibleTokens = computed(() => {
+  return props.tokens.filter((token) => {
+    // Si le token est visible, tout le monde le voit
+    if (token.isVisible) return true
+
+    // Si le token est invisible, seul le MJ ou les joueurs avec contrôle peuvent le voir
+    const canControl = canControlToken(token)
+    return props.isGameMaster || canControl
+  })
+})
 
 // Émettre un événement pour demander la création d'un token
 const emit = defineEmits<{
@@ -76,6 +92,12 @@ function selectToken(tokenId: number) {
 function handleTokenMouseDown(event: MouseEvent, token: GameToken) {
   if (!props.editable || token.isLocked || props.selectedTool !== 'select') return
 
+  // Vérifier si l'utilisateur peut contrôler ce token
+  if (!canControlToken(token)) {
+    console.log("Vous n'avez pas la permission de contrôler ce token")
+    return
+  }
+
   draggingToken.value = token.id
   dragStartPos.value = { x: token.x, y: token.y }
 
@@ -83,13 +105,18 @@ function handleTokenMouseDown(event: MouseEvent, token: GameToken) {
 }
 
 function handleMouseMove(event: MouseEvent) {
-  if (!draggingToken.value || !props.editable) return
+  if (!draggingToken.value || !props.editable || !mapElement.value || !mapContainer.value) return
 
-  const container = event.currentTarget as HTMLElement
-  const rect = container.getBoundingClientRect()
+  // Récupérer les rectangles du conteneur scrollable et de la carte
+  const mapRect = mapElement.value.getBoundingClientRect()
 
-  const x = Math.floor((event.clientX - rect.left) / gridSize.value)
-  const y = Math.floor((event.clientY - rect.top) / gridSize.value)
+  // Calculer la position de la souris relative à la carte, en tenant compte du zoom
+  const mouseX = (event.clientX - mapRect.left) / zoomScale.value
+  const mouseY = (event.clientY - mapRect.top) / zoomScale.value
+
+  // Convertir en coordonnées de grille
+  const x = Math.floor(mouseX / gridSize.value)
+  const y = Math.floor(mouseY / gridSize.value)
 
   // Contraindre aux limites de la carte
   const constrainedX = Math.max(0, Math.min(x, (props.map?.width || 20) - 1))
@@ -179,6 +206,27 @@ function closePermissionsModal() {
   permissionsTokenId.value = null
 }
 
+// ============================================
+// Édition de token
+// ============================================
+function openEditModal(tokenId: number) {
+  const token = props.tokens.find((t) => t.id === tokenId)
+  if (token) {
+    editingToken.value = token
+    showEditTokenModal.value = true
+  }
+}
+
+function closeEditModal() {
+  showEditTokenModal.value = false
+  editingToken.value = null
+}
+
+function handleTokenUpdated() {
+  closeEditModal()
+  // La modal recharge déjà les tokens via mapStore.loadMapTokens()
+}
+
 async function togglePlayerPermission(tokenId: number, userId: number, hasPermission: boolean) {
   try {
     const action = hasPermission ? 'remove' : 'add'
@@ -201,18 +249,21 @@ const currentPermissions = computed(() => {
 // ============================================
 function handleMapClick(event: MouseEvent) {
   // Ne rien faire si ce n'est pas le bon outil ou si pas éditable
-  if (!props.editable || props.selectedTool !== 'token') return
+  if (!props.editable || props.selectedTool !== 'token' || !mapElement.value) return
 
   // Ignorer si on clique sur un token existant
   const target = event.target as HTMLElement
   if (target.closest('[data-token-id]')) return
 
-  const container = event.currentTarget as HTMLElement
-  const rect = container.getBoundingClientRect()
+  const mapRect = mapElement.value.getBoundingClientRect()
 
-  // Calculer la position en tenant compte du zoom
-  const x = Math.floor((event.clientX - rect.left) / (gridSize.value * zoomScale.value))
-  const y = Math.floor((event.clientY - rect.top) / (gridSize.value * zoomScale.value))
+  // Calculer la position de la souris relative à la carte, en tenant compte du zoom
+  const mouseX = (event.clientX - mapRect.left) / zoomScale.value
+  const mouseY = (event.clientY - mapRect.top) / zoomScale.value
+
+  // Convertir en coordonnées de grille
+  const x = Math.floor(mouseX / gridSize.value)
+  const y = Math.floor(mouseY / gridSize.value)
 
   // Contraindre aux limites de la carte
   const constrainedX = Math.max(0, Math.min(x, (props.map?.width || 20) - 1))
@@ -239,6 +290,20 @@ function getTokenColor(type: TokenType): string {
 
 function getTokenSize(token: GameToken): number {
   return gridSize.value * (token.size || 1)
+}
+
+function getTokenImageUrl(imageUrl: string | undefined): string | null {
+  if (!imageUrl) return null
+
+  // Si l'URL commence par http:// ou https://, la retourner telle quelle
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    return imageUrl
+  }
+
+  // Sinon, ajouter l'URL du backend
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+  const baseUrl = apiUrl.replace(/\/api$/, '')
+  return `${baseUrl}${imageUrl}`
 }
 
 // ============================================
@@ -272,7 +337,7 @@ async function moveTokenByKey(direction: 'up' | 'down' | 'left' | 'right') {
 
   // Vérifier si l'utilisateur peut contrôler ce token
   if (!canControlToken(token)) {
-    console.log('Vous n\'avez pas la permission de contrôler ce token')
+    console.log("Vous n'avez pas la permission de contrôler ce token")
     return
   }
 
@@ -412,6 +477,7 @@ defineExpose({
   >
     <!-- Container de la carte avec dimensions et zoom -->
     <div
+      ref="mapElement"
       @click="handleMapClick"
       class="relative bg-cover bg-center transition-transform duration-200"
       :class="{
@@ -444,7 +510,7 @@ defineExpose({
 
       <!-- Tokens -->
       <div
-        v-for="token in tokens"
+        v-for="token in visibleTokens"
         :key="token.id"
         :data-token-id="token.id"
         @mousedown="(e) => handleTokenMouseDown(e, token)"
@@ -470,8 +536,8 @@ defineExpose({
           :style="{ backgroundColor: getTokenColor(token.type) }"
         >
           <img
-            v-if="token.imageUrl"
-            :src="token.imageUrl"
+            v-if="getTokenImageUrl(token.imageUrl)"
+            :src="getTokenImageUrl(token.imageUrl)!"
             :alt="token.name"
             class="w-full h-full object-cover"
           />
@@ -506,6 +572,14 @@ defineExpose({
           class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-secondary-800 border border-secondary-700 rounded-lg p-4 shadow-lg z-50"
         >
           <div class="flex gap-2">
+            <button
+              v-if="isGameMaster"
+              @click="openEditModal(selectedTokenId)"
+              class="btn-secondary text-sm"
+              title="Modifier le token"
+            >
+              ✏️ Modifier
+            </button>
             <button
               @click="toggleTokenVisibility(selectedTokenId)"
               class="btn-secondary text-sm"
@@ -591,10 +665,7 @@ defineExpose({
                   "
                   class="w-5 h-5 rounded border-gray-600 text-primary-500 focus:ring-primary-500 focus:ring-offset-secondary-900"
                 />
-                <label
-                  :for="`player-${gamePlayer.id}`"
-                  class="flex-1 text-white cursor-pointer"
-                >
+                <label :for="`player-${gamePlayer.id}`" class="flex-1 text-white cursor-pointer">
                   {{ gamePlayer.user.pseudo }}
                 </label>
               </div>
@@ -609,6 +680,16 @@ defineExpose({
         </div>
       </Transition>
     </Teleport>
+
+    <!-- Modal d'édition de token -->
+    <EditTokenModal
+      :show="showEditTokenModal"
+      :token="editingToken"
+      :game-id="gameId"
+      :map-id="map?.id || 0"
+      @close="closeEditModal"
+      @success="handleTokenUpdated"
+    />
   </div>
 </template>
 

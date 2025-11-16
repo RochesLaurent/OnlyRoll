@@ -7,6 +7,7 @@ namespace App\Service;
 use App\Entity\Game;
 use App\Entity\User;
 use DateTimeImmutable;
+use Exception;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Log\LoggerInterface;
 
@@ -247,7 +248,7 @@ class PresenceService
      */
     private function getOnlineUsersFromCache(int $gameId): array
     {
-        $cacheKey = self::CACHE_PREFIX.$gameId;
+        $cacheKey = self::CACHE_PREFIX . $gameId;
 
         try {
             $item = $this->presenceCache->getItem($cacheKey);
@@ -258,8 +259,9 @@ class PresenceService
 
             $data = $item->get();
 
-            return is_array($data) ? $data : [];
-        } catch (\Exception $e) {
+            return \is_array($data) ? $data : [];
+        }
+        catch (Exception $e) {
             $this->logger->error('Error reading presence from cache', [
                 'gameId' => $gameId,
                 'error' => $e->getMessage(),
@@ -272,11 +274,11 @@ class PresenceService
     /**
      * Sauvegarde les utilisateurs en ligne dans le cache Redis.
      *
-     * @param array<int, DateTimeImmutable> $onlineUsers Mapping userId -> lastSeen
+     * @param array<int, DateTimeImmutable|int> $onlineUsers Mapping userId -> lastSeen (DateTimeImmutable ou timestamp)
      */
     private function saveOnlineUsersToCache(int $gameId, array $onlineUsers): void
     {
-        $cacheKey = self::CACHE_PREFIX.$gameId;
+        $cacheKey = self::CACHE_PREFIX . $gameId;
 
         try {
             // Si plus personne n'est connecté, on supprime la clé
@@ -302,7 +304,8 @@ class PresenceService
                 'gameId' => $gameId,
                 'users' => array_keys($data),
             ]);
-        } catch (\Exception $e) {
+        }
+        catch (Exception $e) {
             $this->logger->error('Error saving presence to cache', [
                 'gameId' => $gameId,
                 'error' => $e->getMessage(),
@@ -320,7 +323,8 @@ class PresenceService
             // Note: CacheItemPoolInterface n'a pas de méthode clear() globale
             // Pour simplifier, on log juste un avertissement
             $this->logger->warning('clearAll() called but not fully implemented - use Redis FLUSHDB if needed');
-        } catch (\Exception $e) {
+        }
+        catch (Exception $e) {
             $this->logger->error('Error clearing presence cache', [
                 'error' => $e->getMessage(),
             ]);

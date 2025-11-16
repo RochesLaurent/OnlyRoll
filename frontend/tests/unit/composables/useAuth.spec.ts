@@ -22,7 +22,9 @@ vi.mock('@/stores/auth', () => ({
 }))
 
 describe('useAuth', () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let mockRouter: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let mockStore: any
 
   beforeEach(() => {

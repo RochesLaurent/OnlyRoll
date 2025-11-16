@@ -39,6 +39,58 @@ final class MapController extends AbstractController
     }
 
     /**
+     * Parse multipart/form-data for PUT/PATCH requests.
+     * PHP only automatically parses multipart data for POST requests.
+     */
+    private function parseMultipartFormData(Request $request): ?JsonResponse
+    {
+        $contentType = $request->headers->get('Content-Type') ?? '';
+
+        // Extraire la boundary du Content-Type
+        if (!preg_match('/boundary=(.+)$/i', $contentType, $matches)) {
+            return null;
+        }
+
+        $boundary = trim($matches[1]);
+        $rawData = $request->getContent();
+
+        // Découper le contenu en parties
+        $parts = preg_split('/--' . preg_quote($boundary, '/') . '/', $rawData);
+
+        if (false === $parts) {
+            return $this->json(['error' => 'Erreur lors du parsing du contenu multipart'], Response::HTTP_BAD_REQUEST);
+        }
+
+        foreach ($parts as $part) {
+            $part = trim($part);
+            if (empty($part) || $part === '--') {
+                continue;
+            }
+
+            // Séparer les headers du body avec \r\n\r\n ou \n\n
+            $divider = str_contains($part, "\r\n\r\n") ? "\r\n\r\n" : "\n\n";
+            $sections = explode($divider, $part, 2);
+
+            if (\count($sections) < 2) {
+                continue;
+            }
+
+            [$headers, $body] = $sections;
+
+            // Parser le nom du champ depuis Content-Disposition
+            if (preg_match('/name="([^"]+)"/', $headers, $nameMatch)) {
+                $name = $nameMatch[1];
+                $value = rtrim($body, "\r\n");
+
+                // Ajouter au request parameter bag
+                $request->request->set($name, $value);
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Liste toutes les cartes d'une partie.
      */
     #[Route('', name: 'list', methods: ['GET'])]
@@ -294,6 +346,7 @@ final class MapController extends AbstractController
         }
 
         try {
+            $imageUrl = null;
             $imageFile = $request->files->get('image');
 
             if ($imageFile) {
@@ -304,14 +357,63 @@ final class MapController extends AbstractController
                 $imageUrl = $this->fileUploader->uploadMapImage($imageFile);
             }
 
-            $dto = $this->serializer->deserialize(
-                $request->getContent(),
-                UpdateMapDTO::class,
-                'json',
-            );
+            $contentType = $request->headers->get('Content-Type') ?? '';
 
-            if (isset($imageUrl)) {
-                $dto->imageUrl = $imageUrl;
+            if (str_contains($contentType, 'multipart/form-data')) {
+                // Gestion du FormData
+                $dto = new UpdateMapDTO();
+
+                // Pour les requêtes PUT/PATCH, il faut parser manuellement le multipart/form-data
+                // car PHP ne le fait que pour POST
+                if (\in_array($request->getMethod(), ['PUT', 'PATCH'], true)) {
+                    $this->parseMultipartFormData($request);
+                }
+
+                $name = $request->request->get('name');
+                if (\is_string($name) && !empty($name)) {
+                    $dto->name = $name;
+                }
+
+                $description = $request->request->get('description');
+                if (\is_string($description)) {
+                    $dto->description = $description;
+                }
+
+                $gridSize = $request->request->get('gridSize');
+                if (null !== $gridSize) {
+                    $dto->gridSize = (int) $gridSize;
+                }
+
+                $gridType = $request->request->get('gridType');
+                if (\is_string($gridType)) {
+                    $dto->gridType = $gridType;
+                }
+
+                $width = $request->request->get('width');
+                if (null !== $width) {
+                    $dto->width = (int) $width;
+                }
+
+                $height = $request->request->get('height');
+                if (null !== $height) {
+                    $dto->height = (int) $height;
+                }
+
+                if ($imageUrl) {
+                    $dto->imageUrl = $imageUrl;
+                }
+            }
+            else {
+                // Gestion du JSON
+                $dto = $this->serializer->deserialize(
+                    $request->getContent(),
+                    UpdateMapDTO::class,
+                    'json',
+                );
+
+                if (isset($imageUrl)) {
+                    $dto->imageUrl = $imageUrl;
+                }
             }
 
             $errors = $this->validator->validate($dto);

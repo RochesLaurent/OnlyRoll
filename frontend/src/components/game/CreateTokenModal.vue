@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useMapStore } from '@/stores/mapStore'
 import { TokenType } from '@/types/game'
+import { ArrowUpTrayIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 
 const props = defineProps<{
   show: boolean
   position: { x: number; y: number } | null
   mapId: number
+  gameId: number
 }>()
 
 const emit = defineEmits<{
@@ -26,6 +28,11 @@ const form = ref({
 
 const isSubmitting = ref(false)
 const error = ref<string | null>(null)
+
+// Gestion de l'upload de fichier
+const selectedFile = ref<File | null>(null)
+const imagePreview = ref<string | null>(null)
+const uploadError = ref<string | null>(null)
 
 // Types de tokens disponibles
 const tokenTypes = [
@@ -49,6 +56,53 @@ const isFormValid = computed(() => {
   return form.value.name.trim().length > 0
 })
 
+// Gestion de la sélection de fichier
+function handleFileSelect(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+
+  if (!file) return
+
+  // Vérifier le type
+  if (!file.type.startsWith('image/')) {
+    uploadError.value = 'Veuillez sélectionner une image (JPEG, PNG, WebP, GIF)'
+    return
+  }
+
+  // Vérifier la taille (5 Mo max pour les tokens)
+  const maxSize = 5 * 1024 * 1024
+  if (file.size > maxSize) {
+    uploadError.value = "L'image est trop volumineuse (max 5 Mo)"
+    return
+  }
+
+  selectedFile.value = file
+  uploadError.value = null
+
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    imagePreview.value = e.target?.result as string
+  }
+  reader.readAsDataURL(file)
+}
+
+// Supprimer le fichier sélectionné
+function removeFile() {
+  selectedFile.value = null
+  imagePreview.value = null
+  form.value.imageUrl = ''
+}
+
+// Réinitialiser le formulaire quand on ferme la modal
+watch(
+  () => props.show,
+  (isShown) => {
+    if (!isShown) {
+      removeFile()
+    }
+  }
+)
+
 // Handlers
 async function handleSubmit() {
   if (!isFormValid.value || !props.position) return
@@ -57,16 +111,50 @@ async function handleSubmit() {
   error.value = null
 
   try {
-    await mapStore.createToken(props.mapId, {
-      name: form.value.name.trim(),
-      type: form.value.type,
-      x: props.position.x,
-      y: props.position.y,
-      size: form.value.size,
-      imageUrl: form.value.imageUrl.trim() || undefined,
-      isVisible: true,
-      isLocked: false,
-    })
+    // Si un fichier est sélectionné, on utilise l'API directe avec FormData
+    if (selectedFile.value) {
+      const formData = new FormData()
+      formData.append('image', selectedFile.value)
+      formData.append('name', form.value.name.trim())
+      formData.append('type', form.value.type)
+      formData.append('x', props.position.x.toString())
+      formData.append('y', props.position.y.toString())
+      formData.append('size', form.value.size.toString())
+      formData.append('isVisible', 'true')
+      formData.append('isLocked', 'false')
+
+      const response = await fetch(
+        `http://localhost:8000/api/games/${props.gameId}/maps/${props.mapId}/tokens`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          body: formData,
+        }
+      )
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Erreur lors de la création du token')
+      }
+
+      const createdToken = await response.json()
+      console.log('Token créé avec image:', createdToken)
+
+      // Recharger les tokens
+      await mapStore.loadMapTokens(props.mapId)
+    } else {
+      // Sinon, on utilise l'API classique du store
+      await mapStore.createToken(props.mapId, {
+        name: form.value.name.trim(),
+        type: form.value.type,
+        x: props.position.x,
+        y: props.position.y,
+        size: form.value.size,
+        imageUrl: form.value.imageUrl.trim() || undefined,
+        isVisible: true,
+        isLocked: false,
+      })
+    }
 
     // Réinitialiser le formulaire
     form.value = {
@@ -75,6 +163,7 @@ async function handleSubmit() {
       size: 1,
       imageUrl: '',
     }
+    removeFile()
 
     emit('success')
   } catch (e: unknown) {
@@ -112,7 +201,9 @@ function handleClose() {
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
       @click.self="handleClose"
     >
-      <div class="bg-secondary-800 rounded-xl shadow-2xl w-full max-w-lg mx-4 border border-secondary-700">
+      <div
+        class="bg-secondary-800 rounded-xl shadow-2xl w-full max-w-lg mx-4 border border-secondary-700"
+      >
         <!-- Header -->
         <div class="flex items-center justify-between p-6 border-b border-secondary-700">
           <div>
@@ -127,7 +218,12 @@ function handleClose() {
             :disabled="isSubmitting"
           >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -139,8 +235,16 @@ function handleClose() {
             v-if="error"
             class="bg-error/10 border border-error/20 rounded-lg p-4 flex items-start gap-3"
           >
-            <svg class="w-5 h-5 text-error flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+            <svg
+              class="w-5 h-5 text-error flex-shrink-0 mt-0.5"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                clip-rule="evenodd"
+              />
             </svg>
             <p class="text-sm text-error">{{ error }}</p>
           </div>
@@ -210,21 +314,59 @@ function handleClose() {
             </select>
           </div>
 
-          <!-- Image URL (optionnel) -->
+          <!-- Upload d'image (optionnel) -->
           <div>
-            <label for="token-image" class="block text-sm font-medium text-secondary-200 mb-2">
-              URL de l'image (optionnel)
+            <label class="block text-sm font-medium text-secondary-200 mb-2">
+              Image du token (optionnel)
             </label>
-            <input
-              id="token-image"
-              v-model="form.imageUrl"
-              type="url"
-              :disabled="isSubmitting"
-              class="w-full px-4 py-3 bg-secondary-700 border border-secondary-600 rounded-lg text-white placeholder-secondary-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50"
-              placeholder="https://example.com/image.png"
-            />
-            <p class="text-xs text-secondary-500 mt-1">
-              Si vide, les initiales du nom seront utilisées
+
+            <div
+              v-if="!imagePreview"
+              class="border-2 border-dashed border-secondary-600 rounded-lg p-6 text-center hover:border-primary-500 transition-colors cursor-pointer"
+            >
+              <input
+                type="file"
+                accept="image/*"
+                class="hidden"
+                id="token-file-input"
+                @change="handleFileSelect"
+                :disabled="isSubmitting"
+              />
+              <label for="token-file-input" class="cursor-pointer">
+                <ArrowUpTrayIcon class="w-10 h-10 mx-auto text-secondary-400 mb-2" />
+                <p class="text-secondary-300 font-medium mb-1">
+                  Cliquez pour sélectionner une image
+                </p>
+                <p class="text-secondary-500 text-xs">JPEG, PNG, WebP ou GIF (max 5 Mo)</p>
+              </label>
+            </div>
+
+            <!-- Aperçu de l'image -->
+            <div v-else class="relative">
+              <img
+                :src="imagePreview"
+                alt="Aperçu"
+                class="w-32 h-32 object-cover bg-secondary-900 rounded-lg mx-auto"
+              />
+              <button
+                type="button"
+                @click="removeFile"
+                class="absolute top-0 right-0 bg-red-600 hover:bg-red-700 text-white p-1 rounded-full transition-colors"
+                title="Supprimer l'image"
+                :disabled="isSubmitting"
+              >
+                <XMarkIcon class="w-4 h-4" />
+              </button>
+              <p v-if="selectedFile" class="text-secondary-400 text-xs mt-2 text-center">
+                {{ selectedFile.name }}
+              </p>
+            </div>
+
+            <p v-if="uploadError" class="text-xs text-red-400 mt-2">
+              {{ uploadError }}
+            </p>
+            <p v-else class="text-xs text-secondary-500 mt-2">
+              Si aucune image n'est fournie, les initiales du nom seront utilisées
             </p>
           </div>
 

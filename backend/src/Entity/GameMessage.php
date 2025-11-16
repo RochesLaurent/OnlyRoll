@@ -96,7 +96,7 @@ class GameMessage
         nullable: true,
         onDelete: 'SET NULL',
     )]
-    #[Groups(['message:read'])]
+    #[Groups(['message:list', 'message:read'])]
     private ?User $recipient = null;
 
     #[ORM\Column(name: 'message_created_at', type: Types::DATETIME_IMMUTABLE)]

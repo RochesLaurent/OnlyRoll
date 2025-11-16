@@ -27,6 +27,7 @@ vi.mock('@/utils/logger', () => ({
 
 describe('LoginForm.vue', () => {
   let wrapper: VueWrapper
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let mockAuth: any
 
   beforeEach(() => {

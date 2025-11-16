@@ -177,7 +177,11 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useAuth } from '@/composables/useAuth'
-import { useFormValidation, usePasswordVisibility, validators } from '@/composables/useFormValidation'
+import {
+  useFormValidation,
+  usePasswordVisibility,
+  validators,
+} from '@/composables/useFormValidation'
 import type { LoginCredentials } from '@/types/auth'
 import { logger } from '@/utils/logger'
 
@@ -219,7 +223,10 @@ const validateForm = (): boolean => {
       value: form.value.password,
       rules: [
         { validator: validators.required, message: 'Le mot de passe est requis' },
-        { validator: validators.minLength(3), message: 'Le mot de passe doit faire au moins 3 caractères' },
+        {
+          validator: validators.minLength(3),
+          message: 'Le mot de passe doit faire au moins 3 caractères',
+        },
       ],
     },
   ])

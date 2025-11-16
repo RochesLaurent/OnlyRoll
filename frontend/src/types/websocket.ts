@@ -110,7 +110,8 @@ export interface MercureMessageDeletedData {
  * Données reçues lors d'un événement de token via Mercure
  */
 export interface MercureTokenEventData {
-  type: 'created' | 'updated' | 'moved' | 'deleted'
+  type?: 'created' | 'updated' | 'moved' | 'deleted'
+  action?: 'created' | 'updated' | 'moved' | 'deleted' // Compatibilité backend
   token: GameToken
   mapId?: number
   gameId?: number

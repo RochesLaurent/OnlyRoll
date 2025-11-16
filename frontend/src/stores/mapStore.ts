@@ -221,7 +221,8 @@ export const useMapStore = defineStore('map', () => {
       }
     } catch (e: unknown) {
       if (e && typeof e === 'object' && 'message' in e) {
-        error.value = (e as { message: string }).message || 'Erreur lors de la suppression de la carte'
+        error.value =
+          (e as { message: string }).message || 'Erreur lors de la suppression de la carte'
       } else {
         error.value = 'Erreur lors de la suppression de la carte'
       }
@@ -456,14 +457,15 @@ export const useMapStore = defineStore('map', () => {
     if (!token) return
 
     try {
+      let updatedToken: GameToken
       if (token.isVisible) {
-        await tokenApi.hide(currentGameId.value, activeMap.value.id, tokenId)
+        updatedToken = await tokenApi.hide(currentGameId.value, activeMap.value.id, tokenId)
       } else {
-        await tokenApi.show(currentGameId.value, activeMap.value.id, tokenId)
+        updatedToken = await tokenApi.show(currentGameId.value, activeMap.value.id, tokenId)
       }
 
-      // Mettre à jour localement
-      token.isVisible = !token.isVisible
+      // Mettre à jour avec la réponse complète de l'API (qui contient settings)
+      updateTokenInList(updatedToken)
     } catch (e: unknown) {
       if (e && typeof e === 'object' && 'message' in e) {
         error.value =
@@ -488,14 +490,15 @@ export const useMapStore = defineStore('map', () => {
     if (!token) return
 
     try {
+      let updatedToken: GameToken
       if (token.isLocked) {
-        await tokenApi.unlock(currentGameId.value, activeMap.value.id, tokenId)
+        updatedToken = await tokenApi.unlock(currentGameId.value, activeMap.value.id, tokenId)
       } else {
-        await tokenApi.lock(currentGameId.value, activeMap.value.id, tokenId)
+        updatedToken = await tokenApi.lock(currentGameId.value, activeMap.value.id, tokenId)
       }
 
-      // Mettre à jour localement
-      token.isLocked = !token.isLocked
+      // Mettre à jour avec la réponse complète de l'API (qui contient settings)
+      updateTokenInList(updatedToken)
     } catch (e: unknown) {
       if (e && typeof e === 'object' && 'message' in e) {
         error.value =
@@ -511,11 +514,7 @@ export const useMapStore = defineStore('map', () => {
   /**
    * Gérer les permissions de contrôle d'un token
    */
-  async function manageTokenPermissions(
-    tokenId: number,
-    action: 'add' | 'remove',
-    userId: number
-  ) {
+  async function manageTokenPermissions(tokenId: number, action: 'add' | 'remove', userId: number) {
     if (!currentGameId.value || !activeMap.value) {
       throw new Error('GameId or Map not set')
     }
@@ -529,11 +528,8 @@ export const useMapStore = defineStore('map', () => {
         userId
       )
 
-      // Mettre à jour le token localement
-      const tokenIndex = tokens.value.findIndex((t) => t.id === tokenId)
-      if (tokenIndex !== -1) {
-        tokens.value[tokenIndex] = updatedToken
-      }
+      // Utiliser updateTokenInList pour garantir la réactivité
+      updateTokenInList(updatedToken)
 
       logger.log(`Permission ${action} pour l'utilisateur ${userId} sur le token ${tokenId}`)
     } catch (e: unknown) {
@@ -561,7 +557,7 @@ export const useMapStore = defineStore('map', () => {
     // Structure attendue depuis le backend :
     // { type: 'created' | 'updated' | 'moved' | 'deleted', token: GameToken }
     // Note: Le backend envoie 'action' au lieu de 'type' pour certains événements
-    const eventType = (data as any).type || (data as any).action
+    const eventType = data.type || data.action
 
     switch (eventType) {
       case 'created':
@@ -602,8 +598,14 @@ export const useMapStore = defineStore('map', () => {
         break
 
       case 'updated':
+        // Mettre à jour la carte active si c'est celle qui a été modifiée
         if (activeMap.value && data.map.id === activeMap.value.id) {
           activeMap.value = data.map
+        }
+        // Mettre à jour la carte dans la liste de toutes les cartes
+        const mapIndex = allMaps.value.findIndex((m) => m.id === data.map.id)
+        if (mapIndex !== -1) {
+          allMaps.value[mapIndex] = data.map
         }
         break
 
@@ -632,7 +634,8 @@ export const useMapStore = defineStore('map', () => {
   function updateTokenInList(updatedToken: GameToken) {
     const index = tokens.value.findIndex((t) => t.id === updatedToken.id)
     if (index !== -1) {
-      tokens.value[index] = updatedToken
+      // Utiliser splice pour garantir la réactivité Vue
+      tokens.value.splice(index, 1, updatedToken)
     } else {
       // Si le token n'existe pas, l'ajouter
       tokens.value.push(updatedToken)

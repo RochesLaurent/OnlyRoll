@@ -1,23 +1,11 @@
 <template>
   <Teleport to="body">
-    <Transition
-      name="konami"
-      @enter="onEnter"
-      @after-leave="onAfterLeave"
-    >
-      <div
-        v-if="show"
-        class="konami-overlay"
-        @click="close"
-      >
+    <Transition name="konami" @enter="onEnter" @after-leave="onAfterLeave">
+      <div v-if="show" class="konami-overlay" @click="close">
         <div class="konami-container">
           <!-- Message principal avec effet rétro -->
-          <h1 class="konami-title">
-            KONAMI CODE
-          </h1>
-          <h2 class="konami-subtitle">
-            VICTORY!
-          </h2>
+          <h1 class="konami-title">KONAMI CODE</h1>
+          <h2 class="konami-subtitle">VICTORY!</h2>
 
           <!-- Score rétro -->
           <div class="konami-score">
@@ -26,17 +14,10 @@
           </div>
 
           <!-- Message de félicitations -->
-          <p class="konami-message">
-            🎮 Vous avez découvert l'easter egg ! 🎮
-          </p>
+          <p class="konami-message">🎮 Vous avez découvert l'easter egg ! 🎮</p>
 
           <!-- Bouton pour fermer -->
-          <button
-            class="konami-close"
-            @click.stop="close"
-          >
-            [ PRESS START ]
-          </button>
+          <button class="konami-close" @click.stop="close">[ PRESS START ]</button>
         </div>
       </div>
     </Transition>
@@ -69,7 +50,7 @@ const playSound = () => {
     audio.play().catch(() => {
       // Ignore les erreurs de lecture (permissions navigateur)
     })
-  } catch (error) {
+  } catch {
     // Son non disponible, pas grave
   }
 }
@@ -303,16 +284,26 @@ watch(
 
 /* Animations */
 @keyframes konami-flicker {
-  0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+  0%,
+  19%,
+  21%,
+  23%,
+  25%,
+  54%,
+  56%,
+  100% {
     opacity: 1;
   }
-  20%, 24%, 55% {
+  20%,
+  24%,
+  55% {
     opacity: 0.8;
   }
 }
 
 @keyframes konami-pulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
   }
   50% {

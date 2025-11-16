@@ -54,7 +54,7 @@ class GameToken
 
     #[ORM\Column(name: 'token_image_url', type: Types::STRING, length: 500, nullable: true)]
     #[Assert\Url(message: 'L\'URL de l\'image n\'est pas valide')]
-    #[Groups(['token:read', 'token:write'])]
+    #[Groups(['token:list', 'token:read', 'token:write'])]
     private ?string $imageUrl = null;
 
     #[ORM\Column(name: 'token_x', type: Types::INTEGER)]
@@ -73,7 +73,7 @@ class GameToken
         max: 10.0,
         notInRangeMessage: 'La taille doit être entre {{ min }} et {{ max }}',
     )]
-    #[Groups(['token:read', 'token:write', 'map:read'])]
+    #[Groups(['token:list', 'token:read', 'token:write', 'map:read'])]
     private float $size = 1.0;
 
     #[ORM\Column(name: 'token_rotation', type: Types::INTEGER)]
@@ -82,7 +82,7 @@ class GameToken
         max: 359,
         notInRangeMessage: 'La rotation doit être entre {{ min }}° et {{ max }}°',
     )]
-    #[Groups(['token:read', 'token:write'])]
+    #[Groups(['token:list', 'token:read', 'token:write'])]
     private int $rotation = 0;
 
     #[ORM\Column(name: 'token_is_visible', type: Types::BOOLEAN)]
@@ -90,7 +90,7 @@ class GameToken
     private bool $isVisible = true;
 
     #[ORM\Column(name: 'token_is_locked', type: Types::BOOLEAN)]
-    #[Groups(['token:read', 'token:write'])]
+    #[Groups(['token:list', 'token:read', 'token:write'])]
     private bool $isLocked = false;
 
     #[ORM\Column(name: 'token_layer', type: Types::STRING, length: 20)]
@@ -98,14 +98,14 @@ class GameToken
         choices: ['background', 'objects', 'tokens', 'effects'],
         message: 'Le calque doit être "background", "objects", "tokens" ou "effects"',
     )]
-    #[Groups(['token:read', 'token:write'])]
+    #[Groups(['token:list', 'token:read', 'token:write'])]
     private string $layer = 'tokens';
 
     /**
      * @var array<string, mixed>|null
      */
     #[ORM\Column(name: 'token_settings', type: Types::JSON, nullable: true)]
-    #[Groups(['token:read', 'token:write'])]
+    #[Groups(['token:list', 'token:read', 'token:write'])]
     private ?array $settings = null;
 
     #[ORM\Column(name: 'token_created_at', type: Types::DATETIME_IMMUTABLE)]

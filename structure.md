@@ -184,6 +184,8 @@ OnlyRoll/
     │   │   │   ├── CreateGameModal.vue
     │   │   │   ├── CreateTokenModal.vue
     │   │   │   ├── DiceRoller.vue
+    │   │   │   ├── EditMapModal.vue
+    │   │   │   ├── EditTokenModal.vue
     │   │   │   ├── EmptyMapState.vue
     │   │   │   ├── GameCard.vue
     │   │   │   ├── GameHeader.vue

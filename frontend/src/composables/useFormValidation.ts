@@ -1,4 +1,4 @@
-import { ref, computed, type Ref } from 'vue'
+import { ref, computed } from 'vue'
 
 /**
  * Interface pour une erreur de validation.
@@ -34,11 +34,7 @@ export function useFormValidation() {
   /**
    * Valide un champ avec des règles données.
    */
-  const validateField = (
-    field: string,
-    value: unknown,
-    rules: ValidationRule[]
-  ): boolean => {
+  const validateField = (field: string, value: unknown, rules: ValidationRule[]): boolean => {
     // Supprimer les erreurs existantes pour ce champ
     validationErrors.value = validationErrors.value.filter((err) => err.field !== field)
 
@@ -153,18 +149,22 @@ export const validators = {
   /**
    * Vérifie la longueur minimale d'une chaîne.
    */
-  minLength: (min: number) => (value: unknown): boolean => {
-    if (typeof value !== 'string') return false
-    return value.length >= min
-  },
+  minLength:
+    (min: number) =>
+    (value: unknown): boolean => {
+      if (typeof value !== 'string') return false
+      return value.length >= min
+    },
 
   /**
    * Vérifie la longueur maximale d'une chaîne.
    */
-  maxLength: (max: number) => (value: unknown): boolean => {
-    if (typeof value !== 'string') return false
-    return value.length <= max
-  },
+  maxLength:
+    (max: number) =>
+    (value: unknown): boolean => {
+      if (typeof value !== 'string') return false
+      return value.length <= max
+    },
 
   /**
    * Vérifie si le mot de passe est fort.
@@ -179,9 +179,11 @@ export const validators = {
   /**
    * Vérifie si deux valeurs sont identiques (pour confirmation de mot de passe).
    */
-  matches: (otherValue: unknown) => (value: unknown): boolean => {
-    return value === otherValue
-  },
+  matches:
+    (otherValue: unknown) =>
+    (value: unknown): boolean => {
+      return value === otherValue
+    },
 
   /**
    * Vérifie si une valeur est un nombre.
@@ -194,8 +196,10 @@ export const validators = {
   /**
    * Vérifie si un nombre est dans une plage donnée.
    */
-  inRange: (min: number, max: number) => (value: unknown): boolean => {
-    const num = Number(value)
-    return !isNaN(num) && num >= min && num <= max
-  },
+  inRange:
+    (min: number, max: number) =>
+    (value: unknown): boolean => {
+      const num = Number(value)
+      return !isNaN(num) && num >= min && num <= max
+    },
 }
