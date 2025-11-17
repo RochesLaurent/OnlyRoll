@@ -14,6 +14,53 @@ env:
 
 jobs:
   # ============================================
+  # JOB 0: VALIDATION DOCKER
+  # ============================================
+  docker-validation:
+    name: Validate Docker Setup
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create .env.docker for CI
+        run: |
+          cp .env.docker.example .env.docker
+          echo "DB_ROOT_PASSWORD=root" >> .env.docker
+          echo "DB_NAME=onlyroll_test" >> .env.docker
+
+      - name: Build Docker images
+        run: docker-compose build
+
+      - name: Start Docker services
+        run: docker-compose up -d
+
+      - name: Wait for services to be healthy
+        run: |
+          echo "⏳ Waiting for services to be healthy..."
+          timeout 120 bash -c 'until docker-compose ps | grep -q "healthy"; do sleep 2; done' || (docker-compose logs && exit 1)
+
+      - name: Check API health
+        run: |
+          curl -f http://localhost/health || exit 1
+
+      - name: Check Frontend build
+        run: |
+          docker-compose logs frontend | grep -q "ready in" || exit 1
+
+      - name: Check Mercure
+        run: |
+          curl -f http://localhost:3000/.well-known/mercure || exit 1
+
+      - name: Stop containers
+        if: always()
+        run: docker-compose down -v
+
+  # ============================================
   # JOB 1: TESTS BACKEND (PHP/Symfony)
   # ============================================
   backend-tests:
@@ -278,61 +325,66 @@ jobs:
         run: npm audit --audit-level=moderate
 
   # ============================================
-  # JOB 6: BUILD & DEPLOY (Production uniquement)
+  # JOB 6: BUILD DOCKER IMAGES (Sans déploiement)
   # ============================================
-  deploy:
-    name: Deploy to Production
+  docker-build:
+    name: Build & Validate Docker Images
     runs-on: ubuntu-latest
-    needs: [backend-tests, backend-quality, frontend-tests, frontend-quality, security]
+    needs: [docker-validation, backend-tests, backend-quality, frontend-tests, frontend-quality, security]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-      
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      
-      - name: Build and push Docker images
-        run: |
-          docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --tag ${{ secrets.DOCKER_USERNAME }}/onlyroll-backend:latest \
-            --tag ${{ secrets.DOCKER_USERNAME }}/onlyroll-backend:${{ github.sha }} \
-            --push \
-            ./backend
-          
-          docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --tag ${{ secrets.DOCKER_USERNAME }}/onlyroll-frontend:latest \
-            --tag ${{ secrets.DOCKER_USERNAME }}/onlyroll-frontend:${{ github.sha }} \
-            --push \
-            ./frontend
-      
-      - name: Deploy to production
-        uses: appleboy/ssh-action@v1.0.0
+
+      # Build Backend (Production)
+      - name: Build backend production image
+        uses: docker/build-push-action@v5
         with:
-          host: ${{ secrets.PRODUCTION_HOST }}
-          username: ${{ secrets.PRODUCTION_USER }}
-          key: ${{ secrets.PRODUCTION_SSH_KEY }}
-          script: |
-            cd /var/www/onlyroll
-            docker-compose pull
-            docker-compose up -d
-            docker-compose exec -T php-fpm php bin/console doctrine:migrations:migrate --no-interaction
-            docker-compose exec -T php-fpm php bin/console cache:clear --env=prod
-      
-      - name: Notify deployment
-        if: success()
+          context: ./backend
+          target: php_prod
+          push: false
+          tags: onlyroll-backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            APP_ENV=prod
+            APP_DEBUG=0
+
+      # Build Frontend (Production)
+      - name: Build frontend production image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          target: nginx_prod
+          push: false
+          tags: onlyroll-frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VITE_API_URL=https://api.onlyroll.com
+            VITE_WS_URL=wss://mercure.onlyroll.com
+
+      # Test des images buildées
+      - name: Test backend image
         run: |
-          echo "Deployment successful!"
-          # Ajoutez ici vos notifications (Slack, Discord, etc.)
+          docker run --rm onlyroll-backend:latest php -v
+          docker run --rm onlyroll-backend:latest php bin/console --version || echo "Console not available in prod mode"
+
+      - name: Test frontend image
+        run: |
+          docker run -d --name frontend-test -p 8080:80 onlyroll-frontend:latest
+          sleep 5
+          curl -f http://localhost:8080/ || exit 1
+          docker stop frontend-test
+
+      - name: Show image sizes
+        run: |
+          echo "📦 Docker Image Sizes:"
+          docker images | grep onlyroll
 
   # ============================================
   # JOB 7: NOTIFICATION FINALE
@@ -340,12 +392,13 @@ jobs:
   notify:
     name: Send Notifications
     runs-on: ubuntu-latest
-    needs: [backend-tests, frontend-tests, backend-quality, frontend-quality]
+    needs: [docker-validation, backend-tests, frontend-tests, backend-quality, frontend-quality]
     if: always()
-    
+
     steps:
       - name: Check job statuses
         run: |
+          echo "Docker Validation: ${{ needs.docker-validation.result }}"
           echo "Backend Tests: ${{ needs.backend-tests.result }}"
           echo "Frontend Tests: ${{ needs.frontend-tests.result }}"
           echo "Backend Quality: ${{ needs.backend-quality.result }}"

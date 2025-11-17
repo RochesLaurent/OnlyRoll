@@ -10,15 +10,36 @@ OnlyRoll/
 ├── .gitignore
 ├── check-ci.ps1
 ├── .claude.md
-├── .claude/                        # Configuration Claude Code
+├── DOCKER_SETUP.md
+├── .env.docker.example
+├── .env.docker
+├── docker-compose.yml
+├── docker-compose.prod.yml
+├── .claude/
 │
 ├── docs/                           # Documentation du projet
+│
+├── docker/
+│   ├── nginx/
+│   │   └── nginx.conf
+│   ├── mysql/
+│   │   ├── my.cnf
+│   │   └── init.sql
+│   └── redis/
+│       └── redis.conf
 │
 ├── .github/
 │   └── workflows/
 │       └── ci.yml
 │
 ├── backend/
+│   ├── Dockerfile
+│   ├── .dockerignore
+│   ├── docker/
+│   │   ├── php-fpm/
+│   │   │   ├── php.ini
+│   │   │   └── php-dev.ini
+│   │   └── entrypoint.sh
 │   ├── bin/
 │   ├── config/
 │   │   ├── packages/
@@ -168,6 +189,12 @@ OnlyRoll/
 │   └── .env
 │
 └── frontend/
+    ├── Dockerfile
+    ├── .dockerignore
+    ├── docker/
+    │   └── nginx/
+    │       ├── nginx.conf
+    │       └── default.conf
     ├── src/
     │   ├── components/
     │   │   ├── auth/
