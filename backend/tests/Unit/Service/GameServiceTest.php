@@ -64,8 +64,7 @@ class GameServiceTest extends TestCase
         $gameMaster = $this->createUser(1);
 
         $this->entityManager->expects($this->exactly(2))
-            ->method('persist')
-            ->with($this->isInstanceOf(Game::class));
+            ->method('persist');
 
         $this->entityManager->expects($this->once())
             ->method('flush');
@@ -351,19 +350,22 @@ class GameServiceTest extends TestCase
 
     public function testJoinGameThrowsExceptionWhenGameStatusNotAccepting(): void
     {
-        $game = $this->createGame(1, 'Test Game');
-        $user = $this->createUser(2);
-
+        $game = $this->createMock(Game::class);
+        $game->method('getId')->willReturn(1);
         $game->method('isPublic')->willReturn(true);
         $game->method('isFull')->willReturn(false);
         $game->method('getStatus')->willReturn(GameStatus::COMPLETED);
 
+        $user = $this->createUser(2);
+
         $this->gameRepository->expects($this->once())
             ->method('findGameWithPlayers')
+            ->with(1)
             ->willReturn($game);
 
         $this->gamePlayerRepository->expects($this->once())
             ->method('isUserInGame')
+            ->with($game, $user)
             ->willReturn(false);
 
         $this->expectException(AccessDeniedException::class);

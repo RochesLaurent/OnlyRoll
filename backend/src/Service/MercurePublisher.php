@@ -127,9 +127,7 @@ readonly class MercurePublisher
     {
         return $this->publishGameEvent($gameId, 'token', [
             'action' => 'deleted',
-            'token' => [
-                'id' => $tokenId,
-            ],
+            'tokenId' => $tokenId,
         ]);
     }
 

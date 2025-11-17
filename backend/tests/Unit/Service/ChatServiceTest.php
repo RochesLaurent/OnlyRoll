@@ -270,7 +270,7 @@ class ChatServiceTest extends TestCase
             ->method('flush');
 
         $this->mercurePublisher->expects($this->once())
-            ->method('publishDiceRoll');
+            ->method('publishChatMessage');
 
         $message = $this->chatService->createDiceRollMessage($game, $user, '3d6', $results);
 

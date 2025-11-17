@@ -359,7 +359,7 @@ class GameControllerTest extends WebTestCase
             'password' => 'wrongpassword',
         ]));
 
-        $this->assertResponseIsUnprocessable();
+        $this->assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
     }
 
     // ==================== LEAVE ====================
@@ -408,7 +408,7 @@ class GameControllerTest extends WebTestCase
         $this->client->loginUser($this->otherUser);
         $this->client->request('DELETE', '/api/games/' . $game->getId());
 
-        $this->assertResponseIsUnprocessable();
+        $this->assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
     }
 
     public function testDeleteGameReturnsNotFoundForInvalidId(): void

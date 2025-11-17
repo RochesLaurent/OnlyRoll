@@ -116,7 +116,7 @@ readonly class ChatService
      */
     public function getVisibleMessagesForUser(Game $game, User $user, ?int $limit = null): array
     {
-        return $this->messageRepository->findVisibleForUser($game, $user);
+        return $this->messageRepository->findVisibleForUser($game, $user, $limit);
     }
 
     /**

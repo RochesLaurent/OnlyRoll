@@ -64,6 +64,14 @@ class TokenControllerTest extends WebTestCase
         $this->game->setGameMaster($this->gameMaster);
         $this->game->setIsPublic(false);
 
+        // Add game master as a player
+        $gmPlayer = new GamePlayer();
+        $gmPlayer->setGame($this->game);
+        $gmPlayer->setUser($this->gameMaster);
+        $gmPlayer->setStatus(PlayerStatus::ACTIVE);
+        $this->game->addGamePlayer($gmPlayer);
+
+        // Add regular player
         $gamePlayer = new GamePlayer();
         $gamePlayer->setGame($this->game);
         $gamePlayer->setUser($this->player);

@@ -18,15 +18,18 @@ enum PlayerStatus: string
     public function isParticipating(): bool
     {
         return match ($this) {
-            self::ACTIVE, self::INACTIVE => true,
-            self::PENDING, self::KICKED, self::LEFT => false,
+            self::ACTIVE, self::INACTIVE, self::PENDING => true,
+            self::KICKED, self::LEFT => false,
         };
     }
 
     public function canReactivate(): bool
     {
-        // Peut se réactiver sans intervention du GM
-        return self::INACTIVE === $this;
+        // Can reactivate without GM intervention
+        return match ($this) {
+            self::INACTIVE, self::LEFT, self::KICKED => true,
+            default => false,
+        };
     }
 
     public function needsNewInvite(): bool

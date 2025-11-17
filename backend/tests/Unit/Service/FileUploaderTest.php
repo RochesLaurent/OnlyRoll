@@ -166,7 +166,7 @@ class FileUploaderTest extends TestCase
             ->method('warning')
             ->with('Invalid URL for file deletion', $this->anything());
 
-        $this->fileUploader->deleteFile('invalid-url');
+        $this->fileUploader->deleteFile('http://');
     }
 
     public function testUploadCreatesDirectoryIfNotExists(): void

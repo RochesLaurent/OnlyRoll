@@ -339,7 +339,7 @@ class ChatControllerTest extends WebTestCase
         $this->client->loginUser($this->player);
         $this->client->request(
             'GET',
-            '/api/games/' . $this->game->getId() . '/chat/messages/since?since=' . $since->format('c'),
+            '/api/games/' . $this->game->getId() . '/chat/messages/since?since=' . urlencode($since->format('c')),
         );
 
         $this->assertResponseIsSuccessful();

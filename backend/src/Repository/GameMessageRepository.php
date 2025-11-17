@@ -135,9 +135,9 @@ class GameMessageRepository extends ServiceEntityRepository
      *
      * @return GameMessage[]
      */
-    public function findVisibleForUser(Game $game, User $user): array
+    public function findVisibleForUser(Game $game, User $user, ?int $limit = null): array
     {
-        return $this->findVisibleMessagesForUser($game, $user, 200);
+        return $this->findVisibleMessagesForUser($game, $user, $limit ?? 200);
     }
 
     /**
