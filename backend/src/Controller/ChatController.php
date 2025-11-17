@@ -364,7 +364,7 @@ final class ChatController extends AbstractController
 
         return $this->json([
             'stats' => $stats,
-            'total' => $stats['total'] ?? 0,
+            'total' => $stats['total'],
         ], Response::HTTP_OK);
     }
 
