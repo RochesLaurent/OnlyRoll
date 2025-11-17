@@ -251,7 +251,7 @@ class TokenControllerTest extends WebTestCase
     {
         $token = $this->createToken('Movable Token', true);
 
-        $this->client->loginUser($this->player);
+        $this->client->loginUser($this->gameMaster);
         $this->client->request(
             'POST',
             $this->getTokenUrl($token->getId()) . '/move',
