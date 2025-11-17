@@ -33,6 +33,19 @@ class TokenControllerTest extends WebTestCase
         $this->client = static::createClient();
         $this->entityManager = $this->client->getContainer()->get('doctrine')->getManager();
 
+        // Clear database before each test
+        $connection = $this->entityManager->getConnection();
+        $connection->executeStatement('SET FOREIGN_KEY_CHECKS=0');
+
+        // Truncate all relevant tables
+        $connection->executeStatement('TRUNCATE TABLE game_token');
+        $connection->executeStatement('TRUNCATE TABLE game_player');
+        $connection->executeStatement('TRUNCATE TABLE game_map');
+        $connection->executeStatement('TRUNCATE TABLE game');
+        $connection->executeStatement('TRUNCATE TABLE user');
+
+        $connection->executeStatement('SET FOREIGN_KEY_CHECKS=1');
+
         $this->gameMaster = new User();
         $this->gameMaster->setPseudo('gamemaster');
         $this->gameMaster->setEmail('gm@test.com');
