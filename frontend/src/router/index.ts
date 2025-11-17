@@ -95,21 +95,6 @@ const router = createRouter({
     //   ]
     // },
 
-    {
-      path: '/test/mercure/:gameId',
-      name: 'mercure-test',
-      component: () => import('@/components/game/MercureChatTest.vue'),
-      props: (route) => ({ gameId: Number(route.params.gameId) }),
-      meta: { requiresAuth: true },
-    },
-    {
-      path: '/test/stores/:gameId',
-      name: 'stores-test',
-      component: () => import('@/components/test/StoresTest.vue'),
-      props: (route) => ({ gameId: Number(route.params.gameId) }),
-      meta: { requiresAuth: true },
-    },
-
     // ========== PAGE 404 ==========
     {
       path: '/:pathMatch(.*)*',

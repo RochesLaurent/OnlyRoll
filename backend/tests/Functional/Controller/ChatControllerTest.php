@@ -31,6 +31,9 @@ class ChatControllerTest extends WebTestCase
         $this->client = static::createClient();
         $this->entityManager = $this->client->getContainer()->get('doctrine')->getManager();
 
+        // Nettoyer la base de données avant chaque test
+        $this->cleanDatabase();
+
         // Créer les utilisateurs de test
         $this->gameMaster = new User();
         $this->gameMaster->setPseudo('gamemaster');
@@ -66,6 +69,20 @@ class ChatControllerTest extends WebTestCase
     {
         parent::tearDown();
         $this->entityManager->close();
+    }
+
+    private function cleanDatabase(): void
+    {
+        // Supprimer toutes les données de test
+        $connection = $this->entityManager->getConnection();
+        $connection->executeStatement('SET FOREIGN_KEY_CHECKS = 0');
+
+        $tables = ['game_message', 'game_player', 'game_token', 'game_map', 'game', 'user'];
+        foreach ($tables as $table) {
+            $connection->executeStatement("TRUNCATE TABLE $table");
+        }
+
+        $connection->executeStatement('SET FOREIGN_KEY_CHECKS = 1');
     }
 
     public function testGetMessagesWithoutAuthentication(): void

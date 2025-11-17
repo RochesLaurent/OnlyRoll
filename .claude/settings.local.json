@@ -25,7 +25,8 @@
       "Bash(npm run lint:*)",
       "Bash(npm run format:check:*)",
       "Bash(npx prettier --write \"src/**/*.{js,ts,vue}\")",
-      "Bash(npx prettier:*)"
+      "Bash(npx prettier:*)",
+      "Bash(composer update:*)"
     ],
     "deny": [],
     "ask": []

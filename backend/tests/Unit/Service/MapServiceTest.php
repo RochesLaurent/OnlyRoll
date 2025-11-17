@@ -10,6 +10,7 @@ use App\Entity\Game;
 use App\Entity\GameMap;
 use App\Repository\GameMapRepository;
 use App\Service\MapService;
+use App\Service\MercurePublisher;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -20,16 +21,20 @@ class MapServiceTest extends TestCase
 
     private GameMapRepository&MockObject $mapRepository;
 
+    private MercurePublisher&MockObject $mercurePublisher;
+
     private MapService $mapService;
 
     protected function setUp(): void
     {
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
         $this->mapRepository = $this->createMock(GameMapRepository::class);
+        $this->mercurePublisher = $this->createMock(MercurePublisher::class);
 
         $this->mapService = new MapService(
             $this->entityManager,
             $this->mapRepository,
+            $this->mercurePublisher,
         );
     }
 

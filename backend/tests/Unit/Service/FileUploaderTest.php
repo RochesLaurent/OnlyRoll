@@ -11,6 +11,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\String\Slugger\SluggerInterface;
+use Symfony\Component\String\UnicodeString;
 
 class FileUploaderTest extends TestCase
 {
@@ -53,7 +54,7 @@ class FileUploaderTest extends TestCase
 
         $this->slugger->expects($this->once())
             ->method('slug')
-            ->willReturn('test-map');
+            ->willReturn(new UnicodeString('test-map'));
 
         $this->logger->expects($this->once())
             ->method('info');
@@ -71,7 +72,7 @@ class FileUploaderTest extends TestCase
 
         $this->slugger->expects($this->once())
             ->method('slug')
-            ->willReturn('test-token');
+            ->willReturn(new UnicodeString('test-token'));
 
         $this->logger->expects($this->once())
             ->method('info');
@@ -87,7 +88,7 @@ class FileUploaderTest extends TestCase
 
         $this->slugger->expects($this->once())
             ->method('slug')
-            ->willReturn('avatar');
+            ->willReturn(new UnicodeString('avatar'));
 
         $this->logger->expects($this->once())
             ->method('info');
@@ -172,7 +173,7 @@ class FileUploaderTest extends TestCase
     {
         $file = $this->createValidUploadedFile();
 
-        $this->slugger->method('slug')->willReturn('test');
+        $this->slugger->method('slug')->willReturn(new UnicodeString('test'));
 
         $this->fileUploader->uploadMapImage($file);
 
@@ -185,7 +186,7 @@ class FileUploaderTest extends TestCase
         $file1 = $this->createValidUploadedFile();
         $file2 = $this->createValidUploadedFile();
 
-        $this->slugger->method('slug')->willReturn('test');
+        $this->slugger->method('slug')->willReturn(new UnicodeString('test'));
 
         $url1 = $this->fileUploader->uploadMapImage($file1);
         $url2 = $this->fileUploader->uploadMapImage($file2);
@@ -202,7 +203,7 @@ class FileUploaderTest extends TestCase
         $file->method('guessExtension')->willReturn('jpg');
         $file->method('getClientOriginalName')->willReturn('test.jpg');
 
-        $this->slugger->method('slug')->willReturn('test');
+        $this->slugger->method('slug')->willReturn(new UnicodeString('test'));
 
         // Should not throw exception
         $url = $this->fileUploader->uploadMapImage($file);
@@ -218,7 +219,7 @@ class FileUploaderTest extends TestCase
         $file->method('guessExtension')->willReturn('png');
         $file->method('getClientOriginalName')->willReturn('test.png');
 
-        $this->slugger->method('slug')->willReturn('test');
+        $this->slugger->method('slug')->willReturn(new UnicodeString('test'));
 
         $url = $this->fileUploader->uploadMapImage($file);
         $this->assertStringEndsWith('.png', $url);
@@ -233,7 +234,7 @@ class FileUploaderTest extends TestCase
         $file->method('guessExtension')->willReturn('webp');
         $file->method('getClientOriginalName')->willReturn('test.webp');
 
-        $this->slugger->method('slug')->willReturn('test');
+        $this->slugger->method('slug')->willReturn(new UnicodeString('test'));
 
         $url = $this->fileUploader->uploadMapImage($file);
         $this->assertStringEndsWith('.webp', $url);

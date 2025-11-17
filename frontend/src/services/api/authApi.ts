@@ -4,7 +4,7 @@ import type { LoginCredentials, RegisterCredentials, MeResponse } from '@/types/
 /**
  * Type de réponse adapté au nouveau format avec cookie
  */
-interface LoginResponse {
+export interface LoginResponse {
   success: boolean
   message: string
   user?: {
@@ -14,7 +14,7 @@ interface LoginResponse {
   }
 }
 
-interface RegisterResponse {
+export interface RegisterResponse {
   message: string
   user: {
     id: number

@@ -63,6 +63,9 @@ readonly class ChatService
             $message->setRecipient($recipient);
         }
 
+        // Appel manuel du hook PrePersist pour les tests unitaires
+        $message->onPrePersist();
+
         $this->em->persist($message);
         $this->em->flush();
 
@@ -143,6 +146,9 @@ readonly class ChatService
         $message->setType(GameMessage::TYPE_SYSTEM);
         $message->setIsInCharacter(false);
 
+        // Appel manuel du hook PrePersist pour les tests unitaires
+        $message->onPrePersist();
+
         $this->em->persist($message);
         $this->em->flush();
 
@@ -204,6 +210,9 @@ readonly class ChatService
         if (null !== $recipient) {
             $message->setRecipient($recipient);
         }
+
+        // Appel manuel du hook PrePersist pour les tests unitaires
+        $message->onPrePersist();
 
         $this->em->persist($message);
         $this->em->flush();

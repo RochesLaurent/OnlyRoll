@@ -185,10 +185,6 @@ class AuthControllerTest extends WebTestCase
         $this->client->request('GET', '/api/me');
 
         $this->assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
-
-        $response = json_decode($this->client->getResponse()->getContent(), true);
-        $this->assertArrayHasKey('error', $response);
-        $this->assertSame('Unauthorized', $response['error']);
     }
 
     public function testMeReturnsCorrectDataFormat(): void

@@ -185,6 +185,7 @@ describe('LoginForm.vue', () => {
     expect(mockAuth.login).toHaveBeenCalledWith({
       email: 'test@example.com',
       password: 'password123',
+      rememberMe: false,
     })
   })
 
@@ -333,6 +334,7 @@ describe('LoginForm.vue', () => {
     expect(mockAuth.login).toHaveBeenCalledWith({
       email: 'test@example.com',
       password: 'password123',
+      rememberMe: false,
     })
   })
 })

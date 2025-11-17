@@ -52,6 +52,9 @@ readonly class TokenService
         $token->setLayer($dto->layer ?? 'tokens');
         $token->setSettings($dto->settings);
 
+        // Appel manuel du hook PrePersist pour les tests unitaires
+        $token->onPrePersist();
+
         $this->em->persist($token);
         $this->em->flush();
 

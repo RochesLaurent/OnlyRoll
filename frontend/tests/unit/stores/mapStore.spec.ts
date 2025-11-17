@@ -314,7 +314,7 @@ describe('mapStore', () => {
 
     await store.activateMap(1, 3)
 
-    expect(mapApi.activate).toHaveBeenCalledWith(3)
+    expect(mapApi.activate).toHaveBeenCalledWith(1, 3)
     expect(store.activeMap).toEqual(mockMap)
   })
 
@@ -550,8 +550,8 @@ describe('mapStore', () => {
     store.activeMap = createMockMap({ id: 1 })
     store.tokens = [createMockToken({ id: 1, isVisible: true })]
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    vi.mocked(tokenApi.hide).mockResolvedValueOnce(undefined as any)
+    const updatedToken = createMockToken({ id: 1, isVisible: false })
+    vi.mocked(tokenApi.hide).mockResolvedValueOnce(updatedToken)
 
     await store.toggleTokenVisibility(1)
 
@@ -565,8 +565,8 @@ describe('mapStore', () => {
     store.activeMap = createMockMap({ id: 1 })
     store.tokens = [createMockToken({ id: 1, isVisible: false })]
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    vi.mocked(tokenApi.show).mockResolvedValueOnce(undefined as any)
+    const updatedToken = createMockToken({ id: 1, isVisible: true })
+    vi.mocked(tokenApi.show).mockResolvedValueOnce(updatedToken)
 
     await store.toggleTokenVisibility(1)
 
@@ -582,8 +582,8 @@ describe('mapStore', () => {
     store.activeMap = createMockMap({ id: 1 })
     store.tokens = [createMockToken({ id: 1, isLocked: true })]
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    vi.mocked(tokenApi.unlock).mockResolvedValueOnce(undefined as any)
+    const updatedToken = createMockToken({ id: 1, isLocked: false })
+    vi.mocked(tokenApi.unlock).mockResolvedValueOnce(updatedToken)
 
     await store.toggleTokenLock(1)
 
@@ -597,8 +597,8 @@ describe('mapStore', () => {
     store.activeMap = createMockMap({ id: 1 })
     store.tokens = [createMockToken({ id: 1, isLocked: false })]
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    vi.mocked(tokenApi.lock).mockResolvedValueOnce(undefined as any)
+    const updatedToken = createMockToken({ id: 1, isLocked: true })
+    vi.mocked(tokenApi.lock).mockResolvedValueOnce(updatedToken)
 
     await store.toggleTokenLock(1)
 

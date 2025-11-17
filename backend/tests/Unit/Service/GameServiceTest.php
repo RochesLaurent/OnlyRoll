@@ -468,6 +468,7 @@ class GameServiceTest extends TestCase
         $game = $this->createMock(Game::class);
         $game->method('getId')->willReturn($id);
         $game->method('getName')->willReturn($name);
+        $game->method('getStatus')->willReturn(\App\Enum\GameStatus::PREPARATION);
 
         return $game;
     }
