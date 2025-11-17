@@ -27,7 +27,9 @@
       "Bash(npx prettier --write \"src/**/*.{js,ts,vue}\")",
       "Bash(npx prettier:*)",
       "Bash(composer update:*)",
-      "Bash(npm audit fix:*)"
+      "Bash(npm audit fix:*)",
+      "Bash(vendor/bin/phpunit:*)",
+      "Bash(tee:*)"
     ],
     "deny": [],
     "ask": []

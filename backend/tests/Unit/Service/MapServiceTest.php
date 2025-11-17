@@ -133,7 +133,12 @@ class MapServiceTest extends TestCase
 
     public function testUpdateMapWithAllFields(): void
     {
+        $game = $this->createMock(Game::class);
+        $game->method('getId')->willReturn(1);
+
         $map = $this->createMock(GameMap::class);
+        $map->method('getGame')->willReturn($game);
+        $map->method('getId')->willReturn(1);
 
         $dto = new UpdateMapDTO();
         $dto->name = 'Updated Name';
@@ -159,6 +164,9 @@ class MapServiceTest extends TestCase
         $this->entityManager->expects($this->once())
             ->method('flush');
 
+        $this->mercurePublisher->expects($this->once())
+            ->method('publishMapChange');
+
         $result = $this->mapService->updateMap($map, $dto);
 
         $this->assertSame($map, $result);
@@ -166,7 +174,12 @@ class MapServiceTest extends TestCase
 
     public function testUpdateMapWithPartialFields(): void
     {
+        $game = $this->createMock(Game::class);
+        $game->method('getId')->willReturn(1);
+
         $map = $this->createMock(GameMap::class);
+        $map->method('getGame')->willReturn($game);
+        $map->method('getId')->willReturn(1);
 
         $dto = new UpdateMapDTO();
         $dto->name = 'Only Name Updated';
@@ -178,21 +191,34 @@ class MapServiceTest extends TestCase
         $this->entityManager->expects($this->once())
             ->method('flush');
 
+        $this->mercurePublisher->expects($this->once())
+            ->method('publishMapChange');
+
         $this->mapService->updateMap($map, $dto);
     }
 
     public function testUpdateMapActivationDeactivatesOthers(): void
     {
         $game = $this->createMock(Game::class);
+        $game->method('getId')->willReturn(1);
+
         $map = $this->createMock(GameMap::class);
+        $map->method('getGame')->willReturn($game);
+        $map->method('getId')->willReturn(1);
+        $map->method('getName')->willReturn('Test Map');
+        $map->method('getDescription')->willReturn('Test Description');
+        $map->method('getImageUrl')->willReturn('/test.jpg');
+        $map->method('getGridSize')->willReturn(50);
+        $map->method('getGridType')->willReturn('square');
+        $map->method('getWidth')->willReturn(20);
+        $map->method('getHeight')->willReturn(20);
+        $map->method('isActive')->willReturn(true);
+        $map->method('getSettings')->willReturn([]);
+
         $otherMap = $this->createMock(GameMap::class);
 
         $dto = new UpdateMapDTO();
         $dto->isActive = true;
-
-        $map->expects($this->once())
-            ->method('getGame')
-            ->willReturn($game);
 
         $map->expects($this->once())
             ->method('setIsActive')
@@ -206,22 +232,43 @@ class MapServiceTest extends TestCase
         $otherMap->expects($this->once())
             ->method('deactivate');
 
-        $this->entityManager->expects($this->exactly(2))
-            ->method('persist');
+        $this->entityManager->expects($this->once())
+            ->method('persist')
+            ->with($otherMap);
 
         $this->entityManager->expects($this->once())
             ->method('flush');
+
+        $this->mercurePublisher->expects($this->once())
+            ->method('publishMapChange');
 
         $this->mapService->updateMap($map, $dto);
     }
 
     public function testActivateMap(): void
     {
+        $game = $this->createMock(Game::class);
+        $game->method('getId')->willReturn(1);
+
         $map = $this->createMock(GameMap::class);
+        $map->method('getGame')->willReturn($game);
+        $map->method('getId')->willReturn(1);
+        $map->method('getName')->willReturn('Test Map');
+        $map->method('getDescription')->willReturn('Test Description');
+        $map->method('getImageUrl')->willReturn('/test.jpg');
+        $map->method('getGridSize')->willReturn(50);
+        $map->method('getGridType')->willReturn('square');
+        $map->method('getWidth')->willReturn(20);
+        $map->method('getHeight')->willReturn(20);
+        $map->method('isActive')->willReturn(true);
+        $map->method('getSettings')->willReturn([]);
 
         $this->mapRepository->expects($this->once())
             ->method('activateMap')
             ->with($map);
+
+        $this->mercurePublisher->expects($this->once())
+            ->method('publishMapChange');
 
         $result = $this->mapService->activateMap($map);
 

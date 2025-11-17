@@ -13,9 +13,11 @@ use App\Entity\User;
 use App\Repository\GameTokenRepository;
 use App\Service\MercurePublisher;
 use App\Service\TokenService;
+use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 class TokenServiceTest extends TestCase
@@ -63,9 +65,20 @@ class TokenServiceTest extends TestCase
         $dto->isLocked = false;
         $dto->layer = 'tokens';
 
+        // Set up entity manager to properly set IDs and timestamps after flush
         $this->entityManager->expects($this->once())
             ->method('persist')
-            ->with($this->isInstanceOf(GameToken::class));
+            ->willReturnCallback(function (GameToken $token) {
+                // Simulate Doctrine setting IDs and timestamps
+                $reflection = new ReflectionClass($token);
+                $idProperty = $reflection->getProperty('id');
+                $idProperty->setAccessible(true);
+                $idProperty->setValue($token, 1);
+
+                $createdAtProperty = $reflection->getProperty('createdAt');
+                $createdAtProperty->setAccessible(true);
+                $createdAtProperty->setValue($token, new DateTimeImmutable('2024-01-01 10:00:00'));
+            });
 
         $this->entityManager->expects($this->once())
             ->method('flush');
@@ -129,6 +142,8 @@ class TokenServiceTest extends TestCase
         $token->method('isLocked')->willReturn(false);
         $token->method('getMap')->willReturn($map);
         $token->method('getId')->willReturn(1);
+        $token->method('getCreatedAt')->willReturn(new DateTimeImmutable('2024-01-01 10:00:00'));
+        $token->method('getUpdatedAt')->willReturn(new DateTimeImmutable('2024-01-01 10:00:00'));
 
         $dto = new MoveTokenDTO();
         $dto->x = 15;
@@ -143,7 +158,7 @@ class TokenServiceTest extends TestCase
             ->method('flush');
 
         $this->mercurePublisher->expects($this->once())
-            ->method('publishTokenMove');
+            ->method('publishGameEvent');
 
         $result = $this->tokenService->moveToken($token, $dto);
 
@@ -244,6 +259,8 @@ class TokenServiceTest extends TestCase
         $token->method('isVisible')->willReturn(true);
         $token->method('getMap')->willReturn($map);
         $token->method('getId')->willReturn(1);
+        $token->method('getCreatedAt')->willReturn(new DateTimeImmutable('2024-01-01 10:00:00'));
+        $token->method('getUpdatedAt')->willReturn(new DateTimeImmutable('2024-01-01 10:00:00'));
 
         $token->expects($this->once())
             ->method('setIsVisible')
@@ -273,6 +290,8 @@ class TokenServiceTest extends TestCase
         $token->method('isLocked')->willReturn(false);
         $token->method('getMap')->willReturn($map);
         $token->method('getId')->willReturn(1);
+        $token->method('getCreatedAt')->willReturn(new DateTimeImmutable('2024-01-01 10:00:00'));
+        $token->method('getUpdatedAt')->willReturn(new DateTimeImmutable('2024-01-01 10:00:00'));
 
         $token->expects($this->once())
             ->method('setIsLocked')
