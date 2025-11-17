@@ -21,13 +21,16 @@ RUN apk add --no-cache \
     libzip-dev \
     mysql-client \
     redis \
+    && apk add --no-cache --virtual .build-deps \
+        $PHPIZE_DEPS \
     && docker-php-ext-install \
         pdo_mysql \
         intl \
         opcache \
         zip \
     && pecl install redis \
-    && docker-php-ext-enable redis
+    && docker-php-ext-enable redis \
+    && apk del .build-deps
 
 # Installer Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -65,7 +68,7 @@ RUN composer dump-autoload --optimize --classmap-authoritative \
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint
 RUN chmod +x /usr/local/bin/entrypoint
 
-ENTRYPOINT ["entrypoint"]
+ENTRYPOINT ["/usr/local/bin/entrypoint"]
 CMD ["php-fpm"]
 
 # ===========================================
@@ -78,8 +81,10 @@ ENV APP_ENV=dev \
     XDEBUG_MODE=develop,debug
 
 # Installer Xdebug
-RUN pecl install xdebug \
-    && docker-php-ext-enable xdebug
+RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS linux-headers \
+    && pecl install xdebug \
+    && docker-php-ext-enable xdebug \
+    && apk del .build-deps
 
 # Configuration dev
 COPY docker/php-fpm/php-dev.ini /usr/local/etc/php/conf.d/99-dev.ini
