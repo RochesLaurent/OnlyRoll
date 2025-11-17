@@ -1,10 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use LogicException;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
@@ -58,20 +62,20 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(name: 'user_created_at', type: Types::DATETIME_IMMUTABLE)]
     #[Groups(['user:read'])]
-    private \DateTimeImmutable $createdAt;
+    private DateTimeImmutable $createdAt;
 
     #[ORM\Column(name: 'user_updated_at', type: Types::DATETIME_IMMUTABLE)]
-    private \DateTimeImmutable $updatedAt;
+    private DateTimeImmutable $updatedAt;
 
     #[ORM\Column(name: 'user_last_login', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     #[Groups(['user:read'])]
-    private ?\DateTimeImmutable $lastLogin = null;
+    private ?DateTimeImmutable $lastLogin = null;
 
     public function __construct()
     {
         $this->roles = ['ROLE_USER'];
-        $this->createdAt = new \DateTimeImmutable();
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->createdAt = new DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable();
     }
 
     public function getId(): ?int
@@ -101,7 +105,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getUserIdentifier(): string
     {
         if ('' === $this->email) {
-            throw new \LogicException('User email cannot be empty');
+            throw new LogicException('User email cannot be empty');
         }
 
         return $this->email;
@@ -203,36 +207,36 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getCreatedAt(): \DateTimeImmutable
+    public function getCreatedAt(): DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    public function setCreatedAt(\DateTimeImmutable $createdAt): static
+    public function setCreatedAt(DateTimeImmutable $createdAt): static
     {
         $this->createdAt = $createdAt;
 
         return $this;
     }
 
-    public function getUpdatedAt(): \DateTimeImmutable
+    public function getUpdatedAt(): DateTimeImmutable
     {
         return $this->updatedAt;
     }
 
-    public function setUpdatedAt(\DateTimeImmutable $updatedAt): static
+    public function setUpdatedAt(DateTimeImmutable $updatedAt): static
     {
         $this->updatedAt = $updatedAt;
 
         return $this;
     }
 
-    public function getLastLogin(): ?\DateTimeImmutable
+    public function getLastLogin(): ?DateTimeImmutable
     {
         return $this->lastLogin;
     }
 
-    public function setLastLogin(?\DateTimeImmutable $lastLogin): static
+    public function setLastLogin(?DateTimeImmutable $lastLogin): static
     {
         $this->lastLogin = $lastLogin;
 
@@ -255,6 +259,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\PrePersist]
     public function setUpdatedAtValue(): void
     {
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable();
     }
 }

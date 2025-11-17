@@ -8,399 +8,383 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useAuth } from '@/composables/useAuth'
 import { useAuthStore } from '@/stores/auth'
-import type { User } from '@/types/auth'
+import { useRouter } from 'vue-router'
+import type { LoginCredentials, RegisterCredentials } from '@/types/auth'
 
 // Mock du router
-const mockPush = vi.fn()
-const mockCurrentRoute = { value: { fullPath: '/dashboard' } }
 vi.mock('vue-router', () => ({
-  useRouter: () => ({
-    push: mockPush,
-    currentRoute: mockCurrentRoute,
-  }),
+  useRouter: vi.fn(),
 }))
 
-// Mock de l'API
-vi.mock('@/services/api/authApi', () => ({
-  authApi: {
-    register: vi.fn(),
-    login: vi.fn(),
-    logout: vi.fn(),
-    me: vi.fn(),
-  },
+// Mock du store
+vi.mock('@/stores/auth', () => ({
+  useAuthStore: vi.fn(),
 }))
 
-describe('useAuth Composable', () => {
+describe('useAuth', () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let mockRouter: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let mockStore: any
+
   beforeEach(() => {
     setActivePinia(createPinia())
-    localStorage.clear()
-    vi.clearAllMocks()
+
+    mockRouter = {
+      push: vi.fn(),
+      currentRoute: {
+        value: {
+          fullPath: '/current-path',
+        },
+      },
+    }
+
+    mockStore = {
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+      error: null,
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      hasRole: vi.fn(),
+      hasAnyRole: vi.fn(),
+      hasAllRoles: vi.fn(),
+      clearError: vi.fn(),
+      setError: vi.fn(),
+    }
+
+    vi.mocked(useRouter).mockReturnValue(mockRouter)
+    vi.mocked(useAuthStore).mockReturnValue(mockStore)
   })
 
-  describe('Propriétés computed', () => {
-    it('expose les propriétés du store', () => {
-      const { user, isAuthenticated, isLoading, error } = useAuth()
+  // ========== COMPUTED PROPERTIES ==========
 
-      expect(user.value).toBeNull()
-      expect(isAuthenticated.value).toBe(false)
-      expect(isLoading.value).toBe(false)
-      expect(error.value).toBeNull()
-    })
+  it('should expose reactive store states', () => {
+    mockStore.user = { id: 1, email: 'test@example.com' }
+    mockStore.isAuthenticated = true
+    mockStore.isLoading = true
+    mockStore.error = 'Test error'
 
-    it('réagit aux changements du store', () => {
-      const { user, isAuthenticated } = useAuth()
-      const authStore = useAuthStore()
+    const { user, isAuthenticated, isLoading, error } = useAuth()
 
-      const mockUser: User = {
-        id: 1,
-        email: 'test@onlyroll.com',
-        pseudo: 'TestUser',
-        roles: ['ROLE_USER'],
-        isVerified: false,
-        createdAt: '',
-        updatedAt: ''
-      }
-
-      authStore.setToken('token-123')
-      authStore.setUser(mockUser)
-
-      expect(user.value).toEqual(mockUser)
-      expect(isAuthenticated.value).toBe(true)
-    })
+    expect(user.value).toEqual(mockStore.user)
+    expect(isAuthenticated.value).toBe(true)
+    expect(isLoading.value).toBe(true)
+    expect(error.value).toBe('Test error')
   })
 
-  describe('login', () => {
-    it('connecte l\'utilisateur et redirige vers le dashboard', async () => {
-      const { login } = useAuth()
-      const authStore = useAuthStore()
+  // ========== LOGIN ==========
 
-      vi.spyOn(authStore, 'login').mockResolvedValue()
+  it('should login and redirect to dashboard by default', async () => {
+    const credentials: LoginCredentials = {
+      email: 'test@example.com',
+      password: 'password123',
+    }
 
-      await login({ email: 'test@onlyroll.com', password: 'Pass123!' })
+    mockStore.login.mockResolvedValueOnce(undefined)
 
-      expect(authStore.login).toHaveBeenCalledWith({
-        email: 'test@onlyroll.com',
-        password: 'Pass123!',
-      })
-      expect(mockPush).toHaveBeenCalledWith({ name: 'dashboard' })
-    })
+    const { login } = useAuth()
+    await login(credentials)
 
-    it('redirige vers une route spécifique si fournie', async () => {
-      const { login } = useAuth()
-      const authStore = useAuthStore()
-
-      vi.spyOn(authStore, 'login').mockResolvedValue()
-
-      await login(
-        { email: 'test@onlyroll.com', password: 'Pass123!' },
-        '/games/123'
-      )
-
-      expect(mockPush).toHaveBeenCalledWith('/games/123')
-    })
-
-    it('propage les erreurs de connexion', async () => {
-      const { login } = useAuth()
-      const authStore = useAuthStore()
-
-      const error = new Error('Identifiants invalides')
-      vi.spyOn(authStore, 'login').mockRejectedValue(error)
-
-      await expect(
-        login({ email: 'wrong@email.com', password: 'WrongPass' })
-      ).rejects.toThrow('Identifiants invalides')
-
-      expect(mockPush).not.toHaveBeenCalled()
-    })
+    expect(mockStore.login).toHaveBeenCalledWith(credentials)
+    expect(mockRouter.push).toHaveBeenCalledWith({ name: 'dashboard' })
   })
 
-  describe('register', () => {
-    it('inscrit l\'utilisateur et redirige vers register-success', async () => {
-      const { register } = useAuth()
-      const authStore = useAuthStore()
+  it('should login and redirect to custom route', async () => {
+    const credentials: LoginCredentials = {
+      email: 'test@example.com',
+      password: 'password123',
+    }
 
-      vi.spyOn(authStore, 'register').mockResolvedValue()
+    mockStore.login.mockResolvedValueOnce(undefined)
 
-      const credentials = {
-        pseudo: 'NewUser',
-        email: 'new@onlyroll.com',
-        password: 'Pass123!',
-        confirmPassword: 'Pass123!',
-      }
+    const { login } = useAuth()
+    await login(credentials, '/custom-route')
 
-      await register(credentials)
+    expect(mockRouter.push).toHaveBeenCalledWith('/custom-route')
+  })
 
-      expect(authStore.register).toHaveBeenCalledWith(credentials)
-      expect(mockPush).toHaveBeenCalledWith({
-        name: 'register-success',
-        query: { email: credentials.email },
-      })
-    })
+  it('should propagate login errors', async () => {
+    const credentials: LoginCredentials = {
+      email: 'test@example.com',
+      password: 'wrongpassword',
+    }
 
-    it('propage les erreurs d\'inscription', async () => {
-      const { register } = useAuth()
-      const authStore = useAuthStore()
+    const loginError = new Error('Invalid credentials')
+    mockStore.login.mockRejectedValueOnce(loginError)
 
-      const error = new Error('Email déjà utilisé')
-      vi.spyOn(authStore, 'register').mockRejectedValue(error)
+    const { login } = useAuth()
 
-      await expect(
-        register({
-          pseudo: 'User',
-          email: 'existing@onlyroll.com',
-          password: 'Pass123!',
-          confirmPassword: 'Pass123!',
-        })
-      ).rejects.toThrow('Email déjà utilisé')
+    await expect(login(credentials)).rejects.toThrow('Invalid credentials')
+    expect(mockRouter.push).not.toHaveBeenCalled()
+  })
 
-      expect(mockPush).not.toHaveBeenCalled()
+  // ========== REGISTER ==========
+
+  it('should register and redirect to success page', async () => {
+    const credentials: RegisterCredentials = {
+      email: 'new@example.com',
+      pseudo: 'NewUser',
+      password: 'password123',
+      confirmPassword: 'password123',
+    }
+
+    mockStore.register.mockResolvedValueOnce(undefined)
+
+    const { register } = useAuth()
+    await register(credentials)
+
+    expect(mockStore.register).toHaveBeenCalledWith(credentials)
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      name: 'register-success',
+      query: { email: credentials.email },
     })
   })
 
-  describe('logout', () => {
-    it('déconnecte l\'utilisateur et redirige vers home', async () => {
-      const { logout } = useAuth()
-      const authStore = useAuthStore()
+  it('should propagate registration errors', async () => {
+    const credentials: RegisterCredentials = {
+      email: 'existing@example.com',
+      pseudo: 'User',
+      password: 'password123',
+      confirmPassword: 'password123',
+    }
 
-      vi.spyOn(authStore, 'logout').mockResolvedValue()
+    const registerError = new Error('Email already exists')
+    mockStore.register.mockRejectedValueOnce(registerError)
 
-      await logout()
+    const { register } = useAuth()
 
-      expect(authStore.logout).toHaveBeenCalled()
-      expect(mockPush).toHaveBeenCalledWith({ name: 'home' })
-    })
+    await expect(register(credentials)).rejects.toThrow('Email already exists')
+    expect(mockRouter.push).not.toHaveBeenCalled()
+  })
 
-    it('redirige vers une route spécifique si fournie', async () => {
-      const { logout } = useAuth()
-      const authStore = useAuthStore()
+  // ========== LOGOUT ==========
 
-      vi.spyOn(authStore, 'logout').mockResolvedValue()
+  it('should logout and redirect to home by default', async () => {
+    mockStore.logout.mockResolvedValueOnce(undefined)
 
-      await logout('/goodbye')
+    const { logout } = useAuth()
+    await logout()
 
-      expect(mockPush).toHaveBeenCalledWith('/goodbye')
-    })
+    expect(mockStore.logout).toHaveBeenCalled()
+    expect(mockRouter.push).toHaveBeenCalledWith({ name: 'home' })
+  })
 
-    it('redirige même si logout échoue', async () => {
-      const { logout } = useAuth()
-      const authStore = useAuthStore()
+  it('should logout and redirect to custom route', async () => {
+    mockStore.logout.mockResolvedValueOnce(undefined)
 
-      vi.spyOn(authStore, 'logout').mockRejectedValue(new Error('API error'))
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { logout } = useAuth()
+    await logout('/login')
 
-      await logout()
+    expect(mockRouter.push).toHaveBeenCalledWith('/login')
+  })
 
-      expect(mockPush).toHaveBeenCalledWith({ name: 'home' })
-      expect(consoleErrorSpy).toHaveBeenCalled()
-      
-      consoleErrorSpy.mockRestore()
+  it('should redirect even if logout fails', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mockStore.logout.mockRejectedValueOnce(new Error('Network error'))
+
+    const { logout } = useAuth()
+    await logout()
+
+    expect(consoleErrorSpy).toHaveBeenCalled()
+    expect(mockRouter.push).toHaveBeenCalledWith({ name: 'home' })
+    
+    consoleErrorSpy.mockRestore()
+  })
+
+  // ========== ROLE CHECKS ==========
+
+  it('should check if user has specific role', () => {
+    mockStore.hasRole.mockReturnValue(true)
+
+    const { hasRole } = useAuth()
+    const result = hasRole('ROLE_ADMIN')
+
+    expect(mockStore.hasRole).toHaveBeenCalledWith('ROLE_ADMIN')
+    expect(result).toBe(true)
+  })
+
+  it('should check if user has any of the roles', () => {
+    mockStore.hasAnyRole.mockReturnValue(true)
+
+    const { hasAnyRole } = useAuth()
+    const result = hasAnyRole(['ROLE_ADMIN', 'ROLE_GM'])
+
+    expect(mockStore.hasAnyRole).toHaveBeenCalledWith(['ROLE_ADMIN', 'ROLE_GM'])
+    expect(result).toBe(true)
+  })
+
+  it('should check if user has all roles', () => {
+    mockStore.hasAllRoles.mockReturnValue(false)
+
+    const { hasAllRoles } = useAuth()
+    const result = hasAllRoles(['ROLE_USER', 'ROLE_ADMIN'])
+
+    expect(mockStore.hasAllRoles).toHaveBeenCalledWith(['ROLE_USER', 'ROLE_ADMIN'])
+    expect(result).toBe(false)
+  })
+
+  // ========== NAVIGATION GUARDS ==========
+
+  it('should allow access when authenticated (requireAuth)', () => {
+    mockStore.isAuthenticated = true
+
+    const { requireAuth } = useAuth()
+    const result = requireAuth()
+
+    expect(result).toBe(true)
+    expect(mockRouter.push).not.toHaveBeenCalled()
+  })
+
+  it('should redirect to login when not authenticated (requireAuth)', () => {
+    mockStore.isAuthenticated = false
+
+    const { requireAuth } = useAuth()
+    const result = requireAuth()
+
+    expect(result).toBe(false)
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      name: 'login',
+      query: { redirect: '/current-path' },
     })
   })
 
-  describe('hasRole', () => {
-    it('retourne true si l\'utilisateur a le rôle', () => {
-      const { hasRole } = useAuth()
-      const authStore = useAuthStore()
+  it('should allow access when not authenticated (requireGuest)', () => {
+    mockStore.isAuthenticated = false
 
-      authStore.setUser({
-        id: 1,
-        email: 'test@onlyroll.com',
-        pseudo: 'TestUser',
-        roles: ['ROLE_USER', 'ROLE_GM'],
-        isVerified: false,
-        createdAt: '',
-        updatedAt: ''
-      })
+    const { requireGuest } = useAuth()
+    const result = requireGuest()
 
-      expect(hasRole('ROLE_USER')).toBe(true)
-      expect(hasRole('ROLE_GM')).toBe(true)
-    })
-
-    it('retourne false si l\'utilisateur n\'a pas le rôle', () => {
-      const { hasRole } = useAuth()
-      const authStore = useAuthStore()
-
-      authStore.setUser({
-        id: 1,
-        email: 'test@onlyroll.com',
-        pseudo: 'TestUser',
-        roles: ['ROLE_USER'],
-        isVerified: false,
-        createdAt: '',
-        updatedAt: ''
-      })
-
-      expect(hasRole('ROLE_ADMIN')).toBe(false)
-    })
+    expect(result).toBe(true)
+    expect(mockRouter.push).not.toHaveBeenCalled()
   })
 
-  describe('hasAnyRole', () => {
-    it('retourne true si l\'utilisateur a au moins un des rôles', () => {
-      const { hasAnyRole } = useAuth()
-      const authStore = useAuthStore()
+  it('should redirect to dashboard when authenticated (requireGuest)', () => {
+    mockStore.isAuthenticated = true
 
-      authStore.setUser({
-        id: 1,
-        email: 'test@onlyroll.com',
-        pseudo: 'TestUser',
-        roles: ['ROLE_USER'],
-        isVerified: false,
-        createdAt: '',
-        updatedAt: ''
-      })
+    const { requireGuest } = useAuth()
+    const result = requireGuest()
 
-      expect(hasAnyRole(['ROLE_USER', 'ROLE_ADMIN'])).toBe(true)
-      expect(hasAnyRole(['ROLE_GM', 'ROLE_ADMIN'])).toBe(false)
-    })
+    expect(result).toBe(false)
+    expect(mockRouter.push).toHaveBeenCalledWith({ name: 'dashboard' })
   })
 
-  describe('hasAllRoles', () => {
-    it('retourne true si l\'utilisateur a tous les rôles', () => {
-      const { hasAllRoles } = useAuth()
-      const authStore = useAuthStore()
+  // ========== ERROR MANAGEMENT ==========
 
-      authStore.setUser({
-        id: 1,
-        email: 'test@onlyroll.com',
-        pseudo: 'TestUser',
-        roles: ['ROLE_USER', 'ROLE_GM'],
-        isVerified: false,
-        createdAt: '',
-        updatedAt: ''
-      })
+  it('should clear error from store', () => {
+    const { clearError } = useAuth()
+    clearError()
 
-      expect(hasAllRoles(['ROLE_USER', 'ROLE_GM'])).toBe(true)
-      expect(hasAllRoles(['ROLE_USER', 'ROLE_ADMIN'])).toBe(false)
-    })
+    expect(mockStore.clearError).toHaveBeenCalled()
   })
 
-  describe('requireAuth', () => {
-    it('retourne true si l\'utilisateur est authentifié', () => {
-      const { requireAuth } = useAuth()
-      const authStore = useAuthStore()
+  it('should set error in store', () => {
+    const { setError } = useAuth()
+    setError('Test error message')
 
-      authStore.setToken('token')
-      authStore.setUser({
-        id: 1,
-        email: 'test@onlyroll.com',
-        pseudo: 'TestUser',
-        roles: ['ROLE_USER'],
-        isVerified: false,
-        createdAt: '',
-        updatedAt: ''
-      })
-
-      expect(requireAuth()).toBe(true)
-      expect(mockPush).not.toHaveBeenCalled()
-    })
-
-    it('redirige vers login avec redirect query et retourne false si non authentifié', () => {
-      const { requireAuth } = useAuth()
-
-      expect(requireAuth()).toBe(false)
-      expect(mockPush).toHaveBeenCalledWith({
-        name: 'login',
-        query: { redirect: '/dashboard' }
-      })
-    })
+    expect(mockStore.setError).toHaveBeenCalledWith('Test error message')
   })
 
-  describe('requireGuest', () => {
-    it('retourne true si l\'utilisateur n\'est pas authentifié', () => {
-      const { requireGuest } = useAuth()
+  it('should extract error message from string', () => {
+    const { getErrorMessage } = useAuth()
+    const result = getErrorMessage('String error')
 
-      expect(requireGuest()).toBe(true)
-      expect(mockPush).not.toHaveBeenCalled()
-    })
-
-    it('redirige vers dashboard et retourne false si authentifié', () => {
-      const { requireGuest } = useAuth()
-      const authStore = useAuthStore()
-
-      authStore.setToken('token')
-      authStore.setUser({
-        id: 1,
-        email: 'test@onlyroll.com',
-        pseudo: 'TestUser',
-        roles: ['ROLE_USER'],
-        isVerified: false,
-        createdAt: '',
-        updatedAt: ''
-      })
-
-      expect(requireGuest()).toBe(false)
-      expect(mockPush).toHaveBeenCalledWith({ name: 'dashboard' })
-    })
+    expect(result).toBe('String error')
   })
 
-  describe('Gestion des erreurs', () => {
-    it('clearError efface l\'erreur du store', () => {
-      const { clearError, error } = useAuth()
-      const authStore = useAuthStore()
+  it('should extract error message from ApiError with message', () => {
+    const { getErrorMessage } = useAuth()
+    const apiError = { message: 'API error message', error: 'fallback' }
+    const result = getErrorMessage(apiError)
 
-      authStore.setError('Une erreur')
-      expect(error.value).toBe('Une erreur')
+    expect(result).toBe('API error message')
+  })
 
-      clearError()
-      expect(error.value).toBeNull()
-    })
+  it('should extract error message from ApiError with error property', () => {
+    const { getErrorMessage } = useAuth()
+    const apiError = { error: 'Error property message' }
+    const result = getErrorMessage(apiError)
 
-    it('setError définit une erreur dans le store', () => {
-      const { setError, error } = useAuth()
+    expect(result).toBe('Error property message')
+  })
 
-      setError('Nouvelle erreur')
-      expect(error.value).toBe('Nouvelle erreur')
-    })
+  it('should extract error message from Error instance', () => {
+    const { getErrorMessage } = useAuth()
+    const error = new Error('Native error message')
+    const result = getErrorMessage(error)
 
-    it('getErrorMessage extrait le message d\'une erreur string', () => {
-      const { getErrorMessage } = useAuth()
+    expect(result).toBe('Native error message')
+  })
 
-      const message = getErrorMessage('Erreur simple')
-      expect(message).toBe('Erreur simple')
-    })
+  it('should return default message for unknown error format', () => {
+    const { getErrorMessage } = useAuth()
+    const result = getErrorMessage(123)
 
-    it('getErrorMessage extrait le message d\'un ApiError', () => {
-      const { getErrorMessage } = useAuth()
+    expect(result).toBe("Une erreur inattendue s'est produite")
+  })
 
-      const message = getErrorMessage({ 
-        error: 'Bad Request',
-        message: 'Email déjà utilisé',
-        statusCode: 400 
-      })
-      expect(message).toBe('Email déjà utilisé')
-    })
+  it('should format error with status code', () => {
+    const { formatError } = useAuth()
+    const error = { message: 'Error message', statusCode: 404 }
+    const result = formatError(error)
 
-    it('getErrorMessage retourne un message par défaut pour erreur inconnue', () => {
-      const { getErrorMessage } = useAuth()
+    expect(result).toBe('[404] Error message')
+  })
 
-      const message = getErrorMessage({})
-      expect(message).toBe('Une erreur inattendue s\'est produite')
-    })
+  it('should format error without status code', () => {
+    const { formatError } = useAuth()
+    const error = { message: 'Error message' }
+    const result = formatError(error)
 
-    it('formatError inclut le status code', () => {
-      const { formatError } = useAuth()
+    expect(result).toBe('Error message')
+  })
 
-      const formatted = formatError({
-        error: 'Unauthorized',
-        message: 'Token invalide',
-        statusCode: 401
-      })
-      expect(formatted).toBe('[401] Token invalide')
-    })
+  it('should format error with status code 0', () => {
+    const { formatError } = useAuth()
+    const error = { message: 'Error message', statusCode: 0 }
+    const result = formatError(error)
 
-    it('isAuthError détecte les erreurs 401', () => {
-      const { isAuthError } = useAuth()
+    expect(result).toBe('Error message')
+  })
 
-      expect(isAuthError({ statusCode: 401 })).toBe(true)
-      expect(isAuthError({ statusCode: 400 })).toBe(false)
-      expect(isAuthError('error')).toBe(false)
-    })
+  it('should identify authentication error (401)', () => {
+    const { isAuthError } = useAuth()
+    const error = { statusCode: 401, message: 'Unauthorized' }
 
-    it('isValidationError détecte les erreurs 422', () => {
-      const { isValidationError } = useAuth()
+    expect(isAuthError(error)).toBe(true)
+  })
 
-      expect(isValidationError({ statusCode: 422 })).toBe(true)
-      expect(isValidationError({ statusCode: 400 })).toBe(false)
-    })
+  it('should not identify non-auth error as auth error', () => {
+    const { isAuthError } = useAuth()
+    const error = { statusCode: 404, message: 'Not found' }
+
+    expect(isAuthError(error)).toBe(false)
+  })
+
+  it('should identify validation error (422)', () => {
+    const { isValidationError } = useAuth()
+    const error = { statusCode: 422, message: 'Validation failed' }
+
+    expect(isValidationError(error)).toBe(true)
+  })
+
+  it('should not identify non-validation error as validation error', () => {
+    const { isValidationError } = useAuth()
+    const error = { statusCode: 500, message: 'Server error' }
+
+    expect(isValidationError(error)).toBe(false)
+  })
+
+  it('should handle null error in isAuthError', () => {
+    const { isAuthError } = useAuth()
+
+    expect(isAuthError(null)).toBe(false)
+  })
+
+  it('should handle undefined error in isValidationError', () => {
+    const { isValidationError } = useAuth()
+
+    expect(isValidationError(undefined)).toBe(false)
   })
 })

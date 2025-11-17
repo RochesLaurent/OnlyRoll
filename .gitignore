@@ -5,6 +5,10 @@
 /backend/.env.local
 /backend/.env.local.php
 /backend/.env.*.local
+/backend/coverage.xml
+# Uploads (ne pas versionner les fichiers uploadés)
+/backend/public/uploads/*
+!/backend/public/uploads/.gitkeep
 
 # Frontend
 frontend/node_modules/

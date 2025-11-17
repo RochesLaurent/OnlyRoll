@@ -1,17 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\DTO\Game;
 
 use App\Enum\GameStatus;
 use Symfony\Component\Validator\Constraints as Assert;
 
-class UpdateGameDTO
+/**
+ * DTO pour mettre à jour une partie.
+ */
+final class UpdateGameDTO
 {
     #[Assert\Length(
         min: 3,
         max: 250,
         minMessage: 'Le nom du jeu doit faire au moins {{ limit }} caractères.',
-        maxMessage: 'Le nom du jeu ne peut pas dépasser {{ limit }} caractères.'
+        maxMessage: 'Le nom du jeu ne peut pas dépasser {{ limit }} caractères.',
     )]
     public ?string $name = null;
 
@@ -20,7 +25,7 @@ class UpdateGameDTO
     #[Assert\Range(
         min: 1,
         max: 20,
-        notInRangeMessage: 'Le nombre de joueurs doit être compris entre {{ min }} et {{ max }}.'
+        notInRangeMessage: 'Le nombre de joueurs doit être compris entre {{ min }} et {{ max }}.',
     )]
     public ?int $maxPlayers = null;
 

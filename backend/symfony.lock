@@ -119,18 +119,6 @@
             "./bin/phpunit"
         ]
     },
-    "squizlabs/php_codesniffer": {
-        "version": "3.13",
-        "recipe": {
-            "repo": "github.com/symfony/recipes-contrib",
-            "branch": "main",
-            "version": "3.6",
-            "ref": "1019e5c08d4821cb9b77f4891f8e9c31ff20ac6f"
-        },
-        "files": [
-            "./phpcs.xml.dist"
-        ]
-    },
     "symfony/console": {
         "version": "7.3",
         "recipe": {
@@ -184,6 +172,18 @@
             "version": "1.0",
             "ref": "fadbfe33303a76e25cb63401050439aa9b1a9c7f"
         }
+    },
+    "symfony/mercure-bundle": {
+        "version": "0.3",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "main",
+            "version": "0.3",
+            "ref": "528285147494380298f8f991ee8c47abebaf79db"
+        },
+        "files": [
+            "./config/packages/mercure.yaml"
+        ]
     },
     "symfony/phpunit-bridge": {
         "version": "7.3",

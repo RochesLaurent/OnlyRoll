@@ -13,8 +13,9 @@ security:
             pattern: ^/(_(profiler|wdt)|css|images|js)
             security: false
 
+        # Firewall de login DOIT être AVANT le firewall api
         api_login:
-            pattern: ^/api/login
+            pattern: ^/api/(login|register)
             stateless: true
             json_login:
                 check_path: /api/login
@@ -23,13 +24,20 @@ security:
                 success_handler: lexik_jwt_authentication.handler.authentication_success
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
 
+        # Firewall pour logout
+        api_logout:
+            pattern: ^/api/logout
+            stateless: true
+
+        # Firewall principal API avec custom authenticator
         api:
             pattern: ^/api
             stateless: true
-            jwt: ~
+            custom_authenticators:
+                - App\Security\JwtCookieAuthenticator
 
     access_control:
         - { path: ^/api/register, roles: PUBLIC_ACCESS }
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
-        - { path: ^/api/debug-login, roles: PUBLIC_ACCESS }
+        - { path: ^/api/logout, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }

@@ -1,16 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Service;
 
+use Exception;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-class DtoValidatorService
+/**
+ * Service de validation des Data Transfer Objects (DTOs).
+ */
+final class DtoValidatorService
 {
     public function __construct(
-        private SerializerInterface $serializer,
-        private ValidatorInterface $validator,
+        private readonly SerializerInterface $serializer,
+        private readonly ValidatorInterface $validator,
     ) {
     }
 
@@ -19,7 +25,7 @@ class DtoValidatorService
      *
      * @template T
      *
-     * @param string          $content  Le contenu JSON
+     * @param string $content Le contenu JSON
      * @param class-string<T> $dtoClass La classe du DTO à créer
      *
      * @return array{dto: T|null, errors: JsonResponse|null}
@@ -31,13 +37,13 @@ class DtoValidatorService
             $dto = $this->serializer->deserialize(
                 $content,
                 $dtoClass,
-                'json'
+                'json',
             );
 
             // Validation
             $errors = $this->validator->validate($dto);
 
-            if (count($errors) > 0) {
+            if (\count($errors) > 0) {
                 $errorMessages = [];
                 foreach ($errors as $error) {
                     $errorMessages[$error->getPropertyPath()] = $error->getMessage();
@@ -53,7 +59,8 @@ class DtoValidatorService
             }
 
             return ['dto' => $dto, 'errors' => null];
-        } catch (\Exception $e) {
+        }
+        catch (Exception $e) {
             return [
                 'dto' => null,
                 'errors' => new JsonResponse([

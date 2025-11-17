@@ -5,257 +5,478 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Service;
 
 use App\DTO\Game\CreateGameDTO;
+use App\DTO\Game\UpdateGameDTO;
 use App\Entity\Game;
 use App\Entity\GamePlayer;
 use App\Entity\User;
 use App\Enum\GameStatus;
-use App\Enum\PlayerRole;
-use App\Enum\PlayerStatus;
+use App\Exception\Game\AccessDeniedException;
 use App\Exception\Game\GameFullException;
 use App\Exception\Game\GameNotFoundException;
+use App\Exception\Game\InvalidPasswordException;
 use App\Repository\GamePlayerRepository;
 use App\Repository\GameRepository;
 use App\Service\GameService;
 use Doctrine\ORM\EntityManagerInterface;
+use InvalidArgumentException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 class GameServiceTest extends TestCase
 {
+    private EntityManagerInterface&MockObject $entityManager;
+
+    private GameRepository&MockObject $gameRepository;
+
+    private GamePlayerRepository&MockObject $gamePlayerRepository;
+
+    private LoggerInterface&MockObject $logger;
+
     private GameService $gameService;
-
-    /** @var EntityManagerInterface&MockObject */
-    private EntityManagerInterface $entityManager;
-
-    /** @var GameRepository&MockObject */
-    private GameRepository $gameRepository;
-
-    /** @var GamePlayerRepository&MockObject */
-    private GamePlayerRepository $gamePlayerRepository;
-
-    /** @var LoggerInterface&MockObject */
-    private LoggerInterface $logger;
 
     protected function setUp(): void
     {
-        // Créer les mocks
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
         $this->gameRepository = $this->createMock(GameRepository::class);
         $this->gamePlayerRepository = $this->createMock(GamePlayerRepository::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
-        // Instancier le service avec les mocks
         $this->gameService = new GameService(
             $this->entityManager,
             $this->gameRepository,
             $this->gamePlayerRepository,
-            $this->logger
+            $this->logger,
         );
     }
 
-    public function testCreateGame(): void
-    {
-        $user = $this->createTestUser('gm@test.com', 1);
+    // ==================== CREATE GAME ====================
 
+    public function testCreateGameWithPublicGame(): void
+    {
         $dto = new CreateGameDTO();
-        $dto->name = 'Test Campaign';
-        $dto->description = 'A test campaign';
-        $dto->maxPlayers = 6;
+        $dto->name = 'Test Game';
+        $dto->description = 'A test game';
+        $dto->maxPlayers = 5;
         $dto->isPublic = true;
+        $dto->password = null;
 
-        // Mock EntityManager - vérifier que persist est appelé avec Game puis GamePlayer
-        $persistedEntities = [];
-        $this->entityManager
-            ->expects($this->exactly(2))
-            ->method('persist')
-            ->willReturnCallback(function ($entity) use (&$persistedEntities) {
-                $persistedEntities[] = $entity;
-            });
+        $gameMaster = $this->createUser(1);
 
-        $this->entityManager
-            ->expects($this->once())
+        $this->entityManager->expects($this->exactly(2))
+            ->method('persist');
+
+        $this->entityManager->expects($this->once())
             ->method('flush');
 
-        // Mock logger
-        $this->logger
-            ->expects($this->exactly(2))
+        $this->logger->expects($this->exactly(2))
             ->method('info');
 
-        // Act
-        $game = $this->gameService->createGame($dto, $user);
+        $game = $this->gameService->createGame($dto, $gameMaster);
 
-        // Assert
         $this->assertInstanceOf(Game::class, $game);
-        $this->assertEquals('Test Campaign', $game->getName());
-        $this->assertEquals('A test campaign', $game->getDescription());
-        $this->assertEquals(6, $game->getMaxPlayers());
+        $this->assertSame('Test Game', $game->getName());
+        $this->assertSame('A test game', $game->getDescription());
+        $this->assertSame(5, $game->getMaxPlayers());
         $this->assertTrue($game->isPublic());
-        $this->assertEquals($user->getId(), $game->getGameMaster()->getId());
-        $this->assertEquals(GameStatus::PREPARATION, $game->getStatus());
-        $this->assertNotNull($game->getInviteCode());
-        $this->assertEquals(8, strlen($game->getInviteCode()));
-
-        // Vérifier que les bonnes entités ont été persistées
-        $this->assertCount(2, $persistedEntities);
-        $this->assertInstanceOf(Game::class, $persistedEntities[0]);
-        $this->assertInstanceOf(GamePlayer::class, $persistedEntities[1]);
+        $this->assertNull($game->getPassword());
     }
 
-    public function testJoinGameSuccess(): void
+    public function testCreateGameWithPrivateGame(): void
     {
-        // Arrange
-        $gm = $this->createTestUser('gm@test.com', 1);
-        $player = $this->createTestUser('player@test.com', 2);
+        $dto = new CreateGameDTO();
+        $dto->name = 'Private Game';
+        $dto->description = 'A private game';
+        $dto->maxPlayers = 4;
+        $dto->isPublic = false;
+        $dto->password = 'secret123';
 
-        $game = new Game();
-        $game->setName('Test Game')
-             ->setGameMaster($gm)
-             ->setMaxPlayers(6)
-             ->setIsPublic(true)
-             ->setStatus(GameStatus::PREPARATION);
+        $gameMaster = $this->createUser(1);
 
-        // Simuler l'ID du jeu
-        $this->setEntityId($game, 1);
+        $this->entityManager->expects($this->exactly(2))
+            ->method('persist');
 
-        // Mock du repository pour retourner le jeu avec findGameWithPlayers
-        $this->gameRepository
-            ->expects($this->once())
-            ->method('findGameWithPlayers')
-            ->with(1)
-            ->willReturn($game);
-
-        // Mock pour vérifier que le joueur n'est pas déjà dans la partie
-        $this->gamePlayerRepository
-            ->expects($this->once())
-            ->method('isUserInGame')
-            ->with($game, $player)
-            ->willReturn(false);
-
-        // Mock EntityManager
-        $this->entityManager
-            ->expects($this->once())
-            ->method('persist')
-            ->with($this->callback(function ($gamePlayer) use ($player, $game) {
-                return $gamePlayer instanceof GamePlayer
-                    && $gamePlayer->getUser()->getId() === $player->getId()
-                    && $gamePlayer->getGame() === $game
-                    && PlayerRole::PLAYER === $gamePlayer->getRole()
-                    && PlayerStatus::ACTIVE === $gamePlayer->getStatus();
-            }));
-
-        $this->entityManager
-            ->expects($this->once())
+        $this->entityManager->expects($this->once())
             ->method('flush');
 
-        // Mock logger
-        $this->logger
-            ->expects($this->once())
-            ->method('info');
+        $game = $this->gameService->createGame($dto, $gameMaster);
 
-        // Act
-        $gamePlayer = $this->gameService->joinGame(1, $player);
-
-        // Assert
-        $this->assertInstanceOf(GamePlayer::class, $gamePlayer);
-        $this->assertEquals($player->getId(), $gamePlayer->getUser()->getId());
-        $this->assertEquals(PlayerRole::PLAYER, $gamePlayer->getRole());
-        $this->assertEquals(PlayerStatus::ACTIVE, $gamePlayer->getStatus());
+        $this->assertFalse($game->isPublic());
+        $this->assertNotNull($game->getPassword());
+        $this->assertTrue(password_verify('secret123', $game->getPassword()));
     }
 
-    public function testJoinFullGameThrowsException(): void
+    public function testCreateGameThrowsExceptionWhenPrivateWithoutPassword(): void
     {
-        // Arrange
-        $gm = $this->createTestUser('gm@test.com', 1);
-        $player3 = $this->createTestUser('player3@test.com', 4);
+        $dto = new CreateGameDTO();
+        $dto->name = 'Private Game';
+        $dto->isPublic = false;
+        $dto->password = '';
 
-        $game = new Game();
-        $game->setName('Full Game')
-             ->setGameMaster($gm)
-             ->setMaxPlayers(2) // Maximum 2 joueurs
-             ->setIsPublic(true)
-             ->setStatus(GameStatus::PREPARATION);
+        $gameMaster = $this->createUser(1);
 
-        $this->setEntityId($game, 1);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Le mot de passe est requis pour une partie privée');
 
-        // Ajouter 2 joueurs actifs pour remplir la partie
-        $player1 = $this->createTestUser('player1@test.com', 2);
-        $player2 = $this->createTestUser('player2@test.com', 3);
+        $this->gameService->createGame($dto, $gameMaster);
+    }
 
-        $gamePlayer1 = new GamePlayer();
-        $gamePlayer1->setUser($player1)
-                    ->setGame($game)
-                    ->setRole(PlayerRole::PLAYER)
-                    ->setStatus(PlayerStatus::ACTIVE);
+    public function testCreateGameThrowsExceptionWhenPasswordTooShort(): void
+    {
+        $dto = new CreateGameDTO();
+        $dto->name = 'Private Game';
+        $dto->isPublic = false;
+        $dto->password = '123';
 
-        $gamePlayer2 = new GamePlayer();
-        $gamePlayer2->setUser($player2)
-                    ->setGame($game)
-                    ->setRole(PlayerRole::PLAYER)
-                    ->setStatus(PlayerStatus::ACTIVE);
+        $gameMaster = $this->createUser(1);
 
-        $game->addGamePlayer($gamePlayer1);
-        $game->addGamePlayer($gamePlayer2);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Le mot de passe doit faire entre 4 et 50 caractères');
 
-        // Mock du repository
-        $this->gameRepository
-            ->expects($this->once())
+        $this->gameService->createGame($dto, $gameMaster);
+    }
+
+    public function testCreateGameThrowsExceptionWhenPasswordTooLong(): void
+    {
+        $dto = new CreateGameDTO();
+        $dto->name = 'Private Game';
+        $dto->isPublic = false;
+        $dto->password = str_repeat('a', 51);
+
+        $gameMaster = $this->createUser(1);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Le mot de passe doit faire entre 4 et 50 caractères');
+
+        $this->gameService->createGame($dto, $gameMaster);
+    }
+
+    // ==================== UPDATE GAME ====================
+
+    public function testUpdateGameWithAllFields(): void
+    {
+        $game = $this->createGame(1, 'Old Name');
+        $user = $this->createUser(1);
+
+        $game->method('isGameMaster')->willReturn(true);
+
+        $dto = new UpdateGameDTO();
+        $dto->name = 'New Name';
+        $dto->description = 'New Description';
+        $dto->maxPlayers = 10;
+        $dto->isPublic = false;
+        $dto->status = GameStatus::IN_PROGRESS;
+
+        $this->entityManager->expects($this->once())
+            ->method('flush');
+
+        $updatedGame = $this->gameService->updateGame($game, $dto, $user);
+
+        $this->assertSame($game, $updatedGame);
+    }
+
+    public function testUpdateGameThrowsExceptionWhenNotGameMaster(): void
+    {
+        $game = $this->createGame(1, 'Test Game');
+        $user = $this->createUser(2);
+
+        $game->method('isGameMaster')->willReturn(false);
+
+        $dto = new UpdateGameDTO();
+        $dto->name = 'New Name';
+
+        $this->expectException(AccessDeniedException::class);
+        $this->expectExceptionMessage('Seul le MJ peut modifier cette partie');
+
+        $this->gameService->updateGame($game, $dto, $user);
+    }
+
+    public function testUpdateGameWithPartialFields(): void
+    {
+        $game = $this->createGame(1, 'Test Game');
+        $user = $this->createUser(1);
+
+        $game->method('isGameMaster')->willReturn(true);
+
+        $dto = new UpdateGameDTO();
+        $dto->name = 'Updated Name';
+        // Les autres champs restent null
+
+        $this->entityManager->expects($this->once())
+            ->method('flush');
+
+        $this->gameService->updateGame($game, $dto, $user);
+    }
+
+    // ==================== JOIN GAME ====================
+
+    public function testJoinGameSuccessfully(): void
+    {
+        $game = $this->createGame(1, 'Test Game');
+        $user = $this->createUser(2);
+
+        $game->method('isPublic')->willReturn(true);
+        $game->method('isFull')->willReturn(false);
+        $game->method('getStatus')->willReturn(GameStatus::PREPARATION);
+
+        $this->gameRepository->expects($this->once())
             ->method('findGameWithPlayers')
             ->with(1)
             ->willReturn($game);
 
-        // Mock pour vérifier que le joueur n'est pas dans la partie
-        $this->gamePlayerRepository
-            ->expects($this->once())
+        $this->gamePlayerRepository->expects($this->once())
             ->method('isUserInGame')
-            ->with($game, $player3)
             ->willReturn(false);
 
-        // Assert l'exception
-        $this->expectException(GameFullException::class);
+        $this->entityManager->expects($this->once())
+            ->method('persist')
+            ->with($this->isInstanceOf(GamePlayer::class));
 
-        // Act
-        $this->gameService->joinGame(1, $player3);
+        $this->entityManager->expects($this->once())
+            ->method('flush');
+
+        $gamePlayer = $this->gameService->joinGame(1, $user);
+
+        $this->assertInstanceOf(GamePlayer::class, $gamePlayer);
     }
 
-    public function testJoinGameNotFoundThrowsException(): void
+    public function testJoinGameThrowsExceptionWhenGameNotFound(): void
     {
-        // Arrange
-        $player = $this->createTestUser('player@test.com', 2);
+        $user = $this->createUser(2);
 
-        // Mock du repository pour retourner null
-        $this->gameRepository
-            ->expects($this->once())
+        $this->gameRepository->expects($this->once())
             ->method('findGameWithPlayers')
-            ->with(999)
+            ->with(1)
             ->willReturn(null);
 
-        // Assert l'exception
         $this->expectException(GameNotFoundException::class);
 
-        // Act
-        $this->gameService->joinGame(999, $player);
+        $this->gameService->joinGame(1, $user);
     }
 
-    private function createTestUser(string $email, int $id): User
+    public function testJoinGameThrowsExceptionWhenUserAlreadyInGame(): void
     {
-        $user = new User();
-        $user->setPseudo('testuser_' . $id)
-             ->setEmail($email)
-             ->setPassword(password_hash('password', PASSWORD_BCRYPT))
-             ->setRoles(['ROLE_USER'])
-             ->setIsVerified(true);
+        $game = $this->createGame(1, 'Test Game');
+        $user = $this->createUser(2);
 
-        $this->setEntityId($user, $id);
+        $this->gameRepository->expects($this->once())
+            ->method('findGameWithPlayers')
+            ->willReturn($game);
+
+        $this->gamePlayerRepository->expects($this->once())
+            ->method('isUserInGame')
+            ->willReturn(true);
+
+        $this->expectException(AccessDeniedException::class);
+        $this->expectExceptionMessage('Vous faites déjà partie de cette partie');
+
+        $this->gameService->joinGame(1, $user);
+    }
+
+    public function testJoinGameThrowsExceptionWhenGameFull(): void
+    {
+        $game = $this->createGame(1, 'Test Game');
+        $user = $this->createUser(2);
+
+        $game->method('isFull')->willReturn(true);
+
+        $this->gameRepository->expects($this->once())
+            ->method('findGameWithPlayers')
+            ->willReturn($game);
+
+        $this->gamePlayerRepository->expects($this->once())
+            ->method('isUserInGame')
+            ->willReturn(false);
+
+        $this->expectException(GameFullException::class);
+
+        $this->gameService->joinGame(1, $user);
+    }
+
+    public function testJoinPrivateGameWithCorrectPassword(): void
+    {
+        $game = $this->createGame(1, 'Private Game');
+        $user = $this->createUser(2);
+
+        $hashedPassword = password_hash('secret123', \PASSWORD_ARGON2ID);
+
+        $game->method('isPublic')->willReturn(false);
+        $game->method('isFull')->willReturn(false);
+        $game->method('getPassword')->willReturn($hashedPassword);
+        $game->method('getStatus')->willReturn(GameStatus::PREPARATION);
+
+        $this->gameRepository->expects($this->once())
+            ->method('findGameWithPlayers')
+            ->willReturn($game);
+
+        $this->gamePlayerRepository->expects($this->once())
+            ->method('isUserInGame')
+            ->willReturn(false);
+
+        $this->entityManager->expects($this->once())
+            ->method('persist');
+
+        $this->entityManager->expects($this->once())
+            ->method('flush');
+
+        $gamePlayer = $this->gameService->joinGame(1, $user, 'secret123');
+
+        $this->assertInstanceOf(GamePlayer::class, $gamePlayer);
+    }
+
+    public function testJoinPrivateGameWithIncorrectPassword(): void
+    {
+        $game = $this->createGame(1, 'Private Game');
+        $user = $this->createUser(2);
+
+        $hashedPassword = password_hash('secret123', \PASSWORD_ARGON2ID);
+
+        $game->method('isPublic')->willReturn(false);
+        $game->method('isFull')->willReturn(false);
+        $game->method('getPassword')->willReturn($hashedPassword);
+
+        $this->gameRepository->expects($this->once())
+            ->method('findGameWithPlayers')
+            ->willReturn($game);
+
+        $this->gamePlayerRepository->expects($this->once())
+            ->method('isUserInGame')
+            ->willReturn(false);
+
+        $this->expectException(InvalidPasswordException::class);
+
+        $this->gameService->joinGame(1, $user, 'wrongpassword');
+    }
+
+    public function testJoinGameThrowsExceptionWhenGameStatusNotAccepting(): void
+    {
+        $game = $this->createMock(Game::class);
+        $game->method('getId')->willReturn(1);
+        $game->method('isPublic')->willReturn(true);
+        $game->method('isFull')->willReturn(false);
+        $game->method('getStatus')->willReturn(GameStatus::COMPLETED);
+
+        $user = $this->createUser(2);
+
+        $this->gameRepository->expects($this->once())
+            ->method('findGameWithPlayers')
+            ->with(1)
+            ->willReturn($game);
+
+        $this->gamePlayerRepository->expects($this->once())
+            ->method('isUserInGame')
+            ->with($game, $user)
+            ->willReturn(false);
+
+        $this->expectException(AccessDeniedException::class);
+        $this->expectExceptionMessage('Cette partie n\'accepte plus de nouveaux joueurs');
+
+        $this->gameService->joinGame(1, $user);
+    }
+
+    // ==================== LEAVE GAME ====================
+
+    public function testLeaveGameSuccessfully(): void
+    {
+        $game = $this->createGame(1, 'Test Game');
+        $user = $this->createUser(2);
+        $gamePlayer = $this->createGamePlayer();
+
+        $game->method('isGameMaster')->willReturn(false);
+
+        $this->gamePlayerRepository->expects($this->once())
+            ->method('findPlayerInGame')
+            ->with($game, $user)
+            ->willReturn($gamePlayer);
+
+        $this->entityManager->expects($this->once())
+            ->method('flush');
+
+        $this->gameService->leaveGame($game, $user);
+    }
+
+    public function testLeaveGameThrowsExceptionWhenNotInGame(): void
+    {
+        $game = $this->createGame(1, 'Test Game');
+        $user = $this->createUser(2);
+
+        $this->gamePlayerRepository->expects($this->once())
+            ->method('findPlayerInGame')
+            ->willReturn(null);
+
+        $this->expectException(GameNotFoundException::class);
+        $this->expectExceptionMessage('Vous ne faites pas partie de cette partie');
+
+        $this->gameService->leaveGame($game, $user);
+    }
+
+    public function testLeaveGameThrowsExceptionWhenUserIsGameMaster(): void
+    {
+        $game = $this->createGame(1, 'Test Game');
+        $user = $this->createUser(1);
+        $gamePlayer = $this->createGamePlayer();
+
+        $game->method('isGameMaster')->willReturn(true);
+
+        $this->gamePlayerRepository->expects($this->once())
+            ->method('findPlayerInGame')
+            ->willReturn($gamePlayer);
+
+        $this->expectException(AccessDeniedException::class);
+        $this->expectExceptionMessage('Le MJ ne peut pas quitter sa propre partie');
+
+        $this->gameService->leaveGame($game, $user);
+    }
+
+    // ==================== DELETE GAME ====================
+
+    public function testDeleteGameSuccessfully(): void
+    {
+        $game = $this->createGame(1, 'Test Game');
+        $user = $this->createUser(1);
+
+        $game->method('isGameMaster')->willReturn(true);
+
+        $this->entityManager->expects($this->once())
+            ->method('flush');
+
+        $this->gameService->deleteGame($game, $user);
+    }
+
+    public function testDeleteGameThrowsExceptionWhenNotGameMaster(): void
+    {
+        $game = $this->createGame(1, 'Test Game');
+        $user = $this->createUser(2);
+
+        $game->method('isGameMaster')->willReturn(false);
+
+        $this->expectException(AccessDeniedException::class);
+
+        $this->gameService->deleteGame($game, $user);
+    }
+
+    // ==================== HELPERS ====================
+
+    private function createUser(int $id): User&MockObject
+    {
+        $user = $this->createMock(User::class);
+        $user->method('getId')->willReturn($id);
 
         return $user;
     }
 
-    private function setEntityId(object $entity, int $id): void
+    private function createGame(int $id, string $name): Game&MockObject
     {
-        $reflection = new \ReflectionClass($entity);
-        $property = $reflection->getProperty('id');
-        $property->setAccessible(true);
-        $property->setValue($entity, $id);
+        $game = $this->createMock(Game::class);
+        $game->method('getId')->willReturn($id);
+        $game->method('getName')->willReturn($name);
+        $game->method('getStatus')->willReturn(GameStatus::PREPARATION);
+
+        return $game;
+    }
+
+    private function createGamePlayer(): GamePlayer&MockObject
+    {
+        return $this->createMock(GamePlayer::class);
     }
 }

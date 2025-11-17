@@ -4,6 +4,7 @@ import type { Game, CreateGameDTO, UpdateGameDTO, GameFilters, PaginationMeta } 
 import { gameApi } from '@/services/api/gameApi'
 import { useAuthStore } from './auth'
 import { GameStatus } from '@/types/game'
+import { logger } from '@/utils/logger'
 
 // Type pour les erreurs API
 type ApiError = {
@@ -22,7 +23,6 @@ export const useGameStore = defineStore('game', () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  // Pagination
   const pagination = ref<PaginationMeta>({
     total: 0,
     page: 1,
@@ -36,6 +36,7 @@ export const useGameStore = defineStore('game', () => {
   const isGameMaster = computed(() => {
     const authStore = useAuthStore()
     if (!currentGame.value || !authStore.user) return false
+    if (!currentGame.value.gameMaster) return false
     return currentGame.value.gameMaster.id === authStore.user.id
   })
 
@@ -65,15 +66,29 @@ export const useGameStore = defineStore('game', () => {
     try {
       const response = await gameApi.listPublic(filters)
       games.value = response.data
-      pagination.value = response.meta
+
+      pagination.value = {
+        total: response.meta?.total ?? 0,
+        page: response.meta?.page ?? 1,
+        limit: response.meta?.limit ?? 12,
+        totalPages: response.meta?.totalPages ?? 0,
+      }
     } catch (e: unknown) {
+      games.value = []
+      pagination.value = {
+        total: 0,
+        page: 1,
+        limit: 12,
+        totalPages: 0,
+      }
+
       if (e && typeof e === 'object' && 'response' in e) {
         error.value =
           (e as ApiError).response?.data?.error || 'Erreur lors du chargement des parties'
       } else {
         error.value = 'Erreur lors du chargement des parties'
       }
-      console.error('Error fetching games:', e)
+      logger.error('Error fetching games:', e)
     } finally {
       isLoading.value = false
     }
@@ -86,13 +101,15 @@ export const useGameStore = defineStore('game', () => {
     try {
       myGames.value = await gameApi.myGames()
     } catch (e: unknown) {
+      myGames.value = []
+
       if (e && typeof e === 'object' && 'response' in e) {
         error.value =
           (e as ApiError).response?.data?.error || 'Erreur lors du chargement de vos parties'
       } else {
         error.value = 'Erreur lors du chargement de vos parties'
       }
-      console.error('Error fetching my games:', e)
+      logger.error('Error fetching my games:', e)
     } finally {
       isLoading.value = false
     }
@@ -110,7 +127,7 @@ export const useGameStore = defineStore('game', () => {
       } else {
         error.value = 'Partie introuvable'
       }
-      console.error('Error fetching game:', e)
+      logger.error('Error fetching game:', e)
       throw e
     } finally {
       isLoading.value = false
@@ -133,7 +150,7 @@ export const useGameStore = defineStore('game', () => {
       } else {
         error.value = 'Erreur lors de la création de la partie'
       }
-      console.error('Error creating game:', e)
+      logger.error('Error creating game:', e)
       throw e
     } finally {
       isLoading.value = false
@@ -146,62 +163,78 @@ export const useGameStore = defineStore('game', () => {
 
     try {
       const updatedGame = await gameApi.update(id, dto)
-      updateGameInLists(updatedGame)
-      return updatedGame
-    } catch (e: unknown) {
-      if (e && typeof e === 'object' && 'response' in e) {
-        error.value = (e as ApiError).response?.data?.error || 'Erreur lors de la mise à jour'
-      } else {
-        error.value = 'Erreur lors de la mise à jour'
+
+      const index = games.value.findIndex((g) => g.id === id)
+      if (index !== -1) {
+        games.value[index] = updatedGame
       }
-      console.error('Error updating game:', e)
-      throw e
-    } finally {
-      isLoading.value = false
-    }
-  }
 
-  async function partialUpdateGame(id: number, dto: Partial<UpdateGameDTO>) {
-    isLoading.value = true
-    error.value = null
+      const myGameIndex = myGames.value.findIndex((g) => g.id === id)
+      if (myGameIndex !== -1) {
+        myGames.value[myGameIndex] = updatedGame
+      }
 
-    try {
-      const updatedGame = await gameApi.partialUpdate(id, dto)
-      updateGameInLists(updatedGame)
+      if (currentGame.value?.id === id) {
+        currentGame.value = updatedGame
+      }
+
       return updatedGame
     } catch (e: unknown) {
       if (e && typeof e === 'object' && 'response' in e) {
         error.value =
-          (e as ApiError).response?.data?.error || 'Erreur lors de la mise à jour partielle'
+          (e as ApiError).response?.data?.error || 'Erreur lors de la mise à jour de la partie'
       } else {
-        error.value = 'Erreur lors de la mise à jour partielle'
+        error.value = 'Erreur lors de la mise à jour de la partie'
       }
-      console.error('Error partial updating game:', e)
+      logger.error('Error updating game:', e)
       throw e
     } finally {
       isLoading.value = false
     }
   }
 
-  // ========== Actions métier ==========
-  async function joinGame(id: number, password?: string) {
+  async function deleteGame(id: number) {
     isLoading.value = true
     error.value = null
 
     try {
-      await gameApi.join(id, password ? { password } : undefined)
-      await fetchMyGames()
+      await gameApi.delete(id)
+
+      games.value = games.value.filter((g) => g.id !== id)
+      myGames.value = myGames.value.filter((g) => g.id !== id)
 
       if (currentGame.value?.id === id) {
-        await fetchGameById(id)
+        currentGame.value = null
       }
+    } catch (e: unknown) {
+      if (e && typeof e === 'object' && 'response' in e) {
+        error.value =
+          (e as ApiError).response?.data?.error || 'Erreur lors de la suppression de la partie'
+      } else {
+        error.value = 'Erreur lors de la suppression de la partie'
+      }
+      logger.error('Error deleting game:', e)
+      throw e
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function joinGame(inviteCode: string, password?: string) {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const game = await gameApi.joinByCode(inviteCode, password)
+      myGames.value.unshift(game)
+      return game
     } catch (e: unknown) {
       if (e && typeof e === 'object' && 'response' in e) {
         error.value = (e as ApiError).response?.data?.error || 'Impossible de rejoindre la partie'
       } else {
         error.value = 'Impossible de rejoindre la partie'
       }
-      console.error('Error joining game:', e)
+      logger.error('Error joining game:', e)
       throw e
     } finally {
       isLoading.value = false
@@ -215,42 +248,16 @@ export const useGameStore = defineStore('game', () => {
     try {
       await gameApi.leave(id)
       myGames.value = myGames.value.filter((g) => g.id !== id)
-
       if (currentGame.value?.id === id) {
         currentGame.value = null
       }
     } catch (e: unknown) {
       if (e && typeof e === 'object' && 'response' in e) {
-        error.value = (e as ApiError).response?.data?.error || 'Erreur en quittant la partie'
+        error.value = (e as ApiError).response?.data?.error || 'Impossible de quitter la partie'
       } else {
-        error.value = 'Erreur en quittant la partie'
+        error.value = 'Impossible de quitter la partie'
       }
-      console.error('Error leaving game:', e)
-      throw e
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  async function deleteGame(id: number) {
-    isLoading.value = true
-    error.value = null
-
-    try {
-      await gameApi.delete(id)
-      myGames.value = myGames.value.filter((g) => g.id !== id)
-      games.value = games.value.filter((g) => g.id !== id)
-
-      if (currentGame.value?.id === id) {
-        currentGame.value = null
-      }
-    } catch (e: unknown) {
-      if (e && typeof e === 'object' && 'response' in e) {
-        error.value = (e as ApiError).response?.data?.error || 'Erreur lors de la suppression'
-      } else {
-        error.value = 'Erreur lors de la suppression'
-      }
-      console.error('Error deleting game:', e)
+      logger.error('Error leaving game:', e)
       throw e
     } finally {
       isLoading.value = false
@@ -263,7 +270,17 @@ export const useGameStore = defineStore('game', () => {
 
     try {
       const updatedGame = await gameApi.start(id)
-      updateGameInLists(updatedGame)
+
+      // Mise à jour
+      if (currentGame.value?.id === id) {
+        currentGame.value = updatedGame
+      }
+
+      const myGameIndex = myGames.value.findIndex((g) => g.id === id)
+      if (myGameIndex !== -1) {
+        myGames.value[myGameIndex] = updatedGame
+      }
+
       return updatedGame
     } catch (e: unknown) {
       if (e && typeof e === 'object' && 'response' in e) {
@@ -271,69 +288,10 @@ export const useGameStore = defineStore('game', () => {
       } else {
         error.value = 'Impossible de démarrer la partie'
       }
-      console.error('Error starting game:', e)
+      logger.error('Error starting game:', e)
       throw e
     } finally {
       isLoading.value = false
-    }
-  }
-
-  async function pauseGame(id: number) {
-    isLoading.value = true
-    error.value = null
-
-    try {
-      const updatedGame = await gameApi.pause(id)
-      updateGameInLists(updatedGame)
-      return updatedGame
-    } catch (e: unknown) {
-      if (e && typeof e === 'object' && 'response' in e) {
-        error.value = (e as ApiError).response?.data?.error || 'Impossible de mettre en pause'
-      } else {
-        error.value = 'Impossible de mettre en pause'
-      }
-      console.error('Error pausing game:', e)
-      throw e
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  async function completeGame(id: number) {
-    isLoading.value = true
-    error.value = null
-
-    try {
-      const updatedGame = await gameApi.complete(id)
-      updateGameInLists(updatedGame)
-      return updatedGame
-    } catch (e: unknown) {
-      if (e && typeof e === 'object' && 'response' in e) {
-        error.value = (e as ApiError).response?.data?.error || 'Impossible de terminer la partie'
-      } else {
-        error.value = 'Impossible de terminer la partie'
-      }
-      console.error('Error completing game:', e)
-      throw e
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  // ========== Helpers ==========
-  function updateGameInLists(updatedGame: Game) {
-    const myGamesIndex = myGames.value.findIndex((g) => g.id === updatedGame.id)
-    if (myGamesIndex !== -1) {
-      myGames.value[myGamesIndex] = updatedGame
-    }
-
-    const gamesIndex = games.value.findIndex((g) => g.id === updatedGame.id)
-    if (gamesIndex !== -1) {
-      games.value[gamesIndex] = updatedGame
-    }
-
-    if (currentGame.value?.id === updatedGame.id) {
-      currentGame.value = updatedGame
     }
   }
 
@@ -341,11 +299,6 @@ export const useGameStore = defineStore('game', () => {
     error.value = null
   }
 
-  function clearCurrentGame() {
-    currentGame.value = null
-  }
-
-  // ========== Return ==========
   return {
     // State
     games,
@@ -362,24 +315,16 @@ export const useGameStore = defineStore('game', () => {
     canStartGame,
     canModifyGame,
 
-    // Actions CRUD
+    // Actions
     fetchPublicGames,
     fetchMyGames,
     fetchGameById,
     createGame,
     updateGame,
-    partialUpdateGame,
     deleteGame,
-
-    // Actions métier
     joinGame,
     leaveGame,
     startGame,
-    pauseGame,
-    completeGame,
-
-    // Helpers
     clearError,
-    clearCurrentGame,
   }
 })

@@ -44,7 +44,10 @@ async function handleJoin() {
   error.value = null
 
   try {
-    await gameStore.joinGame(props.game.id, needsPassword.value ? password.value : undefined)
+    await gameStore.joinGame(
+      props.game.inviteCode,
+      needsPassword.value ? password.value : undefined
+    )
 
     emit('success')
     emit('close')

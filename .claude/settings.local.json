@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(cat:*)",
+      "Bash(npm run test:unit:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(npx vue-tsc:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npm run build:*)",
+      "Bash(vendor/bin/phpstan analyse:*)",
+      "Bash(redis-cli ping:*)",
+      "Bash(composer require:*)",
+      "Bash(php bin/console:*)",
+      "Bash(php -l:*)",
+      "Bash(php -r:*)",
+      "Bash(redis-cli:*)",
+      "Bash(Get-Content backendvarlogdev.log -Tail 100)",
+      "Bash(node -e:*)",
+      "Bash(test:*)",
+      "Bash(curl:*)",
+      "Bash(vendor/bin/php-cs-fixer fix:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run format:check:*)",
+      "Bash(npx prettier --write \"src/**/*.{js,ts,vue}\")",
+      "Bash(npx prettier:*)",
+      "Bash(composer update:*)",
+      "Bash(npm audit fix:*)",
+      "Bash(vendor/bin/phpunit:*)",
+      "Bash(tee:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfixe: add database isolation to TokenControllerTest to prevent duplicate email errors\n\nThis test was failing with duplicate email constraint violations when tests ran in sequence.\nAdded database cleanup at the beginning of each test (similar to MapControllerTest) to ensure\ntest isolation by truncating relevant tables before setting up test data.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

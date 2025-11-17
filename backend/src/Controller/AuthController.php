@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\DTO\Auth\RegisterRequestDTO;
@@ -8,6 +10,7 @@ use App\Entity\User;
 use App\Service\DtoValidatorService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -15,14 +18,20 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Serializer\SerializerInterface;
 
-class AuthController extends AbstractController
+/**
+ * Contrôleur d'authentification.
+ */
+final class AuthController extends AbstractController
 {
     public function __construct(
-        private DtoValidatorService $dtoValidator,
-        private SerializerInterface $serializer,
+        private readonly DtoValidatorService $dtoValidator,
+        private readonly SerializerInterface $serializer,
     ) {
     }
 
+    /**
+     * Enregistre un nouvel utilisateur.
+     */
     #[Route('/api/register', name: 'api_register', methods: ['POST'])]
     public function register(
         Request $request,
@@ -32,14 +41,14 @@ class AuthController extends AbstractController
         // Validation du DTO
         ['dto' => $dto, 'errors' => $errors] = $this->dtoValidator->validateDto(
             $request->getContent(),
-            RegisterRequestDTO::class
+            RegisterRequestDTO::class,
         );
 
         if ($errors) {
             return $errors;
         }
 
-        assert($dto instanceof RegisterRequestDTO, 'DTO should not be null after validation');
+        \assert($dto instanceof RegisterRequestDTO, 'DTO should not be null after validation');
 
         // Vérifier si l'email existe déjà
         $existingUser = $em->getRepository(User::class)->findOneBy(['email' => $dto->email]);
@@ -58,7 +67,7 @@ class AuthController extends AbstractController
         $user->setEmail($dto->email);
         $user->setPseudo($dto->pseudo);
         $user->setRoles(['ROLE_USER']);
-        $user->setIsVerified(true);
+        $user->setIsVerified(true); // Passeras à false lorsque l'emailing sera en place
 
         $hashedPassword = $passwordHasher->hashPassword($user, $dto->password);
         $user->setPassword($hashedPassword);
@@ -75,6 +84,9 @@ class AuthController extends AbstractController
         ], 201);
     }
 
+    /**
+     * Récupère les informations de l'utilisateur connecté.
+     */
     #[Route('/api/me', name: 'api_me', methods: ['GET'])]
     public function me(#[CurrentUser] ?User $user): JsonResponse
     {
@@ -97,11 +109,27 @@ class AuthController extends AbstractController
         ]);
     }
 
+    /**
+     * Déconnecte l'utilisateur en supprimant le cookie JWT.
+     */
     #[Route('/api/logout', name: 'api_logout', methods: ['POST'])]
     public function logout(): JsonResponse
     {
-        // Avec JWT, la déconnexion est gérée côté client
-        // Le serveur n'a pas besoin de blacklister le token
-        return $this->json(['message' => 'Déconnexion réussie']);
+        // Créer la réponse
+        $response = new JsonResponse(['message' => 'Déconnexion réussie']);
+
+        // On crée un cookie expiré pour le supprimer côté client
+        $isProduction = ($_ENV['APP_ENV'] ?? 'dev') === 'prod';
+
+        $response->headers->clearCookie(
+            'jwt_token',
+            '/',
+            null,
+            $isProduction,
+            true,
+            Cookie::SAMESITE_STRICT,
+        );
+
+        return $response;
     }
 }

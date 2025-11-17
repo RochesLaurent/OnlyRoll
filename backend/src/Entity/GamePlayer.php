@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use App\Enum\PlayerRole;
 use App\Enum\PlayerStatus;
 use App\Repository\GamePlayerRepository;
+use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
@@ -26,7 +29,7 @@ class GamePlayer
         name: 'game_id',
         referencedColumnName: 'game_id',
         nullable: false,
-        onDelete: 'CASCADE'
+        onDelete: 'CASCADE',
     )]
     private ?Game $game = null;
 
@@ -35,7 +38,7 @@ class GamePlayer
         name: 'user_id',
         referencedColumnName: 'user_id',
         nullable: false,
-        onDelete: 'CASCADE'
+        onDelete: 'CASCADE',
     )]
     #[Groups(['game:read'])]
     private ?User $user = null;
@@ -50,16 +53,16 @@ class GamePlayer
 
     #[ORM\Column(name: 'game_player_joined_at', type: Types::DATETIME_IMMUTABLE)]
     #[Groups(['game:read'])]
-    private ?\DateTimeImmutable $joinedAt = null;
+    private ?DateTimeImmutable $joinedAt = null;
 
     #[ORM\Column(name: 'game_player_left_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
-    private ?\DateTimeImmutable $leftAt = null;
+    private ?DateTimeImmutable $leftAt = null;
 
     #[ORM\PrePersist]
     public function onPrePersist(): void
     {
         if (null === $this->joinedAt) {
-            $this->joinedAt = new \DateTimeImmutable();
+            $this->joinedAt = new DateTimeImmutable();
         }
     }
 
@@ -83,13 +86,13 @@ class GamePlayer
     public function leave(): void
     {
         $this->status = PlayerStatus::LEFT;
-        $this->leftAt = new \DateTimeImmutable();
+        $this->leftAt = new DateTimeImmutable();
     }
 
     public function kick(): void
     {
         $this->status = PlayerStatus::KICKED;
-        $this->leftAt = new \DateTimeImmutable();
+        $this->leftAt = new DateTimeImmutable();
     }
 
     public function activate(): void
@@ -153,24 +156,24 @@ class GamePlayer
         return $this;
     }
 
-    public function getJoinedAt(): ?\DateTimeImmutable
+    public function getJoinedAt(): ?DateTimeImmutable
     {
         return $this->joinedAt;
     }
 
-    public function setJoinedAt(\DateTimeImmutable $joinedAt): static
+    public function setJoinedAt(DateTimeImmutable $joinedAt): static
     {
         $this->joinedAt = $joinedAt;
 
         return $this;
     }
 
-    public function getLeftAt(): ?\DateTimeImmutable
+    public function getLeftAt(): ?DateTimeImmutable
     {
         return $this->leftAt;
     }
 
-    public function setLeftAt(?\DateTimeImmutable $leftAt): static
+    public function setLeftAt(?DateTimeImmutable $leftAt): static
     {
         $this->leftAt = $leftAt;
 

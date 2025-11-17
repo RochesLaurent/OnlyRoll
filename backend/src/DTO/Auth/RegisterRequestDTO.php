@@ -1,10 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\DTO\Auth;
 
 use Symfony\Component\Validator\Constraints as Assert;
 
-class RegisterRequestDTO
+/**
+ * DTO pour l'enregistrement d'un nouvel utilisateur.
+ */
+final class RegisterRequestDTO
 {
     #[Assert\NotBlank(message: 'Email is required')]
     #[Assert\Email(message: 'Invalid email format')]
@@ -16,7 +21,7 @@ class RegisterRequestDTO
         min: 3,
         max: 50,
         minMessage: 'Pseudo must be at least {{ limit }} characters',
-        maxMessage: 'Pseudo cannot be longer than {{ limit }} characters'
+        maxMessage: 'Pseudo cannot be longer than {{ limit }} characters',
     )]
     public string $pseudo;
 
@@ -24,7 +29,7 @@ class RegisterRequestDTO
     #[Assert\Length(min: 8, minMessage: 'Password must be at least {{ limit }} characters')]
     #[Assert\Regex(
         pattern: '/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/',
-        message: 'Password must contain at least one uppercase letter, one lowercase letter, and one number'
+        message: 'Password must contain at least one uppercase letter, one lowercase letter, and one number',
     )]
     public string $password;
 }

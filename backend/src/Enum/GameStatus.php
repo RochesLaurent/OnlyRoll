@@ -1,7 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enum;
 
+/**
+ * Statuts possibles d'une partie de jeu.
+ */
 enum GameStatus: string
 {
     case PREPARATION = 'preparation';

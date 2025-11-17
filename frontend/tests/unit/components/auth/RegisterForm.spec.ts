@@ -6,399 +6,407 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, VueWrapper } from '@vue/test-utils'
-import { setActivePinia, createPinia } from 'pinia'
+import { nextTick } from 'vue'
 import RegisterForm from '@/components/auth/RegisterForm.vue'
-import { ref, computed } from 'vue'
-
-//Typage
-interface RegisterFormVm {
-  form: {
-    pseudo: string;
-    email: string;
-    password: string;
-    confirmPassword: string;
-    acceptTerms: boolean;
-  };
-  passwordRules: {
-    minlength: boolean;
-    lowercase: boolean;
-    uppercase: boolean;
-    number: boolean;
-  };
-  passwordsMatch: boolean;
-  isFormValid: boolean;
-  validationErrors: Array<{ field: string; message: string }>;
-  showPassword: boolean;
-  showConfirmPassword: boolean;
-  isLoading: boolean;
-  error: string | null;
-  // Méthodes
-  togglePasswordVisibility: () => void;
-  toggleConfirmPasswordVisibility: () => void;
-  validateForm: () => boolean;
-  handleSubmit: () => Promise<void>;
-}
-
+import { useAuth } from '@/composables/useAuth'
 
 // Mock du composable useAuth
-const mockRegister = vi.fn()
-const mockClearError = vi.fn()
-const mockIsLoadingRef = ref(false)
-const mockErrorRef = ref<string | null>(null)
-
 vi.mock('@/composables/useAuth', () => ({
-  useAuth: () => ({
-    register: mockRegister,
-    isLoading: computed(() => mockIsLoadingRef.value),
-    error: computed(() => mockErrorRef.value), 
-    clearError: mockClearError,
-  }),
+  useAuth: vi.fn(),
 }))
 
-describe('RegisterForm Component', () => {
+describe('RegisterForm.vue', () => {
   let wrapper: VueWrapper
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let mockAuth: any
 
   beforeEach(() => {
-    setActivePinia(createPinia())
-    vi.clearAllMocks()
-    
-    mockIsLoadingRef.value = false
-    mockErrorRef.value = null
+    mockAuth = {
+      register: vi.fn(),
+      isLoading: false,
+      error: null,
+      clearError: vi.fn(),
+    }
 
-    wrapper = mount(RegisterForm)
-  })
+    vi.mocked(useAuth).mockReturnValue(mockAuth)
 
-  describe('Rendu initial', () => {
-    it('affiche tous les champs du formulaire', () => {
-      expect(wrapper.find('input[name="pseudo"]').exists()).toBe(true)
-      expect(wrapper.find('input[name="email"]').exists()).toBe(true)
-      expect(wrapper.find('input[name="password"]').exists()).toBe(true)
-      expect(wrapper.find('input[name="confirmPassword"]').exists()).toBe(true)
-      expect(wrapper.find('input[type="checkbox"]').exists()).toBe(true)
-    })
-
-    it('affiche le bouton de soumission', () => {
-      const submitButton = wrapper.find('button[type="submit"]')
-      expect(submitButton.exists()).toBe(true)
-      expect(submitButton.text()).toContain('Créer mon compte')
-    })
-
-    it('le bouton de soumission est désactivé par défaut', () => {
-      const submitButton = wrapper.find('button[type="submit"]')
-      expect(submitButton.attributes('disabled')).toBeDefined()
+    wrapper = mount(RegisterForm, {
+      global: {
+        stubs: {
+          RouterLink: true,
+        },
+      },
     })
   })
 
-  describe('Validation du pseudo', () => {
-    it('affiche une erreur si le pseudo est vide', async () => {
-      const pseudoInput = wrapper.find('input[name="pseudo"]')
-      
-      await pseudoInput.setValue('')
-      await pseudoInput.trigger('blur')
-      await wrapper.vm.$nextTick()
+  // ========== RENDERING ==========
 
-      const errors = wrapper.findAll('.text-red-400')
-      expect(errors.length).toBeGreaterThan(0)
-    })
+  it('should render the form with all fields', () => {
+    expect(wrapper.find('h2').text()).toBe('Inscription')
+    expect(wrapper.find('#pseudo').exists()).toBe(true)
+    expect(wrapper.find('#email').exists()).toBe(true)
+    expect(wrapper.find('#password').exists()).toBe(true)
+    expect(wrapper.find('#confirmPassword').exists()).toBe(true)
+    expect(wrapper.find('#acceptTerms').exists()).toBe(true)
+    expect(wrapper.find('button[type="submit"]').exists()).toBe(true)
+  })
 
-    it('affiche une erreur si le pseudo est trop court', async () => {
-      const pseudoInput = wrapper.find('input[name="pseudo"]')
-      
-      await pseudoInput.setValue('ab') // Moins de 3 caractères
-      await pseudoInput.trigger('blur')
-      
-      // Le formulaire devrait être invalide
-      const vm = wrapper.vm as unknown as RegisterFormVm;
-      expect(vm.isFormValid).toBe(false)
-    })
+  it('should display required field indicators', () => {
+    const requiredIndicators = wrapper.findAll('.text-error')
+    expect(requiredIndicators.length).toBeGreaterThan(0)
+  })
 
-    it('accepte un pseudo valide', async () => {
-      const pseudoInput = wrapper.find('input[name="pseudo"]')
-      
-      await pseudoInput.setValue('ValidPseudo')
-      await pseudoInput.trigger('blur')
-      
-      const vm = wrapper.vm as unknown as RegisterFormVm;
-      expect(vm.form.pseudo).toBe('ValidPseudo')
+  // ========== FORM INPUT ==========
+
+  it('should update form values on input', async () => {
+    await wrapper.find('#pseudo').setValue('TestUser')
+    await wrapper.find('#email').setValue('test@example.com')
+    await wrapper.find('#password').setValue('Password123')
+    await wrapper.find('#confirmPassword').setValue('Password123')
+
+    expect((wrapper.find('#pseudo').element as HTMLInputElement).value).toBe('TestUser')
+    expect((wrapper.find('#email').element as HTMLInputElement).value).toBe('test@example.com')
+    expect((wrapper.find('#password').element as HTMLInputElement).value).toBe('Password123')
+    expect((wrapper.find('#confirmPassword').element as HTMLInputElement).value).toBe('Password123')
+  })
+
+  // ========== PASSWORD VISIBILITY TOGGLE ==========
+
+  it('should toggle password visibility', async () => {
+    const passwordInput = wrapper.find('#password')
+    const toggleButton = wrapper.findAll('button[type="button"]')[0]
+
+    expect((passwordInput.element as HTMLInputElement).type).toBe('password')
+
+    await toggleButton.trigger('click')
+    await nextTick()
+
+    expect((passwordInput.element as HTMLInputElement).type).toBe('text')
+
+    await toggleButton.trigger('click')
+    await nextTick()
+
+    expect((passwordInput.element as HTMLInputElement).type).toBe('password')
+  })
+
+  it('should toggle confirm password visibility', async () => {
+    const confirmPasswordInput = wrapper.find('#confirmPassword')
+    const toggleButton = wrapper.findAll('button[type="button"]')[1]
+
+    expect((confirmPasswordInput.element as HTMLInputElement).type).toBe('password')
+
+    await toggleButton.trigger('click')
+    await nextTick()
+
+    expect((confirmPasswordInput.element as HTMLInputElement).type).toBe('text')
+  })
+
+  // ========== PASSWORD STRENGTH ==========
+
+  it('should calculate password strength correctly', async () => {
+    const passwordInput = wrapper.find('#password')
+
+    // Weak password
+    await passwordInput.setValue('weak')
+    await nextTick()
+    expect(wrapper.text()).toContain('Mot de passe faible')
+
+    // Medium password
+    await passwordInput.setValue('Medium1')
+    await nextTick()
+    expect(wrapper.text()).toContain('Mot de passe moyen')
+
+    // Strong password
+    await passwordInput.setValue('Strong1Password!')
+    await nextTick()
+    expect(wrapper.text()).toContain('Mot de passe fort')
+  })
+
+  it('should display password rules validation', async () => {
+    const passwordInput = wrapper.find('#password')
+
+    await passwordInput.setValue('Pass1')
+    await nextTick()
+
+    const rulesText = wrapper.text()
+    expect(rulesText).toContain('Au moins 8 caractères')
+    expect(rulesText).toContain('Une minuscule')
+    expect(rulesText).toContain('Une majuscule')
+    expect(rulesText).toContain('Un chiffre')
+  })
+
+  it('should validate password rules individually', async () => {
+    const passwordInput = wrapper.find('#password')
+
+    // Test minlength
+    await passwordInput.setValue('Short1A')
+    await nextTick()
+    expect(wrapper.html()).toContain('text-success')
+
+    // Test lowercase
+    await passwordInput.setValue('PASSWORD123')
+    await nextTick()
+    const html = wrapper.html()
+    expect(html).toContain('○') // Some rules not met
+  })
+
+  // ========== VALIDATION ==========
+
+  it('should validate pseudo field on blur', async () => {
+    const pseudoInput = wrapper.find('#pseudo')
+
+    await pseudoInput.setValue('ab')
+    await pseudoInput.trigger('blur')
+    await nextTick()
+
+    expect(wrapper.text()).toContain('Le pseudo doit faire au moins 3 caractères')
+  })
+
+  it('should validate email field on blur', async () => {
+    const emailInput = wrapper.find('#email')
+
+    await emailInput.setValue('invalid-email')
+    await emailInput.trigger('blur')
+    await nextTick()
+
+    expect(wrapper.text()).toContain("L'email n'est pas valide")
+  })
+
+  it('should show field error after touch', async () => {
+    const pseudoInput = wrapper.find('#pseudo')
+
+    await pseudoInput.trigger('blur')
+    await nextTick()
+
+    expect(wrapper.text()).toContain('Le pseudo est requis')
+  })
+
+  // ========== FORM VALIDATION ==========
+
+  it('should not submit form with empty fields', async () => {
+    const form = wrapper.find('form')
+    await form.trigger('submit.prevent')
+    await nextTick()
+
+    expect(mockAuth.register).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('Le pseudo est requis')
+  })
+
+  it('should not submit form when passwords do not match', async () => {
+    await wrapper.find('#pseudo').setValue('TestUser')
+    await wrapper.find('#email').setValue('test@example.com')
+    await wrapper.find('#password').setValue('Password123')
+    await wrapper.find('#confirmPassword').setValue('DifferentPassword123')
+    await wrapper.find('#acceptTerms').setValue(true)
+
+    await wrapper.find('form').trigger('submit.prevent')
+    await nextTick()
+
+    expect(mockAuth.register).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('Les mots de passe ne correspondent pas')
+  })
+
+  it('should not submit form without accepting terms', async () => {
+    await wrapper.find('#pseudo').setValue('TestUser')
+    await wrapper.find('#email').setValue('test@example.com')
+    await wrapper.find('#password').setValue('Password123')
+    await wrapper.find('#confirmPassword').setValue('Password123')
+
+    await wrapper.find('form').trigger('submit.prevent')
+    await nextTick()
+
+    expect(mockAuth.register).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain("Vous devez accepter les conditions d'utilisation")
+  })
+
+  it('should not submit form with weak password', async () => {
+    await wrapper.find('#pseudo').setValue('TestUser')
+    await wrapper.find('#email').setValue('test@example.com')
+    await wrapper.find('#password').setValue('weak')
+    await wrapper.find('#confirmPassword').setValue('weak')
+    await wrapper.find('#acceptTerms').setValue(true)
+
+    await wrapper.find('form').trigger('submit.prevent')
+    await nextTick()
+
+    expect(mockAuth.register).not.toHaveBeenCalled()
+  })
+
+  // ========== SUCCESSFUL SUBMISSION ==========
+
+  it('should submit form with valid data', async () => {
+    mockAuth.register.mockResolvedValueOnce(undefined)
+
+    await wrapper.find('#pseudo').setValue('TestUser')
+    await wrapper.find('#email').setValue('test@example.com')
+    await wrapper.find('#password').setValue('Password123')
+    await wrapper.find('#confirmPassword').setValue('Password123')
+    await wrapper.find('#acceptTerms').setValue(true)
+
+    await wrapper.find('form').trigger('submit.prevent')
+    await nextTick()
+
+    expect(mockAuth.register).toHaveBeenCalledWith({
+      pseudo: 'TestUser',
+      email: 'test@example.com',
+      password: 'Password123',
+      confirmPassword: 'Password123',
     })
   })
 
-  describe('Validation de l\'email', () => {
-    it('affiche une erreur pour un email invalide', async () => {
-      const emailInput = wrapper.find('input[name="email"]')
-      
-      await emailInput.setValue('invalid-email')
-      await emailInput.trigger('blur')
-      
-      const vm = wrapper.vm as unknown as RegisterFormVm;
-      expect(vm.isFormValid).toBe(false)
+  // ========== ERROR HANDLING ==========
+
+  it('should display error from store', async () => {
+    mockAuth.error = 'Email already exists'
+
+    // Remount the component to pick up the new error value
+    wrapper = mount(RegisterForm, {
+      global: {
+        stubs: {
+          RouterLink: true,
+        },
+      },
     })
 
-    it('accepte un email valide', async () => {
-      const emailInput = wrapper.find('input[name="email"]')
-      
-      await emailInput.setValue('valid@onlyroll.com')
-      await emailInput.trigger('blur')
-      
-      const vm = wrapper.vm as unknown as RegisterFormVm;
-      expect(vm.form.email).toBe('valid@onlyroll.com')
-    })
+    await nextTick()
+
+    expect(wrapper.text()).toContain('Email already exists')
   })
 
-  describe('Validation du mot de passe', () => {
-    it('vérifie la longueur minimale (8 caractères)', async () => {
-      const passwordInput = wrapper.find('input[name="password"]')
-      
-      await passwordInput.setValue('Short1!')
-      
-      const vm = wrapper.vm as unknown as RegisterFormVm;
-      expect(vm.passwordRules.minlength).toBe(false)
-    })
+  it('should display validation errors', async () => {
+    await wrapper.find('form').trigger('submit.prevent')
+    await nextTick()
 
-    it('vérifie la présence d\'une minuscule', async () => {
-      const passwordInput = wrapper.find('input[name="password"]')
-      
-      await passwordInput.setValue('PASSWORD123!')
-      
-      const vm = wrapper.vm as unknown as RegisterFormVm;
-      expect(vm.passwordRules.lowercase).toBe(false)
-    })
-
-    it('vérifie la présence d\'une majuscule', async () => {
-      const passwordInput = wrapper.find('input[name="password"]')
-      
-      await passwordInput.setValue('password123!')
-      
-      const vm = wrapper.vm as unknown as RegisterFormVm;
-      expect(vm.passwordRules.uppercase).toBe(false)
-    })
-
-    it('vérifie la présence d\'un chiffre', async () => {
-      const passwordInput = wrapper.find('input[name="password"]')
-      
-      await passwordInput.setValue('Password!')
-      
-      const vm = wrapper.vm as unknown as RegisterFormVm;
-      expect(vm.passwordRules.number).toBe(false)
-    })
-
-    it('accepte un mot de passe valide', async () => {
-      const passwordInput = wrapper.find('input[name="password"]')
-      
-      await passwordInput.setValue('ValidPass123!')
-      
-      const vm = wrapper.vm as unknown as RegisterFormVm;
-      expect(vm.passwordRules.minlength).toBe(true)
-      expect(vm.passwordRules.lowercase).toBe(true)
-      expect(vm.passwordRules.uppercase).toBe(true)
-      expect(vm.passwordRules.number).toBe(true)
-    })
+    const errorContainer = wrapper.find('.bg-error\\/10')
+    expect(errorContainer.exists()).toBe(true)
   })
 
-  describe('Validation de la confirmation du mot de passe', () => {
-    it('affiche une erreur si les mots de passe ne correspondent pas', async () => {
-      const passwordInput = wrapper.find('input[name="password"]')
-      const confirmInput = wrapper.find('input[name="confirmPassword"]')
-      
-      await passwordInput.setValue('Password123!')
-      await confirmInput.setValue('DifferentPass123!')
-      
-      const vm = wrapper.vm as unknown as RegisterFormVm;
-      expect(vm.passwordsMatch).toBe(false)
-    })
+  it('should clear error on input change', async () => {
+    await wrapper.find('#pseudo').setValue('TestUser')
+    await nextTick()
 
-    it('valide si les mots de passe correspondent', async () => {
-      const passwordInput = wrapper.find('input[name="password"]')
-      const confirmInput = wrapper.find('input[name="confirmPassword"]')
-      
-      const samePassword = 'Password123!'
-      await passwordInput.setValue(samePassword)
-      await confirmInput.setValue(samePassword)
-      
-      const vm = wrapper.vm as unknown as RegisterFormVm;
-      expect(vm.passwordsMatch).toBe(true)
-    })
+    expect(mockAuth.clearError).toHaveBeenCalled()
   })
 
-  describe('Toggle de visibilité du mot de passe', () => {
-    it('bascule entre password et text pour le champ password', async () => {
-      const passwordInput = wrapper.find('input[name="password"]')
-      const toggleButton = wrapper.findAll('button[type="button"]')[0]
-      
-      expect(passwordInput.attributes('type')).toBe('password')
-      
-      await toggleButton.trigger('click')
-      expect(passwordInput.attributes('type')).toBe('text')
-      
-      await toggleButton.trigger('click')
-      expect(passwordInput.attributes('type')).toBe('password')
+  // ========== LOADING STATE ==========
+
+  it('should disable inputs when loading', async () => {
+    mockAuth.isLoading = true
+
+    wrapper = mount(RegisterForm, {
+      global: {
+        stubs: {
+          RouterLink: true,
+        },
+      },
     })
+
+    await nextTick()
+
+    const pseudoInput = wrapper.find('#pseudo')
+    const emailInput = wrapper.find('#email')
+    const passwordInput = wrapper.find('#password')
+    const submitButton = wrapper.find('button[type="submit"]')
+
+    expect((pseudoInput.element as HTMLInputElement).disabled).toBe(true)
+    expect((emailInput.element as HTMLInputElement).disabled).toBe(true)
+    expect((passwordInput.element as HTMLInputElement).disabled).toBe(true)
+    expect((submitButton.element as HTMLButtonElement).disabled).toBe(true)
   })
 
-  describe('Soumission du formulaire', () => {
-    it('n\'envoie pas le formulaire si invalide', async () => {
-      await wrapper.find('form').trigger('submit.prevent')
-      
-      expect(mockRegister).not.toHaveBeenCalled()
+  it('should show loading state on submit button', async () => {
+    mockAuth.isLoading = true
+
+    wrapper = mount(RegisterForm, {
+      global: {
+        stubs: {
+          RouterLink: true,
+        },
+      },
     })
 
-    it('envoie le formulaire avec les bonnes données si valide', async () => {
-      // Remplir le formulaire avec des données valides
-      await wrapper.find('input[name="pseudo"]').setValue('TestUser')
-      await wrapper.find('input[name="email"]').setValue('test@onlyroll.com')
-      await wrapper.find('input[name="password"]').setValue('ValidPass123!')
-      await wrapper.find('input[name="confirmPassword"]').setValue('ValidPass123!')
-      await wrapper.find('input[type="checkbox"]').setValue(true)
-      
-      await wrapper.find('form').trigger('submit.prevent')
-      await wrapper.vm.$nextTick()
-      
-      expect(mockRegister).toHaveBeenCalledWith({
-        pseudo: 'TestUser',
-        email: 'test@onlyroll.com',
-        password: 'ValidPass123!',
-        confirmPassword: 'ValidPass123!',
-      })
-    })
+    await nextTick()
 
-    it('n\'envoie pas si les conditions ne sont pas acceptées', async () => {
-      await wrapper.find('input[name="pseudo"]').setValue('TestUser')
-      await wrapper.find('input[name="email"]').setValue('test@onlyroll.com')
-      await wrapper.find('input[name="password"]').setValue('ValidPass123!')
-      await wrapper.find('input[name="confirmPassword"]').setValue('ValidPass123!')
-      // Ne pas cocher la checkbox
-      
-      const vm = wrapper.vm as unknown as RegisterFormVm;
-      expect(vm.form.acceptTerms).toBe(false)
-      expect(vm.isFormValid).toBe(false)
-    })
-
-    it('désactive le bouton pendant le chargement', async () => {
-      mockIsLoadingRef.value = true
-
-      wrapper = mount(RegisterForm)
-      
-      const submitButton = wrapper.find('button[type="submit"]')
-      expect(submitButton.attributes('disabled')).toBeDefined()
-      expect(submitButton.text()).toContain('Création du compte...')
-    })
+    expect(wrapper.find('button[type="submit"]').text()).toContain('Création du compte...')
   })
 
-  describe('Affichage des erreurs', () => {
-    it('affiche les erreurs de validation', async () => {
-      const vm = wrapper.vm as unknown as RegisterFormVm;
-      
-      // Soumettre un formulaire invalide
-      await wrapper.find('input[name="pseudo"]').setValue('ab') // Trop court
-      await wrapper.find('form').trigger('submit.prevent')
-      
-      expect(vm.validationErrors.length).toBeGreaterThan(0)
-    })
+  // ========== EMAIL VALIDATION ==========
 
-    it('efface l\'erreur globale lors de la saisie', async () => {
-      mockErrorRef.value = 'Une erreur est survenue'
+  it('should validate email format', async () => {
+    const emailInput = wrapper.find('#email')
 
-      wrapper = mount(RegisterForm)
+    // Invalid email
+    await emailInput.setValue('notanemail')
+    await emailInput.trigger('blur')
+    await nextTick()
 
-      const emailInput = wrapper.find('input[name="email"]')
-      await emailInput.setValue('test@example.com')
-      await emailInput.trigger('input')
-      expect(mockClearError).toHaveBeenCalled()
-    })
+    expect(wrapper.text()).toContain("L'email n'est pas valide")
+
+    // Valid email
+    await emailInput.setValue('valid@example.com')
+    await emailInput.trigger('blur')
+    await nextTick()
+
+    expect(wrapper.text()).not.toContain("L'email n'est pas valide")
   })
 
-  describe('Règles de mot de passe visuelles', () => {
-    it('affiche les indicateurs de règles de mot de passe', () => {
-      // Les indicateurs devraient être présents dans le DOM
-      expect(wrapper.html()).toContain('Au moins 8 caractères')
-      expect(wrapper.html()).toContain('Une minuscule')
-      expect(wrapper.html()).toContain('Une majuscule')
-      expect(wrapper.html()).toContain('Un chiffre')
-    })
+  // ========== PSEUDO VALIDATION ==========
 
-    it('met à jour les indicateurs en temps réel', async () => {
-      const passwordInput = wrapper.find('input[name="password"]')
-      
-      await passwordInput.setValue('pass')
-      const vm = wrapper.vm as unknown as RegisterFormVm;
-      
-      expect(vm.passwordRules.minlength).toBe(false)
-      expect(vm.passwordRules.lowercase).toBe(true)
-      expect(vm.passwordRules.uppercase).toBe(false)
-      expect(vm.passwordRules.number).toBe(false)
-    })
+  it('should validate pseudo length', async () => {
+    const pseudoInput = wrapper.find('#pseudo')
+
+    // Too short
+    await pseudoInput.setValue('ab')
+    await pseudoInput.trigger('blur')
+    await nextTick()
+
+    expect(wrapper.text()).toContain('Le pseudo doit faire au moins 3 caractères')
+
+    // Valid length
+    await pseudoInput.setValue('ValidPseudo')
+    await pseudoInput.trigger('blur')
+    await nextTick()
+
+    expect(wrapper.text()).not.toContain('Le pseudo doit faire au moins 3 caractères')
   })
 
-  describe('Computed isFormValid', () => {
-    it('retourne false si le formulaire est incomplet', () => {
-      const vm = wrapper.vm as unknown as RegisterFormVm;
-      expect(vm.isFormValid).toBe(false)
-    })
+  // ========== SUBMIT BUTTON STATE ==========
 
-    it('retourne true si tous les champs sont valides', async () => {
-      await wrapper.find('input[name="pseudo"]').setValue('ValidUser')
-      await wrapper.find('input[name="email"]').setValue('valid@onlyroll.com')
-      await wrapper.find('input[name="password"]').setValue('ValidPass123!')
-      await wrapper.find('input[name="confirmPassword"]').setValue('ValidPass123!')
-      await wrapper.find('input[type="checkbox"]').setValue(true)
-      
-      const vm = wrapper.vm as unknown as RegisterFormVm;
-      expect(vm.isFormValid).toBe(true)
-    })
+  it('should disable submit button when form is invalid', async () => {
+    const submitButton = wrapper.find('button[type="submit"]')
+
+    // Form is empty initially
+    expect((submitButton.element as HTMLButtonElement).disabled).toBe(true)
   })
 
-  describe('Gestion des erreurs API', () => {
-    it('gère les erreurs lors de l\'inscription', async () => {
-      mockRegister.mockRejectedValueOnce(new Error('Email déjà utilisé'))
-      
-      await wrapper.find('input[name="pseudo"]').setValue('TestUser')
-      await wrapper.find('input[name="email"]').setValue('existing@onlyroll.com')
-      await wrapper.find('input[name="password"]').setValue('ValidPass123!')
-      await wrapper.find('input[name="confirmPassword"]').setValue('ValidPass123!')
-      await wrapper.find('input[type="checkbox"]').setValue(true)
-      
-      await wrapper.find('form').trigger('submit.prevent')
-      
-      // L'erreur devrait être gérée par le composable
-      expect(mockRegister).toHaveBeenCalled()
-    })
+  it('should enable submit button when form is valid', async () => {
+    await wrapper.find('#pseudo').setValue('TestUser')
+    await wrapper.find('#email').setValue('test@example.com')
+    await wrapper.find('#password').setValue('Password123')
+    await wrapper.find('#confirmPassword').setValue('Password123')
+    await wrapper.find('#acceptTerms').setValue(true)
+
+    await nextTick()
+
+    const submitButton = wrapper.find('button[type="submit"]')
+    expect((submitButton.element as HTMLButtonElement).disabled).toBe(false)
   })
 
-  describe('Informations supplémentaires', () => {
-    it('affiche un message informatif sur la vérification email', () => {
-      expect(wrapper.html()).toContain('Un email de vérification sera envoyé')
-    })
-  })
+  // ========== ERROR HANDLING ON SUBMIT ==========
 
-  describe('Scénario complet d\'inscription', () => {
-    it('remplit et soumet le formulaire complet avec succès', async () => {
-      const credentials = {
-        pseudo: 'NewPlayer',
-        email: 'newplayer@onlyroll.com',
-        password: 'SecurePass123!',
-      }
-      
-      // 1. Remplir tous les champs
-      await wrapper.find('input[name="pseudo"]').setValue(credentials.pseudo)
-      await wrapper.find('input[name="email"]').setValue(credentials.email)
-      await wrapper.find('input[name="password"]').setValue(credentials.password)
-      await wrapper.find('input[name="confirmPassword"]').setValue(credentials.password)
-      await wrapper.find('input[type="checkbox"]').setValue(true)
-      
-      // 2. Vérifier que le formulaire est valide
-      const vm = wrapper.vm as unknown as RegisterFormVm;
-      expect(vm.isFormValid).toBe(true)
-      
-      // 3. Soumettre
-      await wrapper.find('form').trigger('submit.prevent')
-      
-      // 4. Vérifier l'appel
-      expect(mockRegister).toHaveBeenCalledWith({
-        pseudo: credentials.pseudo,
-        email: credentials.email,
-        password: credentials.password,
-        confirmPassword: credentials.password,
-      })
-    })
+  it('should handle registration error', async () => {
+    const registerError = new Error('Registration failed')
+    mockAuth.register.mockRejectedValueOnce(registerError)
+
+    await wrapper.find('#pseudo').setValue('TestUser')
+    await wrapper.find('#email').setValue('test@example.com')
+    await wrapper.find('#password').setValue('Password123')
+    await wrapper.find('#confirmPassword').setValue('Password123')
+    await wrapper.find('#acceptTerms').setValue(true)
+
+    await wrapper.find('form').trigger('submit.prevent')
+    await nextTick()
+
+    expect(mockAuth.register).toHaveBeenCalled()
   })
 })

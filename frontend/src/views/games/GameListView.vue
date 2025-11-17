@@ -1,25 +1,26 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useGameStore } from '@/stores/game'
+import { useAuthStore } from '@/stores/auth'
+import { usePresenceStore } from '@/stores/presenceStore'
+import { mercureService } from '@/services/mercure'
 import type { Game, GameFilters } from '@/types/game'
+import type { MercurePresenceEventData } from '@/types/websocket'
+import DashboardNav from '@/components/dashboard/DashboardNav.vue'
 import GameCard from '@/components/game/GameCard.vue'
 import CreateGameModal from '@/components/game/CreateGameModal.vue'
 import JoinGameModal from '@/components/game/JoinGameModal.vue'
-import {
-  PlusIcon,
-  MagnifyingGlassIcon,
-  FunnelIcon,
-  InboxIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-} from '@heroicons/vue/24/outline'
+import { PlusIcon, MagnifyingGlassIcon, FunnelIcon, InboxIcon } from '@heroicons/vue/24/outline'
 
 const gameStore = useGameStore()
+const authStore = useAuthStore()
+const presenceStore = usePresenceStore()
 const showCreateModal = ref(false)
 const showJoinModal = ref(false)
 const selectedGame = ref<Game | null>(null)
 const activeTab = ref<'public' | 'my-games'>('public')
 const showFilters = ref(true)
+const connectedGameIds = ref<number[]>([]) // Garder trace des parties écoutées
 
 // Filtres
 const filters = ref<GameFilters>({
@@ -31,49 +32,89 @@ const filters = ref<GameFilters>({
   limit: 12,
 })
 
-// Debounce timer
-let debounceTimer: ReturnType<typeof setTimeout> | null = null
+// Handler pour les événements de présence
+function handlePresenceEvent(data: unknown) {
+  const event = data as {
+    gameId: number
+    data: { userId: number; type: string; onlineUsers?: number[]; timestamp: string }
+  }
+  console.log('Presence event in GameListView:', event)
+  const presenceData: MercurePresenceEventData = {
+    gameId: event.gameId,
+    userId: event.data.userId,
+    type: event.data.type as 'join' | 'leave' | 'heartbeat',
+    onlineUsers: event.data.onlineUsers,
+    timestamp: event.data.timestamp,
+  }
+  presenceStore.handlePresenceEvent(presenceData)
+}
 
-onMounted(() => {
-  loadGames()
+// Connecter aux événements de présence pour les parties affichées
+function connectToPresence() {
+  const gameIds = displayedGames.value.map((game) => game.id)
+
+  if (gameIds.length === 0) {
+    console.log('Aucune partie à écouter')
+    return
+  }
+
+  // Vérifier si les IDs ont changé
+  const idsChanged =
+    gameIds.length !== connectedGameIds.value.length ||
+    !gameIds.every((id) => connectedGameIds.value.includes(id))
+
+  if (!idsChanged) {
+    console.log('Déjà connecté aux mêmes parties, skip reconnexion')
+    return
+  }
+
+  console.log('Connexion aux événements de présence pour les parties:', gameIds)
+
+  // Se connecter aux événements de présence
+  mercureService.connectToPresence(gameIds)
+
+  // Mémoriser les IDs connectés
+  connectedGameIds.value = [...gameIds]
+}
+
+onMounted(async () => {
+  // Enregistrer le listener une seule fois
+  mercureService.on('presence', handlePresenceEvent)
+
+  await loadGames()
+  // Connecter aux événements de présence après le chargement des parties
+  connectToPresence()
 })
 
-// Watch filters pour recherche automatique (avec debounce)
-watch(
-  () => [filters.value.title, filters.value.gameMaster, filters.value.status],
-  () => {
-    if (activeTab.value === 'public') {
-      // Reset à la page 1 quand on change les filtres
-      filters.value.page = 1
-      debouncedSearch()
-    }
-  },
-)
+onUnmounted(() => {
+  // Se déconnecter de Mercure
+  mercureService.off('presence', handlePresenceEvent)
+  mercureService.disconnect()
+})
 
 async function loadGames() {
   if (activeTab.value === 'public') {
-    await gameStore.fetchPublicGames(filters.value)
+    // Pour l'onglet "Toutes", charger à la fois myGames et les parties publiques
+    // Les filtres sont appliqués côté client via les computed
+    await Promise.all([gameStore.fetchMyGames(), gameStore.fetchPublicGames()])
   } else {
+    // Pour l'onglet "M.J.", charger uniquement myGames
     await gameStore.fetchMyGames()
   }
 }
 
-function debouncedSearch() {
-  if (debounceTimer) clearTimeout(debounceTimer)
-
-  debounceTimer = setTimeout(() => {
-    loadGames()
-  }, 500) // 500ms de délai
-}
-
-async function handleSearch() {
-  filters.value.page = 1
-  await gameStore.fetchPublicGames(filters.value)
-}
-
 function handleTabChange(tab: 'public' | 'my-games') {
   activeTab.value = tab
-  resetFilters()
+  // Réinitialiser les filtres sans recharger
+  filters.value = {
+    search: '',
+    title: '',
+    gameMaster: '',
+    status: undefined,
+    page: 1,
+    limit: 12,
+  }
+  // Charger les données appropriées pour l'onglet
   loadGames()
 }
 
@@ -100,70 +141,150 @@ function handleJoinSuccess() {
   loadGames()
 }
 
-// Pagination
-async function goToPage(page: number) {
-  filters.value.page = page
-  await gameStore.fetchPublicGames(filters.value)
-  // Scroll to top
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-}
+// ============================================
+// Tri et filtrage personnalisé pour "Toutes"
+// ============================================
+const sortedGamesForAllTab = computed(() => {
+  if (!authStore.user) return []
 
-async function nextPage() {
-  if (gameStore.pagination.page < gameStore.pagination.totalPages) {
-    await goToPage(gameStore.pagination.page + 1)
-  }
-}
+  // Combiner myGames et games publics
+  const allGames: Game[] = []
+  const seenIds = new Set<number>()
 
-async function previousPage() {
-  if (gameStore.pagination.page > 1) {
-    await goToPage(gameStore.pagination.page - 1)
-  }
-}
+  // D'abord ajouter myGames (pour éviter les doublons)
+  gameStore.myGames.forEach((game) => {
+    allGames.push(game)
+    seenIds.add(game.id)
+  })
 
-/**
- * Génère les numéros de pages à afficher avec ellipses
- */
-function getPaginationRange(): (number | string)[] {
-  const current = gameStore.pagination.page
-  const total = gameStore.pagination.totalPages
-  const delta = 2 // Nombre de pages de chaque côté
+  // Ajouter les parties publiques qui ne sont pas déjà dans myGames
+  gameStore.games.forEach((game) => {
+    if (!seenIds.has(game.id)) {
+      allGames.push(game)
+    }
+  })
 
-  if (total <= 7) {
-    // Afficher toutes les pages si <= 7
-    return Array.from({ length: total }, (_, i) => i + 1)
-  }
+  // Appliquer les filtres
+  let filteredGames = allGames
 
-  // Logique avec ellipses
-  const range: (number | string)[] = []
-
-  // Toujours afficher la première page
-  range.push(1)
-
-  if (current > delta + 2) {
-    range.push('...')
+  // Filtre par recherche globale (titre ou nom de campagne)
+  if (filters.value.search) {
+    const searchTerm = filters.value.search.toLowerCase()
+    filteredGames = filteredGames.filter((game) =>
+      (game.title || game.name).toLowerCase().includes(searchTerm)
+    )
   }
 
-  // Pages autour de la page courante
-  const start = Math.max(2, current - delta)
-  const end = Math.min(total - 1, current + delta)
-
-  for (let i = start; i <= end; i++) {
-    range.push(i)
+  // Filtre par titre
+  if (filters.value.title) {
+    const titleFilter = filters.value.title.toLowerCase()
+    filteredGames = filteredGames.filter((game) =>
+      (game.title || game.name).toLowerCase().includes(titleFilter)
+    )
   }
 
-  if (current < total - delta - 1) {
-    range.push('...')
+  // Filtre par maître du jeu
+  if (filters.value.gameMaster) {
+    const gmFilter = filters.value.gameMaster.toLowerCase()
+    filteredGames = filteredGames.filter((game) =>
+      game.gameMaster.pseudo.toLowerCase().includes(gmFilter)
+    )
   }
 
-  // Toujours afficher la dernière page
-  range.push(total)
+  // Filtre par statut
+  if (filters.value.status) {
+    filteredGames = filteredGames.filter((game) => game.status === filters.value.status)
+  }
 
-  return range
-}
+  // Catégoriser les parties filtrées
+  const asMaster: Game[] = []
+  const asPlayer: Game[] = []
+  const publicGames: Game[] = []
+
+  filteredGames.forEach((game) => {
+    // Vérifier si l'utilisateur est le MJ
+    if (game.gameMaster.id === authStore.user!.id) {
+      asMaster.push(game)
+    }
+    // Vérifier si l'utilisateur est un joueur (mais pas MJ)
+    else if (game.gamePlayers?.some((gp) => gp.user.id === authStore.user!.id)) {
+      asPlayer.push(game)
+    }
+    // Sinon c'est une partie publique
+    else if (game.isPublic) {
+      publicGames.push(game)
+    }
+  })
+
+  // Trier chaque catégorie par ordre alphabétique du titre
+  const sortByTitle = (a: Game, b: Game) => {
+    const titleA = (a.title || a.name).toLowerCase()
+    const titleB = (b.title || b.name).toLowerCase()
+    return titleA.localeCompare(titleB)
+  }
+
+  asMaster.sort(sortByTitle)
+  asPlayer.sort(sortByTitle)
+  publicGames.sort(sortByTitle)
+
+  // Combiner dans l'ordre : MJ > Joueur > Public
+  return [...asMaster, ...asPlayer, ...publicGames]
+})
+
+// Computed pour les parties à afficher selon l'onglet
+const displayedGames = computed(() => {
+  if (!authStore.user) return []
+
+  if (activeTab.value === 'my-games') {
+    // Onglet "M.J." : uniquement les parties où l'utilisateur est MJ
+    let gmGames = gameStore.myGames.filter((game) => game.gameMaster.id === authStore.user!.id)
+
+    // Appliquer les filtres côté client
+    if (filters.value.search) {
+      const searchTerm = filters.value.search.toLowerCase()
+      gmGames = gmGames.filter((game) =>
+        (game.title || game.name).toLowerCase().includes(searchTerm)
+      )
+    }
+
+    if (filters.value.title) {
+      const titleFilter = filters.value.title.toLowerCase()
+      gmGames = gmGames.filter((game) =>
+        (game.title || game.name).toLowerCase().includes(titleFilter)
+      )
+    }
+
+    if (filters.value.status) {
+      gmGames = gmGames.filter((game) => game.status === filters.value.status)
+    }
+
+    // Trier par ordre alphabétique
+    return gmGames.sort((a, b) => {
+      const titleA = (a.title || a.name).toLowerCase()
+      const titleB = (b.title || b.name).toLowerCase()
+      return titleA.localeCompare(titleB)
+    })
+  } else {
+    // Onglet "Toutes" : tri personnalisé
+    return sortedGamesForAllTab.value
+  }
+})
+
+// Reconnecter quand les parties affichées changent
+watch(displayedGames, () => {
+  if (displayedGames.value.length > 0) {
+    connectToPresence()
+  }
+})
+
+// Pagination désactivée - pas d'alias nécessaires
 </script>
 
 <template>
   <div class="min-h-screen bg-primary-900">
+    <!-- Navigation -->
+    <DashboardNav />
+
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <!-- Header -->
       <div class="flex items-center justify-between mb-8">
@@ -240,17 +361,13 @@ function getPaginationRange(): (number | string)[] {
               <div class="relative">
                 <input
                   v-model="filters.search"
-                  @keyup.enter="handleSearch"
                   type="text"
                   placeholder="Rechercher..."
                   class="w-full px-3 py-2 pr-10 bg-secondary-700 border border-secondary-600 rounded-md text-secondary-50 placeholder-secondary-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
-                <button
-                  @click="handleSearch"
-                  class="absolute right-2 top-1/2 -translate-y-1/2 text-secondary-400 hover:text-primary-500 transition-colors"
-                >
-                  <MagnifyingGlassIcon class="w-5 h-5" />
-                </button>
+                <MagnifyingGlassIcon
+                  class="w-5 h-5 absolute right-3 top-1/2 -translate-y-1/2 text-secondary-400"
+                />
               </div>
             </div>
 
@@ -265,8 +382,8 @@ function getPaginationRange(): (number | string)[] {
               />
             </div>
 
-            <!-- Maître du Jeu -->
-            <div>
+            <!-- Maître du Jeu (masqué dans l'onglet M.J.) -->
+            <div v-if="activeTab === 'public'">
               <label class="block text-sm font-medium text-secondary-300 mb-2">
                 Maître du Jeu
               </label>
@@ -305,14 +422,11 @@ function getPaginationRange(): (number | string)[] {
 
         <!-- Main Content -->
         <main class="flex-1 min-w-0">
-          <!-- Results counter (public only) -->
-          <div
-            v-if="activeTab === 'public' && !gameStore.isLoading && gameStore.games.length > 0"
-            class="mb-4"
-          >
+          <!-- Results counter -->
+          <div v-if="!gameStore.isLoading && displayedGames.length > 0" class="mb-4">
             <p class="text-secondary-400 text-sm">
-              <span class="text-secondary-50 font-medium">{{ gameStore.pagination.total }}</span>
-              {{ gameStore.pagination.total > 1 ? 'parties trouvées' : 'partie trouvée' }}
+              <span class="text-secondary-50 font-medium">{{ displayedGames.length }}</span>
+              {{ displayedGames.length > 1 ? 'parties trouvées' : 'partie trouvée' }}
             </p>
           </div>
 
@@ -324,30 +438,17 @@ function getPaginationRange(): (number | string)[] {
             <p class="text-secondary-400 mt-4">Chargement des parties...</p>
           </div>
 
-          <!-- Games Grid - Public -->
+          <!-- Games Grid -->
           <div
-            v-else-if="activeTab === 'public' && gameStore.games.length > 0"
+            v-else-if="displayedGames.length > 0"
             class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
           >
             <GameCard
-              v-for="game in gameStore.games"
+              v-for="game in displayedGames"
               :key="game.id"
               :game="game"
-              :show-join-button="true"
+              :show-join-button="activeTab === 'public'"
               @join="handleJoinGame"
-            />
-          </div>
-
-          <!-- Games Grid - My Games -->
-          <div
-            v-else-if="activeTab === 'my-games' && gameStore.myGames.length > 0"
-            class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
-          >
-            <GameCard
-              v-for="game in gameStore.myGames"
-              :key="game.id"
-              :game="game"
-              :show-join-button="false"
             />
           </div>
 
@@ -381,52 +482,7 @@ function getPaginationRange(): (number | string)[] {
             </button>
           </div>
 
-          <!-- Pagination (public only) -->
-          <div
-            v-if="
-              activeTab === 'public' && !gameStore.isLoading && gameStore.pagination.totalPages > 1
-            "
-            class="mt-8 flex items-center justify-between"
-          >
-            <!-- Previous button -->
-            <button
-              @click="previousPage"
-              :disabled="gameStore.pagination.page === 1"
-              class="px-4 py-2 bg-secondary-800 border border-secondary-700 rounded-lg text-secondary-300 hover:text-secondary-50 hover:bg-secondary-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-secondary-800 disabled:hover:text-secondary-300 transition-all flex items-center gap-2"
-            >
-              <ChevronLeftIcon class="w-5 h-5" />
-              Précédent
-            </button>
-
-            <!-- Page indicators -->
-            <div class="flex items-center gap-2">
-              <template v-for="page in getPaginationRange()" :key="page">
-                <button
-                  v-if="page !== '...'"
-                  @click="goToPage(page as number)"
-                  :class="[
-                    'w-10 h-10 rounded-lg font-medium transition-all',
-                    gameStore.pagination.page === page
-                      ? 'bg-primary-500 text-white shadow-purple'
-                      : 'bg-secondary-800 text-secondary-300 hover:bg-secondary-700 hover:text-secondary-50 border border-secondary-700',
-                  ]"
-                >
-                  {{ page }}
-                </button>
-                <span v-else class="text-secondary-400 px-2">...</span>
-              </template>
-            </div>
-
-            <!-- Next button -->
-            <button
-              @click="nextPage"
-              :disabled="gameStore.pagination.page === gameStore.pagination.totalPages"
-              class="px-4 py-2 bg-secondary-800 border border-secondary-700 rounded-lg text-secondary-300 hover:text-secondary-50 hover:bg-secondary-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-secondary-800 disabled:hover:text-secondary-300 transition-all flex items-center gap-2"
-            >
-              Suivant
-              <ChevronRightIcon class="w-5 h-5" />
-            </button>
-          </div>
+          <!-- Pagination désactivée (tri côté client) -->
 
           <!-- Error State -->
           <div
