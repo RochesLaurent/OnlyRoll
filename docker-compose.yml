@@ -3,7 +3,7 @@ services:
   # MYSQL
   # ===========================================
   mysql:
-    image: mysql:9.0
+    image: mysql:8.0
     container_name: onlyroll-mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
@@ -61,7 +61,7 @@ services:
       APP_DEBUG: true
       APP_SECRET: ${APP_SECRET:-your-app-secret-change-in-production}
       DEFAULT_URI: ${DEFAULT_URI:-http://localhost}
-      DATABASE_URL: ${DATABASE_URL:-mysql://onlyroll_db:onlyroll_docker_pass@mysql:3306/onlyroll_db?serverVersion=9.0&charset=utf8mb4}
+      DATABASE_URL: ${DATABASE_URL:-mysql://onlyroll_db:onlyroll_docker_pass@mysql:3306/onlyroll_db?serverVersion=8.0&charset=utf8mb4}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-%kernel.project_dir%/config/jwt/private.pem}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-%kernel.project_dir%/config/jwt/public.pem}
