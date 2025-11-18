@@ -5,6 +5,7 @@ services:
   mysql:
     image: mysql:8.0
     container_name: onlyroll-mysql
+    command: --default-authentication-plugin=mysql_native_password --max_connections=100 --innodb_buffer_pool_size=256M --innodb_log_file_size=48M
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-onlyroll_db}
@@ -12,8 +13,6 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-onlyroll_docker_pass}
     volumes:
       - mysql-data:/var/lib/mysql
-      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/custom.cnf:ro
-      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
       - "${DB_PORT:-3306}:3306"
     networks:
