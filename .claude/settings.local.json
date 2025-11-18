@@ -41,7 +41,11 @@
       "Bash(docker exec:*)",
       "Bash(docker-compose restart:*)",
       "Bash(copy .env.docker.example .env.docker)",
-      "Bash(docker-compose logs:*)"
+      "Bash(docker-compose logs:*)",
+      "Bash(npm ls:*)",
+      "Bash(npm audit:*)",
+      "Bash(npm update:*)",
+      "Bash(git restore:*)"
     ],
     "deny": [],
     "ask": []

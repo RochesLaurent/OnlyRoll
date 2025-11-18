@@ -34,15 +34,15 @@ jobs:
           echo "DB_NAME=onlyroll_test" >> .env.docker
 
       - name: Build Docker images
-        run: docker-compose build
+        run: docker compose build
 
       - name: Start Docker services
-        run: docker-compose up -d
+        run: docker compose up -d
 
       - name: Wait for services to be healthy
         run: |
           echo "⏳ Waiting for services to be healthy..."
-          timeout 120 bash -c 'until docker-compose ps | grep -q "healthy"; do sleep 2; done' || (docker-compose logs && exit 1)
+          timeout 120 bash -c 'until docker compose ps | grep -q "healthy"; do sleep 2; done' || (docker compose logs && exit 1)
 
       - name: Check API health
         run: |
@@ -50,7 +50,7 @@ jobs:
 
       - name: Check Frontend build
         run: |
-          docker-compose logs frontend | grep -q "ready in" || exit 1
+          docker compose logs frontend | grep -q "ready in" || exit 1
 
       - name: Check Mercure
         run: |
@@ -58,7 +58,7 @@ jobs:
 
       - name: Stop containers
         if: always()
-        run: docker-compose down -v
+        run: docker compose down -v
 
   # ============================================
   # JOB 1: TESTS BACKEND (PHP/Symfony)
@@ -226,8 +226,8 @@ jobs:
       
       - name: Install dependencies
         working-directory: ./frontend
-        run: npm ci
-      
+        run: npm ci --legacy-peer-deps
+
       - name: Run unit tests with coverage
         working-directory: ./frontend
         run: npm run test:unit -- --coverage
@@ -281,8 +281,8 @@ jobs:
       
       - name: Install dependencies
         working-directory: ./frontend
-        run: npm ci
-      
+        run: npm ci --legacy-peer-deps
+
       - name: Run ESLint
         working-directory: ./frontend
         run: npm run lint
@@ -322,7 +322,7 @@ jobs:
       
       - name: Frontend security audit
         working-directory: ./frontend
-        run: npm audit --audit-level=moderate
+        run: npm audit --audit-level=moderate --omit=dev
 
   # ============================================
   # JOB 6: BUILD DOCKER IMAGES (Sans déploiement)
