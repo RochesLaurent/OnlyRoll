@@ -39,7 +39,9 @@
       "Bash(docker-compose build:*)",
       "Bash(docker run:*)",
       "Bash(docker exec:*)",
-      "Bash(docker-compose restart:*)"
+      "Bash(docker-compose restart:*)",
+      "Bash(copy .env.docker.example .env.docker)",
+      "Bash(docker-compose logs:*)"
     ],
     "deny": [],
     "ask": []
