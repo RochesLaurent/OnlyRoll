@@ -6,7 +6,7 @@ FROM node:20-alpine AS node_dependencies
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci --prefer-offline --no-audit
+RUN npm ci --prefer-offline --no-audit --legacy-peer-deps
 
 # ===========================================
 # STAGE 2: Builder
