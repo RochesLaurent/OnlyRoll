@@ -96,7 +96,8 @@ async function handleUpload() {
     formData.append('height', height.value.toString())
 
     // Appeler l'API d'upload
-    const response = await fetch(`http://localhost:8000/api/games/${props.gameId}/maps`, {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost/api'
+    const response = await fetch(`${apiUrl}/games/${props.gameId}/maps`, {
       method: 'POST',
       credentials: 'include',
       body: formData,

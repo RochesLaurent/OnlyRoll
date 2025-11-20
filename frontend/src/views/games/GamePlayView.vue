@@ -302,7 +302,8 @@ async function handleMapCreated() {
 async function handleEditMap(map: GameMapType) {
   try {
     // Charger les données complètes de la carte depuis l'API
-    const response = await fetch(`http://localhost:8000/api/games/${gameId.value}/maps/${map.id}`, {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost/api'
+    const response = await fetch(`${apiUrl}/games/${gameId.value}/maps/${map.id}`, {
       method: 'GET',
       credentials: 'include',
     })

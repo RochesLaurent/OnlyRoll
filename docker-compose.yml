@@ -147,7 +147,7 @@ services:
     networks:
       - onlyroll-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/.well-known/mercure"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "-O", "/dev/null", "http://localhost:3000/"]
       interval: 10s
       timeout: 5s
       retries: 3

@@ -45,7 +45,10 @@
       "Bash(npm ls:*)",
       "Bash(npm audit:*)",
       "Bash(npm update:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(docker-compose:*)",
+      "Bash(Start-Sleep -Seconds 15)",
+      "Bash(timeout 300 bash:*)"
     ],
     "deny": [],
     "ask": []

@@ -156,8 +156,9 @@ async function handleSubmit() {
     formData.append('type', form.value.type)
     formData.append('size', form.value.size.toString())
 
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost/api'
     const response = await fetch(
-      `http://localhost:8000/api/games/${props.gameId}/maps/${props.mapId}/tokens/${props.token.id}`,
+      `${apiUrl}/games/${props.gameId}/maps/${props.mapId}/tokens/${props.token.id}`,
       {
         method: 'PATCH',
         credentials: 'include',

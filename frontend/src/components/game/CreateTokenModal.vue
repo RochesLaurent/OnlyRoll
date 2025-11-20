@@ -123,8 +123,9 @@ async function handleSubmit() {
       formData.append('isVisible', 'true')
       formData.append('isLocked', 'false')
 
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost/api'
       const response = await fetch(
-        `http://localhost:8000/api/games/${props.gameId}/maps/${props.mapId}/tokens`,
+        `${apiUrl}/games/${props.gameId}/maps/${props.mapId}/tokens`,
         {
           method: 'POST',
           credentials: 'include',
