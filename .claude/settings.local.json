@@ -48,7 +48,10 @@
       "Bash(git restore:*)",
       "Bash(docker-compose:*)",
       "Bash(Start-Sleep -Seconds 15)",
-      "Bash(timeout 300 bash:*)"
+      "Bash(timeout 300 bash:*)",
+      "Bash(docker inspect:*)",
+      "Bash(dos2unix:*)",
+      "Bash(sed:*)"
     ],
     "deny": [],
     "ask": []
