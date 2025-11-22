@@ -122,4 +122,15 @@ export const mapApi = {
       name: newName,
     })
   },
+
+  /**
+   * Mettre à jour les paramètres d'une carte (ex: grille)
+   */
+  async updateSettings(
+    gameId: number,
+    mapId: number,
+    settings: { showGrid?: boolean; gridColor?: string; gridOpacity?: number }
+  ): Promise<GameMap> {
+    return patch<GameMap>(`/games/${gameId}/maps/${mapId}/settings`, settings)
+  },
 }

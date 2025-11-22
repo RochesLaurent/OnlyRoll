@@ -51,7 +51,8 @@
       "Bash(timeout 300 bash:*)",
       "Bash(docker inspect:*)",
       "Bash(dos2unix:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(timeout 15 bash:*)"
     ],
     "deny": [],
     "ask": []

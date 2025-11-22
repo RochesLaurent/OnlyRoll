@@ -27,7 +27,10 @@ final class CreateTokenDTO
     )]
     public string $type;
 
-    #[Assert\Url(message: 'L\'URL de l\'image doit être valide.')]
+    #[Assert\Regex(
+        pattern: '/^(\/|https?:\/\/)/',
+        message: 'L\'URL de l\'image doit être un chemin relatif (commençant par /) ou une URL complète (http/https).',
+    )]
     #[Assert\Length(
         max: 500,
         maxMessage: 'L\'URL ne peut pas dépasser {{ limit }} caractères.',

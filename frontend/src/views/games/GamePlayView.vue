@@ -346,6 +346,21 @@ function handleCenterMap() {
   }
 }
 
+async function handleGridSettingsChanged(settings: {
+  showGrid: boolean
+  gridColor: string
+  gridOpacity: number
+}) {
+  if (!mapStore.activeMap) return
+
+  try {
+    await mapStore.updateMapSettings(mapStore.activeMap.id, settings)
+    console.log('Paramètres de grille mis à jour:', settings)
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour des paramètres de grille:', error)
+  }
+}
+
 function handleOpenSettings() {
   console.log('Ouvrir les paramètres')
   // TODO: Implémenter le modal des paramètres
@@ -424,6 +439,7 @@ async function handleTokenCreated() {
           @open-edit-modal="handleEditMap"
           @zoom-changed="handleZoomChanged"
           @center-map="handleCenterMap"
+          @grid-settings-changed="handleGridSettingsChanged"
         />
 
         <div class="flex-1 relative overflow-hidden min-h-0">
