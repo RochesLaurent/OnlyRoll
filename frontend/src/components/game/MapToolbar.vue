@@ -495,7 +495,10 @@ async function deleteMapConfirm(map: GameMap, event: Event) {
                 <div class="flex items-center justify-between mb-4">
                   <label class="text-sm text-secondary-300">Afficher la grille</label>
                   <button
-                    @click="showGrid = !showGrid; updateGridSettings()"
+                    @click="
+                      showGrid = !showGrid
+                      updateGridSettings()
+                    "
                     :class="[
                       'relative w-12 h-6 rounded-full transition-colors',
                       showGrid ? 'bg-primary-500' : 'bg-secondary-600',
@@ -534,9 +537,9 @@ async function deleteMapConfirm(map: GameMap, event: Event) {
                 <div>
                   <div class="flex items-center justify-between mb-2">
                     <label class="text-sm text-secondary-300">Opacité</label>
-                    <span class="text-sm text-white font-mono">{{
-                      Math.round(gridOpacity * 100)
-                    }}%</span>
+                    <span class="text-sm text-white font-mono"
+                      >{{ Math.round(gridOpacity * 100) }}%</span
+                    >
                   </div>
                   <input
                     v-model.number="gridOpacity"

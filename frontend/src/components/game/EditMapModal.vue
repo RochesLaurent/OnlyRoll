@@ -151,14 +151,11 @@ async function handleUpdate() {
 
     // Appeler l'API d'update (PUT)
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost/api'
-    const response = await fetch(
-      `${apiUrl}/games/${props.gameId}/maps/${props.map.id}`,
-      {
-        method: 'PUT',
-        credentials: 'include',
-        body: formData,
-      }
-    )
+    const response = await fetch(`${apiUrl}/games/${props.gameId}/maps/${props.map.id}`, {
+      method: 'PUT',
+      credentials: 'include',
+      body: formData,
+    })
 
     console.log('Réponse reçue:', response.status)
 

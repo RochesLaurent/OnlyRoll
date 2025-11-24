@@ -506,8 +506,12 @@ defineExpose({
         class="absolute inset-0 pointer-events-none"
         :style="{
           backgroundImage: `
-            linear-gradient(to right, ${gridColor}${Math.round(gridOpacity * 255).toString(16).padStart(2, '0')} 1px, transparent 1px),
-            linear-gradient(to bottom, ${gridColor}${Math.round(gridOpacity * 255).toString(16).padStart(2, '0')} 1px, transparent 1px)
+            linear-gradient(to right, ${gridColor}${Math.round(gridOpacity * 255)
+              .toString(16)
+              .padStart(2, '0')} 1px, transparent 1px),
+            linear-gradient(to bottom, ${gridColor}${Math.round(gridOpacity * 255)
+              .toString(16)
+              .padStart(2, '0')} 1px, transparent 1px)
           `,
           backgroundSize: `${gridSize}px ${gridSize}px`,
         }"
