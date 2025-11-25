@@ -128,6 +128,12 @@ export interface GamePlayer {
 // GAME MAP
 // ===========================
 
+export interface MapGridSettings {
+  showGrid?: boolean
+  gridColor?: string
+  gridOpacity?: number
+}
+
 export interface GameMap {
   id: number
   name: string
@@ -138,7 +144,7 @@ export interface GameMap {
   width: number
   height: number
   isActive: boolean
-  settings?: Record<string, unknown>
+  settings?: MapGridSettings
   createdAt: string
   updatedAt?: string
 
@@ -251,15 +257,6 @@ export interface PaginatedResponse<T> {
   page: number
   limit: number
   totalPages: number
-}
-
-/**
- * Type pour les erreurs API
- */
-export interface ApiError {
-  message: string
-  code?: string
-  errors?: Record<string, string[]>
 }
 
 // ===========================

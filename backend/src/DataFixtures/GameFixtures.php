@@ -9,8 +9,12 @@ use App\Entity\GamePlayer;
 use App\Entity\GameToken;
 use App\Entity\User;
 use App\Enum\GameStatus;
+use App\Enum\MapGridType;
+use App\Enum\MessageType;
 use App\Enum\PlayerRole;
 use App\Enum\PlayerStatus;
+use App\Enum\TokenLayer;
+use App\Enum\TokenType;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
 
@@ -85,7 +89,7 @@ class GameFixtures extends Fixture
             ->setWidth(30)
             ->setHeight(25)
             ->setGridSize(50)
-            ->setGridType('square')
+            ->setGridType(MapGridType::SQUARE)
             ->setIsActive(true)
             ->setSettings([
                 'backgroundColor' => '#2a1810',
@@ -106,7 +110,7 @@ class GameFixtures extends Fixture
             ->setWidth(40)
             ->setHeight(35)
             ->setGridSize(50)
-            ->setGridType('square')
+            ->setGridType(MapGridType::SQUARE)
             ->setIsActive(false)
             ->setSettings([
                 'backgroundColor' => '#0a0a0a',
@@ -118,9 +122,9 @@ class GameFixtures extends Fixture
 
         // Tokens pour le donjon
         $tokens = [
-            ['name' => 'Squelette', 'type' => 'monster', 'x' => 15, 'y' => 10],
-            ['name' => 'Zombie', 'type' => 'monster', 'x' => 18, 'y' => 12],
-            ['name' => 'Trésor', 'type' => 'object', 'x' => 30, 'y' => 25],
+            ['name' => 'Squelette', 'type' => TokenType::MONSTER, 'x' => 15, 'y' => 10],
+            ['name' => 'Zombie', 'type' => TokenType::MONSTER, 'x' => 18, 'y' => 12],
+            ['name' => 'Trésor', 'type' => TokenType::OBJECT, 'x' => 30, 'y' => 25],
         ];
 
         foreach ($tokens as $tokenData) {
@@ -134,7 +138,7 @@ class GameFixtures extends Fixture
                 ->setRotation(0)
                 ->setIsVisible(true)
                 ->setIsLocked(false)
-                ->setLayer('tokens');
+                ->setLayer(TokenLayer::TOKENS);
             $manager->persist($token);
         }
 
@@ -146,7 +150,7 @@ class GameFixtures extends Fixture
             ->setWidth(50)
             ->setHeight(50)
             ->setGridSize(50)
-            ->setGridType('hex')
+            ->setGridType(MapGridType::HEX)
             ->setIsActive(false)
             ->setSettings([
                 'backgroundColor' => '#1a3a1a',
@@ -166,7 +170,7 @@ class GameFixtures extends Fixture
         $characters = [
             [
                 'name' => 'Thorin Barbe-de-Fer',
-                'type' => 'character',
+                'type' => TokenType::CHARACTER,
                 'x' => 10,
                 'y' => 12,
                 'size' => 1.0,
@@ -180,7 +184,7 @@ class GameFixtures extends Fixture
             ],
             [
                 'name' => 'Elara la Sage',
-                'type' => 'character',
+                'type' => TokenType::CHARACTER,
                 'x' => 12,
                 'y' => 12,
                 'size' => 1.0,
@@ -194,7 +198,7 @@ class GameFixtures extends Fixture
             ],
             [
                 'name' => 'Grimm le Voleur',
-                'type' => 'character',
+                'type' => TokenType::CHARACTER,
                 'x' => 11,
                 'y' => 14,
                 'size' => 1.0,
@@ -219,15 +223,15 @@ class GameFixtures extends Fixture
                 ->setRotation(0)
                 ->setIsVisible($charData['visible'])
                 ->setIsLocked(false)
-                ->setLayer('tokens')
+                ->setLayer(TokenLayer::TOKENS)
                 ->setSettings($charData['settings']);
             $manager->persist($token);
         }
 
         // NPCs
         $npcs = [
-            ['name' => 'Aubergiste', 'type' => 'npc', 'x' => 15, 'y' => 8],
-            ['name' => 'Marchand', 'type' => 'npc', 'x' => 18, 'y' => 10],
+            ['name' => 'Aubergiste', 'type' => TokenType::NPC, 'x' => 15, 'y' => 8],
+            ['name' => 'Marchand', 'type' => TokenType::NPC, 'x' => 18, 'y' => 10],
         ];
 
         foreach ($npcs as $npcData) {
@@ -241,15 +245,15 @@ class GameFixtures extends Fixture
                 ->setRotation(0)
                 ->setIsVisible(true)
                 ->setIsLocked(false)
-                ->setLayer('tokens');
+                ->setLayer(TokenLayer::TOKENS);
             $manager->persist($token);
         }
 
         // Monstres (cachés par défaut)
         $monsters = [
-            ['name' => 'Gobelin Archer', 'type' => 'monster', 'x' => 25, 'y' => 15, 'visible' => false],
-            ['name' => 'Gobelin Guerrier', 'type' => 'monster', 'x' => 26, 'y' => 16, 'visible' => false],
-            ['name' => 'Chef Gobelin', 'type' => 'monster', 'x' => 27, 'y' => 15, 'visible' => false],
+            ['name' => 'Gobelin Archer', 'type' => TokenType::MONSTER, 'x' => 25, 'y' => 15, 'visible' => false],
+            ['name' => 'Gobelin Guerrier', 'type' => TokenType::MONSTER, 'x' => 26, 'y' => 16, 'visible' => false],
+            ['name' => 'Chef Gobelin', 'type' => TokenType::MONSTER, 'x' => 27, 'y' => 15, 'visible' => false],
         ];
 
         foreach ($monsters as $monsterData) {
@@ -263,7 +267,7 @@ class GameFixtures extends Fixture
                 ->setRotation(0)
                 ->setIsVisible($monsterData['visible'])
                 ->setIsLocked(false)
-                ->setLayer('tokens')
+                ->setLayer(TokenLayer::TOKENS)
                 ->setSettings([
                     'healthPoints' => 15,
                     'maxHealthPoints' => 15,
@@ -274,9 +278,9 @@ class GameFixtures extends Fixture
 
         // Objets
         $objects = [
-            ['name' => 'Table', 'type' => 'object', 'x' => 5, 'y' => 5, 'size' => 2.0],
-            ['name' => 'Chaise', 'type' => 'object', 'x' => 5, 'y' => 7, 'size' => 1.0],
-            ['name' => 'Bar', 'type' => 'object', 'x' => 15, 'y' => 5, 'size' => 3.0],
+            ['name' => 'Table', 'type' => TokenType::OBJECT, 'x' => 5, 'y' => 5, 'size' => 2.0],
+            ['name' => 'Chaise', 'type' => TokenType::OBJECT, 'x' => 5, 'y' => 7, 'size' => 1.0],
+            ['name' => 'Bar', 'type' => TokenType::OBJECT, 'x' => 15, 'y' => 5, 'size' => 3.0],
         ];
 
         foreach ($objects as $objData) {
@@ -290,7 +294,7 @@ class GameFixtures extends Fixture
                 ->setRotation(0)
                 ->setIsVisible(true)
                 ->setIsLocked(true)
-                ->setLayer('objects');
+                ->setLayer(TokenLayer::OBJECTS);
             $manager->persist($token);
         }
     }
@@ -305,31 +309,31 @@ class GameFixtures extends Fixture
         $messages = [
             [
                 'user' => $users[0],
-                'type' => GameMessage::TYPE_SYSTEM,
+                'type' => MessageType::SYSTEM,
                 'content' => 'La partie commence ! Bienvenue à tous.',
                 'isInCharacter' => false,
             ],
             [
                 'user' => $users[1],
-                'type' => GameMessage::TYPE_CHAT,
+                'type' => MessageType::CHAT,
                 'content' => 'Prêt pour l\'aventure !',
                 'isInCharacter' => false,
             ],
             [
                 'user' => $users[1],
-                'type' => GameMessage::TYPE_CHAT,
+                'type' => MessageType::CHAT,
                 'content' => 'Je m\'avance vers le bar pour commander une bière.',
                 'isInCharacter' => true,
             ],
             [
                 'user' => $users[2],
-                'type' => GameMessage::TYPE_EMOTE,
+                'type' => MessageType::EMOTE,
                 'content' => 'observe discrètement les autres clients de la taverne',
                 'isInCharacter' => true,
             ],
             [
                 'user' => $users[1],
-                'type' => GameMessage::TYPE_DICE_ROLL,
+                'type' => MessageType::DICE_ROLL,
                 'content' => 'Jet de Perception',
                 'isInCharacter' => true,
                 'diceResult' => [
@@ -341,25 +345,25 @@ class GameFixtures extends Fixture
             ],
             [
                 'user' => $users[0],
-                'type' => GameMessage::TYPE_CHAT,
+                'type' => MessageType::CHAT,
                 'content' => 'Avec un 18, tu remarques un individu encapuchonné dans le coin.',
                 'isInCharacter' => true,
             ],
             [
                 'user' => $users[3],
-                'type' => GameMessage::TYPE_CHAT,
+                'type' => MessageType::CHAT,
                 'content' => 'Est-ce que je peux essayer de m\'approcher discrètement ?',
                 'isInCharacter' => false,
             ],
             [
                 'user' => $users[0],
-                'type' => GameMessage::TYPE_CHAT,
+                'type' => MessageType::CHAT,
                 'content' => 'Oui, fais un jet de Discrétion.',
                 'isInCharacter' => false,
             ],
             [
                 'user' => $users[3],
-                'type' => GameMessage::TYPE_DICE_ROLL,
+                'type' => MessageType::DICE_ROLL,
                 'content' => 'Jet de Discrétion',
                 'isInCharacter' => true,
                 'diceResult' => [
@@ -371,7 +375,7 @@ class GameFixtures extends Fixture
             ],
             [
                 'user' => $users[2],
-                'type' => GameMessage::TYPE_DICE_ROLL,
+                'type' => MessageType::DICE_ROLL,
                 'content' => 'Jet d\'attaque avec plusieurs dés',
                 'isInCharacter' => true,
                 'diceResult' => [

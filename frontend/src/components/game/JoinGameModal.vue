@@ -1,17 +1,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { Game } from '@/types/game'
+import { getErrorMessage } from '@/types/errors'
 import { useGameStore } from '@/stores/game'
 import { XMarkIcon, LockClosedIcon, GlobeAltIcon, UsersIcon } from '@heroicons/vue/24/outline'
-
-// Type pour les erreurs API
-type ApiError = {
-  response?: {
-    data?: {
-      error?: string
-    }
-  }
-}
 
 interface Props {
   game: Game
@@ -52,11 +44,7 @@ async function handleJoin() {
     emit('success')
     emit('close')
   } catch (e: unknown) {
-    if (e && typeof e === 'object' && 'response' in e) {
-      error.value = (e as ApiError).response?.data?.error || 'Impossible de rejoindre la partie'
-    } else {
-      error.value = 'Impossible de rejoindre la partie'
-    }
+    error.value = getErrorMessage(e) || 'Impossible de rejoindre la partie'
   } finally {
     isSubmitting.value = false
   }

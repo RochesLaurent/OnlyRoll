@@ -119,10 +119,15 @@ function updateGridSettings() {
   })
 }
 
+function toggleShowGrid() {
+  showGrid.value = !showGrid.value
+  updateGridSettings()
+}
+
 // Synchroniser les paramètres de grille avec la carte active
 function syncGridSettings() {
   if (mapStore.activeMap?.settings) {
-    const settings = mapStore.activeMap.settings as Record<string, any>
+    const settings = mapStore.activeMap.settings
     showGrid.value = settings.showGrid ?? true
     gridColor.value = settings.gridColor || '#ffffff'
     gridOpacity.value = settings.gridOpacity ?? 0.1
@@ -495,10 +500,7 @@ async function deleteMapConfirm(map: GameMap, event: Event) {
                 <div class="flex items-center justify-between mb-4">
                   <label class="text-sm text-secondary-300">Afficher la grille</label>
                   <button
-                    @click="
-                      showGrid = !showGrid
-                      updateGridSettings()
-                    "
+                    @click="toggleShowGrid"
                     :class="[
                       'relative w-12 h-6 rounded-full transition-colors',
                       showGrid ? 'bg-primary-500' : 'bg-secondary-600',

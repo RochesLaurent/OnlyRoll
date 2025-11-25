@@ -1,19 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Game, CreateGameDTO, UpdateGameDTO, GameFilters, PaginationMeta } from '@/types/game'
+import { getErrorMessage } from '@/types/errors'
 import { gameApi } from '@/services/api/gameApi'
 import { useAuthStore } from './auth'
 import { GameStatus } from '@/types/game'
 import { logger } from '@/utils/logger'
-
-// Type pour les erreurs API
-type ApiError = {
-  response?: {
-    data?: {
-      error?: string
-    }
-  }
-}
 
 export const useGameStore = defineStore('game', () => {
   // ========== State ==========
@@ -82,12 +74,7 @@ export const useGameStore = defineStore('game', () => {
         totalPages: 0,
       }
 
-      if (e && typeof e === 'object' && 'response' in e) {
-        error.value =
-          (e as ApiError).response?.data?.error || 'Erreur lors du chargement des parties'
-      } else {
-        error.value = 'Erreur lors du chargement des parties'
-      }
+      error.value = getErrorMessage(e) || 'Erreur lors du chargement des parties'
       logger.error('Error fetching games:', e)
     } finally {
       isLoading.value = false
@@ -103,12 +90,7 @@ export const useGameStore = defineStore('game', () => {
     } catch (e: unknown) {
       myGames.value = []
 
-      if (e && typeof e === 'object' && 'response' in e) {
-        error.value =
-          (e as ApiError).response?.data?.error || 'Erreur lors du chargement de vos parties'
-      } else {
-        error.value = 'Erreur lors du chargement de vos parties'
-      }
+      error.value = getErrorMessage(e) || 'Erreur lors du chargement de vos parties'
       logger.error('Error fetching my games:', e)
     } finally {
       isLoading.value = false
@@ -122,11 +104,7 @@ export const useGameStore = defineStore('game', () => {
     try {
       currentGame.value = await gameApi.getById(id)
     } catch (e: unknown) {
-      if (e && typeof e === 'object' && 'response' in e) {
-        error.value = (e as ApiError).response?.data?.error || 'Partie introuvable'
-      } else {
-        error.value = 'Partie introuvable'
-      }
+      error.value = getErrorMessage(e) || 'Partie introuvable'
       logger.error('Error fetching game:', e)
       throw e
     } finally {
@@ -144,12 +122,7 @@ export const useGameStore = defineStore('game', () => {
       currentGame.value = newGame
       return newGame
     } catch (e: unknown) {
-      if (e && typeof e === 'object' && 'response' in e) {
-        error.value =
-          (e as ApiError).response?.data?.error || 'Erreur lors de la création de la partie'
-      } else {
-        error.value = 'Erreur lors de la création de la partie'
-      }
+      error.value = getErrorMessage(e) || 'Erreur lors de la création de la partie'
       logger.error('Error creating game:', e)
       throw e
     } finally {
@@ -180,12 +153,7 @@ export const useGameStore = defineStore('game', () => {
 
       return updatedGame
     } catch (e: unknown) {
-      if (e && typeof e === 'object' && 'response' in e) {
-        error.value =
-          (e as ApiError).response?.data?.error || 'Erreur lors de la mise à jour de la partie'
-      } else {
-        error.value = 'Erreur lors de la mise à jour de la partie'
-      }
+      error.value = getErrorMessage(e) || 'Erreur lors de la mise à jour de la partie'
       logger.error('Error updating game:', e)
       throw e
     } finally {
@@ -207,12 +175,7 @@ export const useGameStore = defineStore('game', () => {
         currentGame.value = null
       }
     } catch (e: unknown) {
-      if (e && typeof e === 'object' && 'response' in e) {
-        error.value =
-          (e as ApiError).response?.data?.error || 'Erreur lors de la suppression de la partie'
-      } else {
-        error.value = 'Erreur lors de la suppression de la partie'
-      }
+      error.value = getErrorMessage(e) || 'Erreur lors de la suppression de la partie'
       logger.error('Error deleting game:', e)
       throw e
     } finally {
@@ -229,11 +192,7 @@ export const useGameStore = defineStore('game', () => {
       myGames.value.unshift(game)
       return game
     } catch (e: unknown) {
-      if (e && typeof e === 'object' && 'response' in e) {
-        error.value = (e as ApiError).response?.data?.error || 'Impossible de rejoindre la partie'
-      } else {
-        error.value = 'Impossible de rejoindre la partie'
-      }
+      error.value = getErrorMessage(e) || 'Impossible de rejoindre la partie'
       logger.error('Error joining game:', e)
       throw e
     } finally {
@@ -252,11 +211,7 @@ export const useGameStore = defineStore('game', () => {
         currentGame.value = null
       }
     } catch (e: unknown) {
-      if (e && typeof e === 'object' && 'response' in e) {
-        error.value = (e as ApiError).response?.data?.error || 'Impossible de quitter la partie'
-      } else {
-        error.value = 'Impossible de quitter la partie'
-      }
+      error.value = getErrorMessage(e) || 'Impossible de quitter la partie'
       logger.error('Error leaving game:', e)
       throw e
     } finally {
@@ -283,11 +238,7 @@ export const useGameStore = defineStore('game', () => {
 
       return updatedGame
     } catch (e: unknown) {
-      if (e && typeof e === 'object' && 'response' in e) {
-        error.value = (e as ApiError).response?.data?.error || 'Impossible de démarrer la partie'
-      } else {
-        error.value = 'Impossible de démarrer la partie'
-      }
+      error.value = getErrorMessage(e) || 'Impossible de démarrer la partie'
       logger.error('Error starting game:', e)
       throw e
     } finally {

@@ -1,14 +1,5 @@
 import { computed, type Ref } from 'vue'
-
-/**
- * Interface pour les métadonnées de pagination.
- */
-export interface PaginationMeta {
-  page: number
-  limit: number
-  total: number
-  totalPages: number
-}
+import type { PaginationMeta } from '@/types/game'
 
 /**
  * Options pour le composable usePagination.

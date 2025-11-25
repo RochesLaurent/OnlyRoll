@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\DTO\Chat;
 
+use App\Enum\MessageType;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
@@ -12,11 +13,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 final class SendMessageDTO
 {
     #[Assert\NotBlank(message: 'Le type de message est obligatoire.')]
-    #[Assert\Choice(
-        choices: ['chat', 'emote', 'whisper', 'system', 'dice_roll'],
-        message: 'Le type doit être "chat", "emote", "whisper", "system" ou "dice_roll".',
-    )]
-    public string $type;
+    public MessageType $type;
 
     #[Assert\NotBlank(message: 'Le contenu du message est obligatoire.')]
     #[Assert\Length(

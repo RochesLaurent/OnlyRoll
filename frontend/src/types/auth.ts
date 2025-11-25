@@ -28,18 +28,6 @@ export interface AuthResponse {
   token?: string
 }
 
-export interface ValidationError {
-  propertyPath: string
-  message: string
-  invalidValue?: unknown
-}
-
-export interface ApiError {
-  error: string
-  message?: string
-  violations?: ValidationError[]
-}
-
 export interface AuthState {
   user: User | null
   token: string | null

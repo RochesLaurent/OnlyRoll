@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\DTO\Game;
 
+use App\Enum\GameStatus;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
@@ -32,11 +33,7 @@ final class GameFilterDTO
     /**
      * Filtre sur le statut de la partie.
      */
-    #[Assert\Choice(
-        choices: ['preparation', 'in_progress', 'paused', 'completed', 'archived'],
-        message: 'Le statut doit être: preparation, in_progress, paused, completed ou archived',
-    )]
-    public ?string $status = null;
+    public ?GameStatus $status = null;
 
     /**
      * Numéro de page (commence à 1).

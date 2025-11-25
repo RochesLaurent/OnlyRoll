@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\DTO\Token;
 
+use App\Enum\TokenLayer;
+use App\Enum\TokenType;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
@@ -21,11 +23,7 @@ final class CreateTokenDTO
     public string $name;
 
     #[Assert\NotBlank(message: 'Le type du token est obligatoire.')]
-    #[Assert\Choice(
-        choices: ['character', 'monster', 'npc', 'object'],
-        message: 'Le type doit être "character", "monster", "npc" ou "object".',
-    )]
-    public string $type;
+    public TokenType $type;
 
     #[Assert\Regex(
         pattern: '/^(\/|https?:\/\/)/',
@@ -66,11 +64,7 @@ final class CreateTokenDTO
     #[Assert\Type(type: 'bool', message: 'Le champ "isLocked" doit être un booléen.')]
     public bool $isLocked = false;
 
-    #[Assert\Choice(
-        choices: ['background', 'objects', 'tokens', 'effects'],
-        message: 'Le layer doit être "background", "objects", "tokens" ou "effects".',
-    )]
-    public string $layer = 'tokens';
+    public TokenLayer $layer = TokenLayer::TOKENS;
 
     /**
      * @var array<string, mixed>|null

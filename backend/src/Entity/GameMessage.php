@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\MessageType;
 use App\Repository\GameMessageRepository;
 use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
@@ -16,20 +17,6 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\HasLifecycleCallbacks]
 class GameMessage
 {
-    public const TYPE_CHAT = 'chat';
-    public const TYPE_EMOTE = 'emote';
-    public const TYPE_WHISPER = 'whisper';
-    public const TYPE_SYSTEM = 'system';
-    public const TYPE_DICE_ROLL = 'dice_roll';
-
-    public const TYPES = [
-        self::TYPE_CHAT,
-        self::TYPE_EMOTE,
-        self::TYPE_WHISPER,
-        self::TYPE_SYSTEM,
-        self::TYPE_DICE_ROLL,
-    ];
-
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(name: 'message_id')]
@@ -56,14 +43,10 @@ class GameMessage
     #[Groups(['message:list', 'message:read', 'game:read'])]
     private ?User $user = null;
 
-    #[ORM\Column(name: 'message_type', type: Types::STRING, length: 20)]
+    #[ORM\Column(name: 'message_type', type: 'string', enumType: MessageType::class)]
     #[Assert\NotBlank]
-    #[Assert\Choice(
-        choices: self::TYPES,
-        message: 'Le type doit être "chat", "emote", "whisper", "system" ou "dice_roll"',
-    )]
     #[Groups(['message:list', 'message:read', 'message:write', 'game:read'])]
-    private ?string $type = null;
+    private ?MessageType $type = null;
 
     #[ORM\Column(name: 'message_content', type: Types::TEXT)]
     #[Assert\NotBlank(message: 'Le contenu du message est obligatoire')]
@@ -113,27 +96,27 @@ class GameMessage
 
     public function isDiceRoll(): bool
     {
-        return self::TYPE_DICE_ROLL === $this->type;
+        return $this->type?->isDiceRoll() ?? false;
     }
 
     public function isSystemMessage(): bool
     {
-        return self::TYPE_SYSTEM === $this->type;
+        return $this->type?->isSystemMessage() ?? false;
     }
 
     public function isWhisper(): bool
     {
-        return self::TYPE_WHISPER === $this->type;
+        return $this->type?->isWhisper() ?? false;
     }
 
     public function isEmote(): bool
     {
-        return self::TYPE_EMOTE === $this->type;
+        return $this->type?->isEmote() ?? false;
     }
 
     public function isChat(): bool
     {
-        return self::TYPE_CHAT === $this->type;
+        return $this->type?->isChat() ?? false;
     }
 
     public function canBeSeenBy(User $user): bool
@@ -178,9 +161,9 @@ class GameMessage
         }
 
         return match ($this->type) {
-            self::TYPE_EMOTE => \sprintf('*%s*', $this->content),
-            self::TYPE_WHISPER => \sprintf('[Chuchotement] %s', $this->content),
-            self::TYPE_SYSTEM => \sprintf('[Système] %s', $this->content),
+            MessageType::EMOTE => \sprintf('*%s*', $this->content),
+            MessageType::WHISPER => \sprintf('[Chuchotement] %s', $this->content),
+            MessageType::SYSTEM => \sprintf('[Système] %s', $this->content),
             default => $this->content,
         };
     }
@@ -216,12 +199,12 @@ class GameMessage
         return $this;
     }
 
-    public function getType(): ?string
+    public function getType(): ?MessageType
     {
         return $this->type;
     }
 
-    public function setType(string $type): static
+    public function setType(MessageType $type): static
     {
         $this->type = $type;
 

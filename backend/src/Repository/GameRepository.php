@@ -62,11 +62,8 @@ class GameRepository extends ServiceEntityRepository
 
         // Filtre: Status
         if ($filters->status) {
-            $status = GameStatus::tryFrom($filters->status);
-            if ($status) {
-                $qb->andWhere('g.status = :status')
-                   ->setParameter('status', $status);
-            }
+            $qb->andWhere('g.status = :status')
+               ->setParameter('status', $filters->status);
         }
 
         // Compter le total AVANT pagination

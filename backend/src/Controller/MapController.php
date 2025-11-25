@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\DTO\Map\CreateMapDTO;
 use App\DTO\Map\UpdateMapDTO;
+use App\Enum\MapGridType;
 use App\Repository\GameMapRepository;
 use App\Repository\GameRepository;
 use App\Service\FileUploader;
@@ -260,8 +261,8 @@ final class MapController extends AbstractController
 
                 $dto->gridSize = (int) $request->request->get('gridSize', 50);
 
-                $gridType = $request->request->get('gridType', 'square');
-                $dto->gridType = \is_string($gridType) ? $gridType : 'square';
+                $gridTypeString = $request->request->get('gridType', 'square');
+                $dto->gridType = \is_string($gridTypeString) ? (MapGridType::tryFrom($gridTypeString) ?? MapGridType::SQUARE) : MapGridType::SQUARE;
 
                 $dto->width = (int) $request->request->get('width', 20);
                 $dto->height = (int) $request->request->get('height', 20);
@@ -386,9 +387,9 @@ final class MapController extends AbstractController
                     $dto->gridSize = (int) $gridSize;
                 }
 
-                $gridType = $request->request->get('gridType');
-                if (\is_string($gridType)) {
-                    $dto->gridType = $gridType;
+                $gridTypeString = $request->request->get('gridType');
+                if (\is_string($gridTypeString)) {
+                    $dto->gridType = MapGridType::tryFrom($gridTypeString);
                 }
 
                 $width = $request->request->get('width');

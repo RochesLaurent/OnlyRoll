@@ -52,7 +52,9 @@
       "Bash(docker inspect:*)",
       "Bash(dos2unix:*)",
       "Bash(sed:*)",
-      "Bash(timeout 15 bash:*)"
+      "Bash(timeout 15 bash:*)",
+      "Bash(find:*)",
+      "Bash(php -d memory_limit=512M vendor/bin/phpstan:*)"
     ],
     "deny": [],
     "ask": []

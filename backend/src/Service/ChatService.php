@@ -8,6 +8,7 @@ use App\DTO\Chat\SendMessageDTO;
 use App\Entity\Game;
 use App\Entity\GameMessage;
 use App\Entity\User;
+use App\Enum\MessageType;
 use App\Repository\GameMessageRepository;
 use App\Repository\UserRepository;
 use DateTimeInterface;
@@ -28,7 +29,7 @@ readonly class ChatService
     {
         // Validation du type whisper
         $recipient = null;
-        if (GameMessage::TYPE_WHISPER === $dto->type) {
+        if (MessageType::WHISPER === $dto->type) {
             if (null === $dto->recipientId) {
                 throw new BadRequestHttpException('Un destinataire est requis pour un message privé.');
             }
@@ -45,7 +46,7 @@ readonly class ChatService
         }
 
         // Validation messages système (seulement pour le GM)
-        if (GameMessage::TYPE_SYSTEM === $dto->type) {
+        if (MessageType::SYSTEM === $dto->type) {
             if (!$game->isGameMaster($user)) {
                 throw new BadRequestHttpException('Seul le MJ peut envoyer des messages système.');
             }
@@ -124,12 +125,8 @@ readonly class ChatService
      *
      * @return GameMessage[]
      */
-    public function getMessagesByType(Game $game, string $type, ?int $limit = null): array
+    public function getMessagesByType(Game $game, MessageType $type, ?int $limit = null): array
     {
-        if (!\in_array($type, GameMessage::TYPES, true)) {
-            throw new BadRequestHttpException("Type de message invalide: {$type}");
-        }
-
         return $this->messageRepository->findByType($game, $type);
     }
 
@@ -143,7 +140,7 @@ readonly class ChatService
         $message->setGame($game);
         $message->setUser($game->getGameMaster());
         $message->setContent($content);
-        $message->setType(GameMessage::TYPE_SYSTEM);
+        $message->setType(MessageType::SYSTEM);
         $message->setIsInCharacter(false);
 
         // Appel manuel du hook PrePersist pour les tests unitaires
@@ -202,7 +199,7 @@ readonly class ChatService
         $message->setGame($game);
         $message->setUser($user);
         $message->setContent($content);
-        $message->setType(GameMessage::TYPE_DICE_ROLL);
+        $message->setType(MessageType::DICE_ROLL);
         $message->setIsInCharacter(true);
         $message->setDiceResult($results);
 
@@ -230,7 +227,7 @@ readonly class ChatService
             'userId' => $user->getId(),
             'userName' => $user->getPseudo(),
             'content' => $content,
-            'type' => GameMessage::TYPE_DICE_ROLL,
+            'type' => MessageType::DICE_ROLL,
             'isIC' => $message->isInCharacter(),
             'recipientId' => $recipient?->getId(),
             'recipientName' => $recipient?->getPseudo(),
