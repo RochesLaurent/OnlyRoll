@@ -187,6 +187,33 @@ final class MapService
     }
 
     /**
+     * Publie une mise à jour de carte via Mercure.
+     */
+    public function publishMapUpdate(GameMap $map): void
+    {
+        $game = $map->getGame();
+        \assert(null !== $game, 'Map must have a game');
+        $gameId = $game->getId();
+        \assert(null !== $gameId, 'Game ID cannot be null');
+
+        $this->mercurePublisher->publishMapChange($gameId, [
+            'type' => 'updated',
+            'map' => [
+                'id' => $map->getId(),
+                'name' => $map->getName(),
+                'description' => $map->getDescription(),
+                'imageUrl' => $map->getImageUrl(),
+                'gridSize' => $map->getGridSize(),
+                'gridType' => $map->getGridType(),
+                'width' => $map->getWidth(),
+                'height' => $map->getHeight(),
+                'isActive' => $map->isActive(),
+                'settings' => $map->getSettings(),
+            ],
+        ]);
+    }
+
+    /**
      * Désactive toutes les cartes d'une partie sauf celle fournie.
      */
     private function deactivateOtherMaps(Game $game): void

@@ -9,6 +9,7 @@ use App\DTO\Token\MoveTokenDTO;
 use App\Entity\GameMap;
 use App\Entity\GameToken;
 use App\Entity\User;
+use App\Enum\TokenLayer;
 use App\Repository\GameTokenRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
@@ -49,7 +50,7 @@ readonly class TokenService
         $token->setRotation($dto->rotation);
         $token->setIsVisible($dto->isVisible ?? true);
         $token->setIsLocked($dto->isLocked ?? false);
-        $token->setLayer($dto->layer ?? 'tokens');
+        $token->setLayer($dto->layer ?? TokenLayer::TOKENS);
         $token->setSettings($dto->settings);
 
         // Appel manuel du hook PrePersist pour les tests unitaires

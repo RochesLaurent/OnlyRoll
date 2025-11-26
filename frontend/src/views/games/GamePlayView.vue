@@ -302,7 +302,8 @@ async function handleMapCreated() {
 async function handleEditMap(map: GameMapType) {
   try {
     // Charger les données complètes de la carte depuis l'API
-    const response = await fetch(`http://localhost:8000/api/games/${gameId.value}/maps/${map.id}`, {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost/api'
+    const response = await fetch(`${apiUrl}/games/${gameId.value}/maps/${map.id}`, {
       method: 'GET',
       credentials: 'include',
     })
@@ -342,6 +343,21 @@ function handleZoomChanged(zoom: number) {
 function handleCenterMap() {
   if (gameMapRef.value) {
     gameMapRef.value.centerView()
+  }
+}
+
+async function handleGridSettingsChanged(settings: {
+  showGrid: boolean
+  gridColor: string
+  gridOpacity: number
+}) {
+  if (!mapStore.activeMap) return
+
+  try {
+    await mapStore.updateMapSettings(mapStore.activeMap.id, settings)
+    console.log('Paramètres de grille mis à jour:', settings)
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour des paramètres de grille:', error)
   }
 }
 
@@ -423,6 +439,7 @@ async function handleTokenCreated() {
           @open-edit-modal="handleEditMap"
           @zoom-changed="handleZoomChanged"
           @center-map="handleCenterMap"
+          @grid-settings-changed="handleGridSettingsChanged"
         />
 
         <div class="flex-1 relative overflow-hidden min-h-0">

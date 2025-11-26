@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\TokenLayer;
+use App\Enum\TokenType;
 use App\Repository\GameTokenRepository;
 use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
@@ -43,14 +45,10 @@ class GameToken
     #[Groups(['token:list', 'token:read', 'token:write', 'map:read'])]
     private ?string $name = null;
 
-    #[ORM\Column(name: 'token_type', type: Types::STRING, length: 20)]
+    #[ORM\Column(name: 'token_type', type: 'string', enumType: TokenType::class)]
     #[Assert\NotBlank]
-    #[Assert\Choice(
-        choices: ['character', 'monster', 'npc', 'object'],
-        message: 'Le type doit être "character", "monster", "npc" ou "object"',
-    )]
     #[Groups(['token:list', 'token:read', 'token:write', 'map:read'])]
-    private ?string $type = null;
+    private ?TokenType $type = null;
 
     #[ORM\Column(name: 'token_image_url', type: Types::STRING, length: 500, nullable: true)]
     #[Assert\Url(message: 'L\'URL de l\'image n\'est pas valide')]
@@ -93,13 +91,10 @@ class GameToken
     #[Groups(['token:list', 'token:read', 'token:write'])]
     private bool $isLocked = false;
 
-    #[ORM\Column(name: 'token_layer', type: Types::STRING, length: 20)]
-    #[Assert\Choice(
-        choices: ['background', 'objects', 'tokens', 'effects'],
-        message: 'Le calque doit être "background", "objects", "tokens" ou "effects"',
-    )]
+    #[ORM\Column(name: 'token_layer', type: 'string', enumType: TokenLayer::class)]
+    #[Assert\NotBlank]
     #[Groups(['token:list', 'token:read', 'token:write'])]
-    private string $layer = 'tokens';
+    private TokenLayer $layer = TokenLayer::TOKENS;
 
     /**
      * @var array<string, mixed>|null
@@ -247,12 +242,12 @@ class GameToken
         return $this;
     }
 
-    public function getType(): ?string
+    public function getType(): ?TokenType
     {
         return $this->type;
     }
 
-    public function setType(string $type): static
+    public function setType(TokenType $type): static
     {
         $this->type = $type;
 
@@ -343,12 +338,12 @@ class GameToken
         return $this;
     }
 
-    public function getLayer(): string
+    public function getLayer(): TokenLayer
     {
         return $this->layer;
     }
 
-    public function setLayer(string $layer): static
+    public function setLayer(TokenLayer $layer): static
     {
         $this->layer = $layer;
 

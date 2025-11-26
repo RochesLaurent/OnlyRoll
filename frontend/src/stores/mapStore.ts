@@ -233,6 +233,35 @@ export const useMapStore = defineStore('map', () => {
     }
   }
 
+  /**
+   * Mettre à jour les paramètres d'une carte (ex: grille)
+   */
+  async function updateMapSettings(
+    mapId: number,
+    settings: { showGrid?: boolean; gridColor?: string; gridOpacity?: number }
+  ) {
+    if (!currentGameId.value) {
+      throw new Error('GameId not set')
+    }
+
+    error.value = null
+
+    try {
+      await mapApi.updateSettings(currentGameId.value, mapId, settings)
+      logger.log('Paramètres de carte mis à jour:', { mapId, settings })
+    } catch (e: unknown) {
+      if (e && typeof e === 'object' && 'message' in e) {
+        error.value =
+          (e as { message: string }).message ||
+          'Erreur lors de la mise à jour des paramètres de la carte'
+      } else {
+        error.value = 'Erreur lors de la mise à jour des paramètres de la carte'
+      }
+      logger.error('Erreur updateMapSettings:', e)
+      throw e
+    }
+  }
+
   // ===========================
   // Actions - Tokens
   // ===========================
@@ -691,6 +720,7 @@ export const useMapStore = defineStore('map', () => {
     loadMap,
     activateMap,
     deleteMap,
+    updateMapSettings,
 
     // Actions - Tokens
     loadMapTokens,

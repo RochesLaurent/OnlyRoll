@@ -46,7 +46,7 @@ async function handleSubmit() {
 
   try {
     const game = await gameStore.createGame(formData.value)
-    router.push({ name: 'game-detail', params: { id: game.id } })
+    router.push({ name: 'game-play', params: { id: game.id } })
     emit('close')
   } catch (e) {
     console.error('Error creating game:', e)

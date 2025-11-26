@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\DTO\Chat\SendMessageDTO;
-use App\Entity\GameMessage;
+use App\Enum\MessageType;
 use App\Repository\GameRepository;
 use App\Repository\UserRepository;
 use App\Service\ChatService;
@@ -100,11 +100,19 @@ final class ChatController extends AbstractController
             );
         }
 
-        $dto = $this->serializer->deserialize(
-            $request->getContent(),
-            SendMessageDTO::class,
-            'json',
-        );
+        try {
+            $dto = $this->serializer->deserialize(
+                $request->getContent(),
+                SendMessageDTO::class,
+                'json',
+            );
+        }
+        catch (Exception $e) {
+            return $this->json(
+                ['error' => 'Les données fournies sont invalides'],
+                Response::HTTP_BAD_REQUEST,
+            );
+        }
 
         $errors = $this->validator->validate($dto);
         if (\count($errors) > 0) {
@@ -160,8 +168,16 @@ final class ChatController extends AbstractController
         $limit = (int) $request->query->get('limit', 50);
         $limit = max(1, min($limit, 200));
 
+        $messageType = MessageType::tryFrom($type);
+        if (!$messageType) {
+            return $this->json(
+                ['error' => "Type de message invalide: {$type}"],
+                Response::HTTP_BAD_REQUEST,
+            );
+        }
+
         try {
-            $messages = $this->chatService->getMessagesByType($game, $type, $limit);
+            $messages = $this->chatService->getMessagesByType($game, $messageType, $limit);
 
             return $this->json(
                 $messages,
@@ -206,7 +222,7 @@ final class ChatController extends AbstractController
         $limit = (int) $request->query->get('limit', 20);
         $limit = max(1, min($limit, 100));
 
-        $messages = $this->chatService->getMessagesByType($game, GameMessage::TYPE_DICE_ROLL, $limit);
+        $messages = $this->chatService->getMessagesByType($game, MessageType::DICE_ROLL, $limit);
 
         return $this->json(
             $messages,

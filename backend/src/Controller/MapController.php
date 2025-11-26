@@ -6,10 +6,12 @@ namespace App\Controller;
 
 use App\DTO\Map\CreateMapDTO;
 use App\DTO\Map\UpdateMapDTO;
+use App\Enum\MapGridType;
 use App\Repository\GameMapRepository;
 use App\Repository\GameRepository;
 use App\Service\FileUploader;
 use App\Service\MapService;
+use Doctrine\ORM\EntityManagerInterface;
 use Exception;
 use InvalidArgumentException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -35,6 +37,7 @@ final class MapController extends AbstractController
         private readonly FileUploader $fileUploader,
         private readonly SerializerInterface $serializer,
         private readonly ValidatorInterface $validator,
+        private readonly EntityManagerInterface $entityManager,
     ) {
     }
 
@@ -258,8 +261,8 @@ final class MapController extends AbstractController
 
                 $dto->gridSize = (int) $request->request->get('gridSize', 50);
 
-                $gridType = $request->request->get('gridType', 'square');
-                $dto->gridType = \is_string($gridType) ? $gridType : 'square';
+                $gridTypeString = $request->request->get('gridType', 'square');
+                $dto->gridType = \is_string($gridTypeString) ? (MapGridType::tryFrom($gridTypeString) ?? MapGridType::SQUARE) : MapGridType::SQUARE;
 
                 $dto->width = (int) $request->request->get('width', 20);
                 $dto->height = (int) $request->request->get('height', 20);
@@ -384,9 +387,9 @@ final class MapController extends AbstractController
                     $dto->gridSize = (int) $gridSize;
                 }
 
-                $gridType = $request->request->get('gridType');
-                if (\is_string($gridType)) {
-                    $dto->gridType = $gridType;
+                $gridTypeString = $request->request->get('gridType');
+                if (\is_string($gridTypeString)) {
+                    $dto->gridType = MapGridType::tryFrom($gridTypeString);
                 }
 
                 $width = $request->request->get('width');
@@ -539,6 +542,81 @@ final class MapController extends AbstractController
             return $this->json(
                 ['message' => 'Carte supprimée avec succès'],
                 Response::HTTP_OK,
+            );
+        }
+        catch (Exception $e) {
+            return $this->json(
+                ['error' => $e->getMessage()],
+                Response::HTTP_INTERNAL_SERVER_ERROR,
+            );
+        }
+    }
+
+    /**
+     * Mettre à jour les paramètres d'une carte (ex: grille).
+     */
+    #[Route('/{id}/settings', name: 'update_settings', methods: ['PATCH'])]
+    public function updateSettings(int $gameId, int $id, Request $request): JsonResponse
+    {
+        $game = $this->gameRepository->find($gameId);
+
+        if (!$game) {
+            return $this->json(
+                ['error' => 'Partie introuvable'],
+                Response::HTTP_NOT_FOUND,
+            );
+        }
+
+        $map = $this->mapRepository->find($id);
+
+        $mapGame = $map?->getGame();
+        if (!$map || !$mapGame || $mapGame->getId() !== $gameId) {
+            return $this->json(
+                ['error' => 'Carte introuvable'],
+                Response::HTTP_NOT_FOUND,
+            );
+        }
+
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+
+        if (!$game->isGameMaster($user)) {
+            return $this->json(
+                ['error' => 'Seul le maître du jeu peut modifier les paramètres'],
+                Response::HTTP_FORBIDDEN,
+            );
+        }
+
+        try {
+            $data = json_decode($request->getContent(), true);
+
+            if (null === $data || !\is_array($data)) {
+                return $this->json(
+                    ['error' => 'Données invalides'],
+                    Response::HTTP_BAD_REQUEST,
+                );
+            }
+
+            // Récupérer les settings actuels ou initialiser un tableau vide
+            $settings = $map->getSettings() ?? [];
+
+            // Fusionner les nouveaux paramètres avec les existants
+            $settings = array_merge($settings, $data);
+
+            // Mettre à jour les settings
+            $map->setSettings($settings);
+
+            // Sauvegarder
+            $this->entityManager->flush();
+
+            // Publier l'événement via Mercure
+            $this->mapService->publishMapUpdate($map);
+
+            return $this->json(
+                $map,
+                Response::HTTP_OK,
+                [],
+                ['groups' => 'map:read'],
             );
         }
         catch (Exception $e) {

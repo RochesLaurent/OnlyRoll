@@ -8,6 +8,7 @@ use App\DTO\Map\CreateMapDTO;
 use App\DTO\Map\UpdateMapDTO;
 use App\Entity\Game;
 use App\Entity\GameMap;
+use App\Enum\MapGridType;
 use App\Repository\GameMapRepository;
 use App\Service\MapService;
 use App\Service\MercurePublisher;
@@ -47,7 +48,7 @@ class MapServiceTest extends TestCase
         $dto->description = 'A test map';
         $dto->imageUrl = '/uploads/map.jpg';
         $dto->gridSize = 50;
-        $dto->gridType = 'square';
+        $dto->gridType = MapGridType::SQUARE;
         $dto->width = 25;
         $dto->height = 20;
         $dto->isActive = false;
@@ -66,7 +67,7 @@ class MapServiceTest extends TestCase
         $this->assertEquals('Test Map', $map->getName());
         $this->assertEquals('A test map', $map->getDescription());
         $this->assertEquals(50, $map->getGridSize());
-        $this->assertEquals('square', $map->getGridType());
+        $this->assertEquals(MapGridType::SQUARE, $map->getGridType());
         $this->assertEquals(25, $map->getWidth());
         $this->assertEquals(20, $map->getHeight());
         $this->assertFalse($map->isActive());
@@ -139,13 +140,14 @@ class MapServiceTest extends TestCase
         $map = $this->createMock(GameMap::class);
         $map->method('getGame')->willReturn($game);
         $map->method('getId')->willReturn(1);
+        $map->method('getGridType')->willReturn(MapGridType::SQUARE);
 
         $dto = new UpdateMapDTO();
         $dto->name = 'Updated Name';
         $dto->description = 'Updated description';
         $dto->imageUrl = '/new-image.jpg';
         $dto->gridSize = 60;
-        $dto->gridType = 'hex';
+        $dto->gridType = MapGridType::HEX;
         $dto->width = 30;
         $dto->height = 25;
         $dto->isActive = false;
@@ -155,7 +157,7 @@ class MapServiceTest extends TestCase
         $map->expects($this->once())->method('setDescription')->with('Updated description');
         $map->expects($this->once())->method('setImageUrl')->with('/new-image.jpg');
         $map->expects($this->once())->method('setGridSize')->with(60);
-        $map->expects($this->once())->method('setGridType')->with('hex');
+        $map->expects($this->once())->method('setGridType')->with(MapGridType::HEX);
         $map->expects($this->once())->method('setWidth')->with(30);
         $map->expects($this->once())->method('setHeight')->with(25);
         $map->expects($this->once())->method('setIsActive')->with(false);
@@ -180,6 +182,7 @@ class MapServiceTest extends TestCase
         $map = $this->createMock(GameMap::class);
         $map->method('getGame')->willReturn($game);
         $map->method('getId')->willReturn(1);
+        $map->method('getGridType')->willReturn(MapGridType::SQUARE);
 
         $dto = new UpdateMapDTO();
         $dto->name = 'Only Name Updated';
@@ -209,7 +212,7 @@ class MapServiceTest extends TestCase
         $map->method('getDescription')->willReturn('Test Description');
         $map->method('getImageUrl')->willReturn('/test.jpg');
         $map->method('getGridSize')->willReturn(50);
-        $map->method('getGridType')->willReturn('square');
+        $map->method('getGridType')->willReturn(MapGridType::SQUARE);
         $map->method('getWidth')->willReturn(20);
         $map->method('getHeight')->willReturn(20);
         $map->method('isActive')->willReturn(true);
@@ -257,7 +260,7 @@ class MapServiceTest extends TestCase
         $map->method('getDescription')->willReturn('Test Description');
         $map->method('getImageUrl')->willReturn('/test.jpg');
         $map->method('getGridSize')->willReturn(50);
-        $map->method('getGridType')->willReturn('square');
+        $map->method('getGridType')->willReturn(MapGridType::SQUARE);
         $map->method('getWidth')->willReturn(20);
         $map->method('getHeight')->willReturn(20);
         $map->method('isActive')->willReturn(true);

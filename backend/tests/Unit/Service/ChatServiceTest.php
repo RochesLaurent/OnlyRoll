@@ -8,6 +8,7 @@ use App\DTO\Chat\SendMessageDTO;
 use App\Entity\Game;
 use App\Entity\GameMessage;
 use App\Entity\User;
+use App\Enum\MessageType;
 use App\Repository\GameMessageRepository;
 use App\Repository\UserRepository;
 use App\Service\ChatService;
@@ -17,6 +18,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use TypeError;
 
 class ChatServiceTest extends TestCase
 {
@@ -55,7 +57,7 @@ class ChatServiceTest extends TestCase
         $user->method('getPseudo')->willReturn('Player1');
 
         $dto = new SendMessageDTO();
-        $dto->type = GameMessage::TYPE_CHAT;
+        $dto->type = MessageType::CHAT;
         $dto->content = 'Hello everyone!';
         $dto->isInCharacter = false;
 
@@ -80,7 +82,7 @@ class ChatServiceTest extends TestCase
         $user = $this->createMock(User::class);
 
         $dto = new SendMessageDTO();
-        $dto->type = GameMessage::TYPE_WHISPER;
+        $dto->type = MessageType::WHISPER;
         $dto->content = 'Secret message';
         $dto->recipientId = null;
 
@@ -96,7 +98,7 @@ class ChatServiceTest extends TestCase
         $user = $this->createMock(User::class);
 
         $dto = new SendMessageDTO();
-        $dto->type = GameMessage::TYPE_WHISPER;
+        $dto->type = MessageType::WHISPER;
         $dto->content = 'Secret';
         $dto->recipientId = 999;
 
@@ -118,7 +120,7 @@ class ChatServiceTest extends TestCase
         $recipient = $this->createMock(User::class);
 
         $dto = new SendMessageDTO();
-        $dto->type = GameMessage::TYPE_WHISPER;
+        $dto->type = MessageType::WHISPER;
         $dto->content = 'Secret';
         $dto->recipientId = 2;
 
@@ -143,7 +145,7 @@ class ChatServiceTest extends TestCase
         $user = $this->createMock(User::class);
 
         $dto = new SendMessageDTO();
-        $dto->type = GameMessage::TYPE_SYSTEM;
+        $dto->type = MessageType::SYSTEM;
         $dto->content = 'System message';
 
         $game->expects($this->once())
@@ -208,10 +210,10 @@ class ChatServiceTest extends TestCase
 
         $this->messageRepository->expects($this->once())
             ->method('findByType')
-            ->with($game, GameMessage::TYPE_CHAT)
+            ->with($game, MessageType::CHAT)
             ->willReturn($messages);
 
-        $result = $this->chatService->getMessagesByType($game, GameMessage::TYPE_CHAT);
+        $result = $this->chatService->getMessagesByType($game, MessageType::CHAT);
 
         $this->assertSame($messages, $result);
     }
@@ -220,9 +222,9 @@ class ChatServiceTest extends TestCase
     {
         $game = $this->createMock(Game::class);
 
-        $this->expectException(BadRequestHttpException::class);
-        $this->expectExceptionMessage('Type de message invalide: invalid_type');
+        $this->expectException(TypeError::class);
 
+        /** @phpstan-ignore-next-line */
         $this->chatService->getMessagesByType($game, 'invalid_type');
     }
 

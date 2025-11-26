@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\DTO\Map;
 
+use App\Enum\MapGridType;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
@@ -31,11 +32,7 @@ final class UpdateMapDTO
     )]
     public ?int $gridSize = null;
 
-    #[Assert\Choice(
-        choices: ['square', 'hex', 'none'],
-        message: 'Le type de grille doit être "square", "hex" ou "none".',
-    )]
-    public ?string $gridType = null;
+    public ?MapGridType $gridType = null;
 
     #[Assert\Range(
         min: 5,

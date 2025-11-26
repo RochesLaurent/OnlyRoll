@@ -96,8 +96,12 @@ OnlyRoll/
 │   │   │
 │   │   ├── Enum/
 │   │   │   ├── GameStatus.php
+│   │   │   ├── MapGridType.php
+│   │   │   ├── MessageType.php
 │   │   │   ├── PlayerRole.php
-│   │   │   └── PlayerStatus.php
+│   │   │   ├── PlayerStatus.php
+│   │   │   ├── TokenLayer.php
+│   │   │   └── TokenType.php
 │   │   │
 │   │   ├── Entity/
 │   │   │   ├── User.php
@@ -223,7 +227,8 @@ OnlyRoll/
     │   │   │   └── UploadMapModal.vue
     │   │   │
     │   │   └── dashboard/
-    │   │       └── DashboardCard.vue
+    │   │       ├── DashboardCard.vue
+    │   │       └── DashboardNav.vue
     │   │
     │   ├── composables/
     │   │   ├── useAuth.ts
@@ -266,8 +271,9 @@ OnlyRoll/
     │   │
     │   ├── types/
     │   │   ├── auth.ts
-    │   │   ├── websocket.ts
-    │   │   └── game.ts
+    │   │   ├── errors.ts
+    │   │   ├── game.ts
+    │   │   └── websocket.ts
     │   │
     │   ├── views/
     │   │   ├── auth/

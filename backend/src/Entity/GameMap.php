@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\MapGridType;
 use App\Repository\GameMapRepository;
 use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -62,13 +63,10 @@ class GameMap
     #[Groups(['map:read', 'map:write'])]
     private int $gridSize = 50;
 
-    #[ORM\Column(name: 'map_grid_type', type: Types::STRING, length: 20)]
-    #[Assert\Choice(
-        choices: ['square', 'hex', 'none'],
-        message: 'Le type de grille doit être "square", "hex" ou "none"',
-    )]
+    #[ORM\Column(name: 'map_grid_type', type: 'string', enumType: MapGridType::class)]
+    #[Assert\NotBlank]
     #[Groups(['map:read', 'map:write'])]
-    private string $gridType = 'square';
+    private MapGridType $gridType = MapGridType::SQUARE;
 
     #[ORM\Column(name: 'map_width', type: Types::INTEGER)]
     #[Assert\Range(
@@ -236,12 +234,12 @@ class GameMap
         return $this;
     }
 
-    public function getGridType(): string
+    public function getGridType(): MapGridType
     {
         return $this->gridType;
     }
 
-    public function setGridType(string $gridType): static
+    public function setGridType(MapGridType $gridType): static
     {
         $this->gridType = $gridType;
 

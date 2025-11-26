@@ -8,6 +8,7 @@ use App\DTO\Game\CreateGameDTO;
 use App\DTO\Game\GameFilterDTO;
 use App\DTO\Game\JoinGameDTO;
 use App\DTO\Game\UpdateGameDTO;
+use App\Enum\GameStatus;
 use App\Repository\GameRepository;
 use App\Service\GameService;
 use Exception;
@@ -47,7 +48,8 @@ final class GameController extends AbstractController
         $filterDTO->search = $request->query->getString('search') ?: null;
         $filterDTO->title = $request->query->getString('title') ?: null;
         $filterDTO->gameMaster = $request->query->getString('gameMaster') ?: null;
-        $filterDTO->status = $request->query->getString('status') ?: null;
+        $statusString = $request->query->getString('status');
+        $filterDTO->status = $statusString ? GameStatus::tryFrom($statusString) : null;
         $filterDTO->page = (int) $request->query->get('page', 1);
         $filterDTO->limit = (int) $request->query->get('limit', 12);
 

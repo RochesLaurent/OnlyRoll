@@ -7,6 +7,7 @@ namespace App\Repository;
 use App\Entity\Game;
 use App\Entity\GameMessage;
 use App\Entity\User;
+use App\Enum\MessageType;
 use DateTimeInterface;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -46,7 +47,7 @@ class GameMessageRepository extends ServiceEntityRepository
      *
      * @return GameMessage[]
      */
-    public function findMessagesByType(Game $game, string $type, int $limit = 50): array
+    public function findMessagesByType(Game $game, MessageType $type, int $limit = 50): array
     {
         return $this->createQueryBuilder('m')
             ->leftJoin('m.user', 'u')
@@ -66,7 +67,7 @@ class GameMessageRepository extends ServiceEntityRepository
      *
      * @return GameMessage[]
      */
-    public function findByType(Game $game, string $type): array
+    public function findByType(Game $game, MessageType $type): array
     {
         return $this->findMessagesByType($game, $type, 200);
     }
@@ -87,7 +88,7 @@ class GameMessageRepository extends ServiceEntityRepository
             ->andWhere('m.type = :whisper')
             ->andWhere('m.user = :user OR m.recipient = :user')
             ->setParameter('game', $game)
-            ->setParameter('whisper', GameMessage::TYPE_WHISPER)
+            ->setParameter('whisper', MessageType::WHISPER)
             ->setParameter('user', $user)
             ->orderBy('m.createdAt', 'DESC')
             ->setMaxResults($limit)
@@ -102,7 +103,7 @@ class GameMessageRepository extends ServiceEntityRepository
      */
     public function findDiceRolls(Game $game, int $limit = 20): array
     {
-        return $this->findMessagesByType($game, GameMessage::TYPE_DICE_ROLL, $limit);
+        return $this->findMessagesByType($game, MessageType::DICE_ROLL, $limit);
     }
 
     /**
@@ -122,7 +123,7 @@ class GameMessageRepository extends ServiceEntityRepository
                 'm.type != :whisper OR m.user = :user OR m.recipient = :user',
             )
             ->setParameter('game', $game)
-            ->setParameter('whisper', GameMessage::TYPE_WHISPER)
+            ->setParameter('whisper', MessageType::WHISPER)
             ->setParameter('user', $user)
             ->orderBy('m.createdAt', 'DESC')
             ->setMaxResults($limit)
@@ -198,7 +199,7 @@ class GameMessageRepository extends ServiceEntityRepository
 
         $counts = [];
         foreach ($result as $row) {
-            $counts[$row['type']] = (int) $row['count'];
+            $counts[$row['type']->value] = (int) $row['count'];
         }
 
         return $counts;
@@ -306,7 +307,7 @@ class GameMessageRepository extends ServiceEntityRepository
             ->andWhere('m.type != :whisper OR m.user = :user OR m.recipient = :user')
             ->setParameter('game', $game)
             ->setParameter('since', $since)
-            ->setParameter('whisper', GameMessage::TYPE_WHISPER)
+            ->setParameter('whisper', MessageType::WHISPER)
             ->setParameter('user', $user)
             ->orderBy('m.createdAt', 'ASC')
             ->getQuery()

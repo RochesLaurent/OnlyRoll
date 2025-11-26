@@ -38,6 +38,11 @@ const gridSize = computed(() => props.map?.gridSize || 50)
 const mapWidth = computed(() => (props.map?.width || 20) * gridSize.value)
 const mapHeight = computed(() => (props.map?.height || 20) * gridSize.value)
 
+// Paramètres de grille
+const gridColor = computed(() => props.map?.settings?.gridColor || '#ffffff')
+const gridOpacity = computed(() => props.map?.settings?.gridOpacity ?? 0.1)
+const showGrid = computed(() => props.map?.settings?.showGrid ?? true)
+
 // URL complète de l'image de la carte
 const mapImageUrl = computed(() => {
   if (!props.map?.imageUrl) return null
@@ -497,12 +502,16 @@ defineExpose({
     >
       <!-- Grille -->
       <div
-        v-if="map?.gridType === 'square'"
+        v-if="map?.gridType === 'square' && showGrid"
         class="absolute inset-0 pointer-events-none"
         :style="{
           backgroundImage: `
-            linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)
+            linear-gradient(to right, ${gridColor}${Math.round(gridOpacity * 255)
+              .toString(16)
+              .padStart(2, '0')} 1px, transparent 1px),
+            linear-gradient(to bottom, ${gridColor}${Math.round(gridOpacity * 255)
+              .toString(16)
+              .padStart(2, '0')} 1px, transparent 1px)
           `,
           backgroundSize: `${gridSize}px ${gridSize}px`,
         }"

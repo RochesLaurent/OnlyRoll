@@ -7,7 +7,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref, type Ref } from 'vue'
 import { usePagination, createPagination } from '@/composables/usePagination'
-import type { PaginationMeta } from '@/composables/usePagination'
+import type { PaginationMeta } from '@/types/game'
 
 // Mock window.scrollTo
 global.scrollTo = vi.fn()

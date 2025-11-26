@@ -6,6 +6,8 @@ namespace App\Controller;
 
 use App\DTO\Token\CreateTokenDTO;
 use App\DTO\Token\MoveTokenDTO;
+use App\Enum\TokenLayer;
+use App\Enum\TokenType;
 use App\Repository\GameMapRepository;
 use App\Repository\GameRepository;
 use App\Repository\GameTokenRepository;
@@ -287,8 +289,8 @@ final class TokenController extends AbstractController
                 }
                 $dto->name = $name;
 
-                $type = $request->request->get('type');
-                $dto->type = \is_string($type) ? $type : 'character';
+                $typeString = $request->request->get('type');
+                $dto->type = \is_string($typeString) ? (TokenType::tryFrom($typeString) ?? TokenType::CHARACTER) : TokenType::CHARACTER;
 
                 $dto->x = (int) $request->request->get('x', 0);
                 $dto->y = (int) $request->request->get('y', 0);
@@ -301,8 +303,8 @@ final class TokenController extends AbstractController
                 $isLocked = $request->request->get('isLocked');
                 $dto->isLocked = $isLocked === 'true' || $isLocked === true;
 
-                $layer = $request->request->get('layer');
-                $dto->layer = \is_string($layer) ? $layer : 'tokens';
+                $layerString = $request->request->get('layer');
+                $dto->layer = \is_string($layerString) ? (TokenLayer::tryFrom($layerString) ?? TokenLayer::TOKENS) : TokenLayer::TOKENS;
 
                 $dto->imageUrl = $imageUrl;
             }
@@ -677,9 +679,12 @@ final class TokenController extends AbstractController
                     $token->setName($name);
                 }
 
-                $type = $request->request->get('type');
-                if (\is_string($type)) {
-                    $token->setType($type);
+                $typeString = $request->request->get('type');
+                if (\is_string($typeString)) {
+                    $tokenType = TokenType::tryFrom($typeString);
+                    if ($tokenType) {
+                        $token->setType($tokenType);
+                    }
                 }
 
                 $size = $request->request->get('size');
@@ -715,7 +720,10 @@ final class TokenController extends AbstractController
                 }
 
                 if (isset($data['type']) && \is_string($data['type'])) {
-                    $token->setType($data['type']);
+                    $tokenType = TokenType::tryFrom($data['type']);
+                    if ($tokenType) {
+                        $token->setType($tokenType);
+                    }
                 }
 
                 if (isset($data['size'])) {
