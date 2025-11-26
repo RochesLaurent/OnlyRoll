@@ -294,7 +294,7 @@ class ChatControllerTest extends WebTestCase
         $message = new GameMessage();
         $message->setGame($this->game);
         $message->setUser($this->player);
-        $message->setType(GameMessage::TYPE_CHAT);
+        $message->setType(MessageType::CHAT);
         $message->setContent('Test');
         $this->entityManager->persist($message);
         $this->entityManager->flush();
@@ -321,7 +321,7 @@ class ChatControllerTest extends WebTestCase
         $oldMessage = new GameMessage();
         $oldMessage->setGame($this->game);
         $oldMessage->setUser($this->player);
-        $oldMessage->setType(GameMessage::TYPE_CHAT);
+        $oldMessage->setType(MessageType::CHAT);
         $oldMessage->setContent('Old message');
         $this->entityManager->persist($oldMessage);
         $this->entityManager->flush();
@@ -332,7 +332,7 @@ class ChatControllerTest extends WebTestCase
         $newMessage = new GameMessage();
         $newMessage->setGame($this->game);
         $newMessage->setUser($this->player);
-        $newMessage->setType(GameMessage::TYPE_CHAT);
+        $newMessage->setType(MessageType::CHAT);
         $newMessage->setContent('New message');
         $this->entityManager->persist($newMessage);
         $this->entityManager->flush();

@@ -100,11 +100,19 @@ final class ChatController extends AbstractController
             );
         }
 
-        $dto = $this->serializer->deserialize(
-            $request->getContent(),
-            SendMessageDTO::class,
-            'json',
-        );
+        try {
+            $dto = $this->serializer->deserialize(
+                $request->getContent(),
+                SendMessageDTO::class,
+                'json',
+            );
+        }
+        catch (Exception $e) {
+            return $this->json(
+                ['error' => 'Les données fournies sont invalides'],
+                Response::HTTP_BAD_REQUEST,
+            );
+        }
 
         $errors = $this->validator->validate($dto);
         if (\count($errors) > 0) {

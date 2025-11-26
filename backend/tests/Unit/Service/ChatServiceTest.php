@@ -18,6 +18,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use TypeError;
 
 class ChatServiceTest extends TestCase
 {
@@ -221,7 +222,7 @@ class ChatServiceTest extends TestCase
     {
         $game = $this->createMock(Game::class);
 
-        $this->expectException(\TypeError::class);
+        $this->expectException(TypeError::class);
 
         /** @phpstan-ignore-next-line */
         $this->chatService->getMessagesByType($game, 'invalid_type');
