@@ -199,7 +199,7 @@ class GameMessageRepository extends ServiceEntityRepository
 
         $counts = [];
         foreach ($result as $row) {
-            $counts[$row['type']] = (int) $row['count'];
+            $counts[$row['type']->value] = (int) $row['count'];
         }
 
         return $counts;
