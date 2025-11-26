@@ -8,6 +8,7 @@ use App\Entity\Game;
 use App\Entity\GameMessage;
 use App\Entity\GamePlayer;
 use App\Entity\User;
+use App\Enum\MessageType;
 use App\Enum\PlayerStatus;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
@@ -122,7 +123,7 @@ class ChatControllerTest extends WebTestCase
             $message = new GameMessage();
             $message->setGame($this->game);
             $message->setUser($this->player);
-            $message->setType(GameMessage::TYPE_CHAT);
+            $message->setType(MessageType::CHAT);
             $message->setContent("Test message $i");
             $this->entityManager->persist($message);
         }
@@ -142,7 +143,7 @@ class ChatControllerTest extends WebTestCase
             $message = new GameMessage();
             $message->setGame($this->game);
             $message->setUser($this->player);
-            $message->setType(GameMessage::TYPE_CHAT);
+            $message->setType(MessageType::CHAT);
             $message->setContent("Test message $i");
             $this->entityManager->persist($message);
         }
@@ -166,7 +167,7 @@ class ChatControllerTest extends WebTestCase
             [],
             ['CONTENT_TYPE' => 'application/json'],
             json_encode([
-                'type' => GameMessage::TYPE_CHAT,
+                'type' => MessageType::CHAT->value,
                 'content' => 'Hello everyone!',
                 'isInCharacter' => false,
             ]),
@@ -200,13 +201,13 @@ class ChatControllerTest extends WebTestCase
         $chatMessage = new GameMessage();
         $chatMessage->setGame($this->game);
         $chatMessage->setUser($this->player);
-        $chatMessage->setType(GameMessage::TYPE_CHAT);
+        $chatMessage->setType(MessageType::CHAT);
         $chatMessage->setContent('Chat message');
 
         $systemMessage = new GameMessage();
         $systemMessage->setGame($this->game);
         $systemMessage->setUser($this->player);
-        $systemMessage->setType(GameMessage::TYPE_SYSTEM);
+        $systemMessage->setType(MessageType::SYSTEM);
         $systemMessage->setContent('System message');
 
         $this->entityManager->persist($chatMessage);
@@ -216,12 +217,12 @@ class ChatControllerTest extends WebTestCase
         $this->client->loginUser($this->player);
         $this->client->request(
             'GET',
-            '/api/games/' . $this->game->getId() . '/chat/messages/type/' . GameMessage::TYPE_CHAT,
+            '/api/games/' . $this->game->getId() . '/chat/messages/type/' . MessageType::CHAT->value,
         );
 
         $this->assertResponseIsSuccessful();
         $data = json_decode($this->client->getResponse()->getContent(), true);
-        $this->assertEquals(GameMessage::TYPE_CHAT, $data[0]['type']);
+        $this->assertEquals(MessageType::CHAT->value, $data[0]['type']);
     }
 
     public function testRollDiceSuccess(): void
@@ -238,7 +239,7 @@ class ChatControllerTest extends WebTestCase
 
         $this->assertResponseStatusCodeSame(Response::HTTP_CREATED);
         $data = json_decode($this->client->getResponse()->getContent(), true);
-        $this->assertEquals(GameMessage::TYPE_DICE_ROLL, $data['type']);
+        $this->assertEquals(MessageType::DICE_ROLL->value, $data['type']);
         $this->assertArrayHasKey('diceResult', $data);
         $this->assertArrayHasKey('total', $data['diceResult']);
     }
@@ -371,14 +372,14 @@ class ChatControllerTest extends WebTestCase
         $diceMessage = new GameMessage();
         $diceMessage->setGame($this->game);
         $diceMessage->setUser($this->player);
-        $diceMessage->setType(GameMessage::TYPE_DICE_ROLL);
+        $diceMessage->setType(MessageType::DICE_ROLL);
         $diceMessage->setContent('2d6+3');
         $diceMessage->setDiceResult(['total' => 10, 'rolls' => [3, 4], 'modifier' => 3]);
 
         $chatMessage = new GameMessage();
         $chatMessage->setGame($this->game);
         $chatMessage->setUser($this->player);
-        $chatMessage->setType(GameMessage::TYPE_CHAT);
+        $chatMessage->setType(MessageType::CHAT);
         $chatMessage->setContent('Chat');
 
         $this->entityManager->persist($diceMessage);
@@ -391,6 +392,6 @@ class ChatControllerTest extends WebTestCase
         $this->assertResponseIsSuccessful();
         $data = json_decode($this->client->getResponse()->getContent(), true);
         $this->assertCount(1, $data);
-        $this->assertEquals(GameMessage::TYPE_DICE_ROLL, $data[0]['type']);
+        $this->assertEquals(MessageType::DICE_ROLL->value, $data[0]['type']);
     }
 }

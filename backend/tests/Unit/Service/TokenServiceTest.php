@@ -10,6 +10,8 @@ use App\Entity\Game;
 use App\Entity\GameMap;
 use App\Entity\GameToken;
 use App\Entity\User;
+use App\Enum\TokenLayer;
+use App\Enum\TokenType;
 use App\Repository\GameTokenRepository;
 use App\Service\MercurePublisher;
 use App\Service\TokenService;
@@ -56,14 +58,14 @@ class TokenServiceTest extends TestCase
 
         $dto = new CreateTokenDTO();
         $dto->name = 'Hero Token';
-        $dto->type = 'character';
+        $dto->type = TokenType::CHARACTER;
         $dto->x = 5;
         $dto->y = 10;
         $dto->size = 1.0;
         $dto->rotation = 0;
         $dto->isVisible = true;
         $dto->isLocked = false;
-        $dto->layer = 'tokens';
+        $dto->layer = TokenLayer::TOKENS;
 
         // Set up entity manager to properly set IDs and timestamps after flush
         $this->entityManager->expects($this->once())
@@ -100,7 +102,7 @@ class TokenServiceTest extends TestCase
 
         $dto = new CreateTokenDTO();
         $dto->name = 'Token';
-        $dto->type = 'character';
+        $dto->type = TokenType::CHARACTER;
         $dto->x = 25; // Out of bounds
         $dto->y = 10;
 
@@ -118,7 +120,7 @@ class TokenServiceTest extends TestCase
 
         $dto = new CreateTokenDTO();
         $dto->name = 'Token';
-        $dto->type = 'character';
+        $dto->type = TokenType::CHARACTER;
         $dto->x = -1;
         $dto->y = 5;
 
@@ -144,6 +146,7 @@ class TokenServiceTest extends TestCase
         $token->method('getId')->willReturn(1);
         $token->method('getCreatedAt')->willReturn(new DateTimeImmutable('2024-01-01 10:00:00'));
         $token->method('getUpdatedAt')->willReturn(new DateTimeImmutable('2024-01-01 10:00:00'));
+        $token->method('getLayer')->willReturn(TokenLayer::TOKENS);
 
         $dto = new MoveTokenDTO();
         $dto->x = 15;
@@ -261,6 +264,7 @@ class TokenServiceTest extends TestCase
         $token->method('getId')->willReturn(1);
         $token->method('getCreatedAt')->willReturn(new DateTimeImmutable('2024-01-01 10:00:00'));
         $token->method('getUpdatedAt')->willReturn(new DateTimeImmutable('2024-01-01 10:00:00'));
+        $token->method('getLayer')->willReturn(TokenLayer::TOKENS);
 
         $token->expects($this->once())
             ->method('setIsVisible')
@@ -292,6 +296,7 @@ class TokenServiceTest extends TestCase
         $token->method('getId')->willReturn(1);
         $token->method('getCreatedAt')->willReturn(new DateTimeImmutable('2024-01-01 10:00:00'));
         $token->method('getUpdatedAt')->willReturn(new DateTimeImmutable('2024-01-01 10:00:00'));
+        $token->method('getLayer')->willReturn(TokenLayer::TOKENS);
 
         $token->expects($this->once())
             ->method('setIsLocked')

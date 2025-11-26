@@ -10,6 +10,7 @@ use App\Entity\GamePlayer;
 use App\Entity\GameToken;
 use App\Entity\User;
 use App\Enum\PlayerStatus;
+use App\Enum\TokenType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
@@ -367,7 +368,7 @@ class TokenControllerTest extends WebTestCase
         $token = new GameToken();
         $token->setMap($otherMap);
         $token->setName('Other Map Token');
-        $token->setType('character');
+        $token->setType(TokenType::CHARACTER);
         $token->setX(5);
         $token->setY(5);
         $this->entityManager->persist($token);
@@ -396,7 +397,7 @@ class TokenControllerTest extends WebTestCase
         $token = new GameToken();
         $token->setMap($this->map);
         $token->setName($name);
-        $token->setType('character');
+        $token->setType(TokenType::CHARACTER);
         $token->setX($x);
         $token->setY($y);
         $token->setIsVisible($visible);

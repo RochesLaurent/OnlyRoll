@@ -54,7 +54,14 @@
       "Bash(sed:*)",
       "Bash(timeout 15 bash:*)",
       "Bash(find:*)",
-      "Bash(php -d memory_limit=512M vendor/bin/phpstan:*)"
+      "Bash(php -d memory_limit=512M vendor/bin/phpstan:*)",
+      "Bash(composer dump-autoload)",
+      "Bash(docker volume:*)",
+      "Bash(ConvertFrom-Json)",
+      "Bash(ConvertTo-Json -Depth 10)",
+      "Bash(Get-ChildItem -Path . -Filter composer.json -Recurse)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(composer install:*)"
     ],
     "deny": [],
     "ask": []
